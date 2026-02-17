@@ -49,7 +49,7 @@ setopt clobber;            # must use >| to truncate existing files
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 # Store ZSH history at a custom location
-if [ -d "$DOTFILE_DIR/../../../../Backup" ]; then HISTFILE="$DOTFILE_DIR/../../../../Backup/.zsh_history"; fi
+HISTFILE="$DOTFILE_DIR/../history/.history";
 
 # Ignore certain commands from being stored in history
 HISTORY_IGNORE="(ls|cd|cd -|df|ff|cls|reboot|restart|poweroff|pwd|exit|date|* --help|#*)";
@@ -78,8 +78,8 @@ setopt no_hist_beep;            # disable beep in ZLE when a widget attempts to 
 # By modifying these 3 hooks, we tell ZSH to not write the entry to history file when zshaddhistory() is called and
 # instead write it when precmd() or zshexit() is run, after checking whether the command was successful or not.
 
-my_zshaddhistory() {
-
+my_zshaddhistory()
+{
     # Remove line continuations since otherwise a "\" will eventually get written to history with no newline.
     LASTHIST=${1//\\$'\n'/};
 
@@ -89,7 +89,6 @@ my_zshaddhistory() {
 
 save_last_command_in_history_if_successful()
 {
-
     # Write the last command if successful, using the history buffered by zshaddhistory().
     if [[ ($? == 0 || $? == 130) && -n ${LASTHIST//[[:space:]\n]/} && -n $HISTFILE ]] ; then
         print -sr -- ${=${LASTHIST%%'\n'}};
@@ -100,6 +99,20 @@ autoload -U add-zsh-hook;
 add-zsh-hook precmd save_last_command_in_history_if_successful;
 add-zsh-hook zshexit save_last_command_in_history_if_successful;
 add-zsh-hook zshaddhistory my_zshaddhistory;
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Terminal Title                                                                                                      ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+# Function to set the terminal title to the current working directory
+function set_terminal_title() {
+  # Use an escape sequence to set the title
+  print -Pn "\e]0;${PWD}\a"
+}
+
+# Hook the function to run before each prompt
+autoload -U add-zsh-hook;
+add-zsh-hook precmd set_terminal_title;
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ Flow Control                                                                                                        ║
@@ -158,28 +171,37 @@ bindkey '\e[8~'   end-of-line;
 bindkey '\eOF'    end-of-line;
 bindkey '\e[F'    end-of-line;
 
-bindkey '\e[1;5D' backward-word;      # CTRL-LEFT goes backward one word
-bindkey '\e[1;5C' forward-word;       # CTRL-RIGHT goes forward one word
-bindkey '^H'      backward-kill-word; # CTRL-BACKSPACE deletes the previous word
-bindkey '5~'      kill-word;          # CTRL-DEL deletes the next word
-bindkey -r        '^S';               # Disable CTRL-S from triggering forward-i-search
+bindkey '\e[1;5D' backward-word;         # CTRL-LEFT goes backward one word
+bindkey '\e[1;5C' forward-word;          # CTRL-RIGHT goes forward one word
+bindkey '^H'      backward-kill-word;    # CTRL-BACKSPACE deletes the previous word
+bindkey '5~'      kill-word;             # CTRL-DEL deletes the next word
+bindkey '\e[Z'    reverse-menu-complete  # SHIFT-TAB should go backwards during auto-completion
+bindkey -r        '^S';                  # Disable CTRL-S from triggering forward-i-search
+
+
+# CTRL-X CTRL-E edits current command in $VISUAL editor
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey '^x^e' edit-command-line
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Prompt                                                                                                              ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+# Load custom prompt
+source "$ZDOTDIR/.zshprompt_theme_cascade";
+# source "$ZDOTDIR/.zshprompt_theme_pure";
+# export STARSHIP_CONFIG="$ZDOTDIR/../starship/gaps.toml" && eval "$(starship init zsh)";
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ Extras                                                                                                              ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-# Load custom prompt - use starship if available, else use the custom defined prompt
-if command -v starship >/dev/null 2>&1; then
-    export STARSHIP_CONFIG="$ZDOTDIR/../starship/gaps.toml" && eval "$(starship init zsh)";
-else
-    source "$ZDOTDIR/.zshprompt";
-fi
-
-# Load aliases, fzf key-binds, and other functions
+# Load aliases, fzf features, and other functions
 source "$ZDOTDIR/.zshfzf";
-source "$ZDOTDIR/../.functions";
-source "$ZDOTDIR/../.aliases";
-if [ -f "$ZDOTDIR/../../../../Backup/.extra" ]; then source "$ZDOTDIR/../../../../Backup/.extra"; fi
+source "$ZDOTDIR/.zshfunctions";
+source "$ZDOTDIR/.zshaliases";
+source "$ZDOTDIR/.zshextra";
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ Notes                                                                                                               ║

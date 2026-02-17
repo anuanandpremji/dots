@@ -1,0 +1,169 @@
+// Place your key bindings in this file to override the defaultsauto[]
+[
+    /******************************************************************************************************************/
+    // Navigate back and forth between editors and views
+    {
+        "command": "workbench.action.navigateBack",
+        "key": "alt+left",
+        "when": "editorTextFocus" // Shortcut to navigate back in editor history
+    },
+
+    {
+        "command": "workbench.action.navigateForward",
+        "key": "alt+right",
+        "when": "editorTextFocus" // Shortcut to navigate forward in editor history
+    },
+
+    /******************************************************************************************************************/
+    // Quick Open and Explorer view toggle
+    {
+        "command": "-workbench.action.quickOpen", // Disabling the default Quick Open shortcut
+        "key": "ctrl+e"
+    },
+    {
+        "command": "workbench.view.explorer", // Reassigning "ctrl+e" to open the Explorer view
+        "key": "ctrl+e"
+    },
+
+    /******************************************************************************************************************/
+    // Delete lines in the editor
+    {
+        "command": "editor.action.deleteLines",
+        "key": "alt+delete",
+        "when": "textInputFocus && !editorReadonly" // Shortcut to delete lines when text input is focused and editor is not read-only
+    },
+
+    /******************************************************************************************************************/
+    // Terminal split and navigation
+    // Split the terminal vertically
+    {
+        "key": "ctrl+alt+h",
+        "command": "workbench.action.terminal.split",
+        "when": "terminalFocus" // Shortcut to split the terminal vertically
+    },
+    // Split the terminal horizontally
+    {
+        "key": "ctrl+alt+v",
+        "command": "workbench.action.terminal.splitInActiveWorkspace",
+        "when": "terminalFocus" // Shortcut to split the terminal horizontally
+    },
+    // Navigate left in terminal split
+    {
+        "key": "ctrl+h",
+        "command": "workbench.action.terminal.focusPreviousPane",
+        "when": "terminalFocus" // Shortcut to navigate to the left terminal pane
+    },
+    // Navigate down in terminal split
+    {
+        "key": "ctrl+j",
+        "command": "workbench.action.terminal.focusNextPane",
+        "when": "terminalFocus" // Shortcut to navigate to the next terminal pane
+    },
+    // Navigate up in terminal split
+    {
+        "key": "ctrl+k",
+        "command": "workbench.action.terminal.focusPreviousPane",
+        "when": "terminalFocus" // Shortcut to navigate to the previous terminal pane
+    },
+    // Navigate right in terminal split
+    {
+        "key": "ctrl+l",
+        "command": "workbench.action.terminal.focusNextPane",
+        "when": "terminalFocus" // Shortcut to navigate to the right terminal pane
+    },
+
+    /******************************************************************************************************************/
+    // Move editor groups
+    {
+        "command": "workbench.action.moveEditorToNextGroup",
+        "key": "ctrl+k right" // Shortcut to move the editor to the next group
+    },
+    {
+        "command": "-views.moveViewRight", // Disabling the default shortcut for moving views to the right
+        "key": "ctrl+k right",
+        "when": "focusedView != ''" // Only applies when a view is focused
+    },
+    {
+        "command": "-workbench.action.moveActiveEditorGroupRight", // Disabling the default shortcut for moving the active editor group to the right
+        "key": "ctrl+k right"
+    },
+
+    /*----------------------------------------------------------------------------------------------------------------*/
+    {
+        "command": "workbench.action.moveEditorToPreviousGroup",
+        "key": "ctrl+k left" // Shortcut to move the editor to the previous group
+    },
+    {
+        "command": "-views.moveViewLeft", // Disabling the default shortcut for moving views to the left
+        "key": "ctrl+k left",
+        "when": "focusedView != ''" // Only applies when a view is focused
+    },
+    {
+        "command": "-workbench.action.moveActiveEditorGroupLeft", // Disabling the default shortcut for moving the active editor group to the left
+        "key": "ctrl+k left"
+    },
+
+    /*----------------------------------------------------------------------------------------------------------------*/
+    {
+        "command": "-workbench.action.moveActiveEditorGroupUp", // Disabling the default shortcut for moving the active editor group up
+        "key": "ctrl+k up"
+    },
+    {
+        "command": "workbench.action.moveEditorToAboveGroup",
+        "key": "ctrl+k up" // Shortcut to move the editor to the group above
+    },
+
+    /*----------------------------------------------------------------------------------------------------------------*/
+    {
+        "command": "-workbench.action.moveActiveEditorGroupDown", // Disabling the default shortcut for moving the active editor group down
+        "key": "ctrl+k down"
+    },
+    {
+        "command": "workbench.action.moveEditorToBelowGroup",
+        "key": "ctrl+k down" // Shortcut to move the editor to the group below
+    },
+
+    /******************************************************************************************************************/
+    // Toggle terminal and panel and also manage terminal size
+    {
+        "key": "ctrl+`",
+        "command": "workbench.action.togglePanel", // Shortcut to toggle the panel
+        "when": "!terminalFocus" // Only when the terminal is not focused
+    },
+    {
+        "key": "ctrl+j",
+        "command": "-workbench.action.togglePanel" // Disabling the default shortcut for toggling the panel
+    },
+    {
+        "key": "ctrl+j",
+        "command": "workbench.action.terminal.toggleTerminal",
+        "when": "terminal.active" // Shortcut to toggle the terminal when it is active
+    },
+    {
+        "key": "ctrl+`",
+        "command": "-workbench.action.terminal.toggleTerminal",
+        "when": "terminal.active" // Disabling the default terminal toggle shortcut when the terminal is active
+    },
+
+    // Maximize and restore the terminal panel size
+    {
+        "command": "workbench.action.toggleMaximizedPanel",
+        "key": "ctrl+shift+J",
+        "when": "terminalFocus && terminalProcessSupported" // Shortcut to toggle maximized terminal panel
+    },
+    {
+        "command": "workbench.action.toggleMaximizedPanel",
+        "key": "ctrl+k t",
+        "when": "terminalFocus && terminalProcessSupported" // Alternate shortcut for the same functionality
+    },
+    {
+        "key": "shift+enter",
+        "command": "workbench.action.terminal.sendSequence",
+        "args": {
+            "text": "\u001b\r"
+        },
+        "when": "terminalFocus"
+    },
+    /******************************************************************************************************************/
+
+]

@@ -11,11 +11,14 @@
 
 # Set DOTFILE_DIR to point to the on-disk directory containing the .bashrc file
 
-if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
-    DOTFILE_DIR="$(wslpath -a "$(wslvar USERPROFILE)")/Dropbox/Docs/dotfiles/.config/shell/bash";
-else
-    DOTFILE_DIR="$HOME/Dropbox/Docs/dotfiles/.config/shell/bash";
-fi
+# Determine the Dropbox installation  path (Linux Home vs Windows User Profile)
+if grep -qEi "(Microsoft|WSL)" /proc/version >/dev/null 2>&1; then BASE_DROPBOX_PATH="$(wslpath -a "$(wslvar USERPROFILE)")/Dropbox";
+else BASE_DROPBOX_PATH="$HOME/Dropbox"; fi
+
+# Check which subdirectory exists inside that dropbox path
+if [ -d "$BASE_DROPBOX_PATH/Docs" ]; then DOTFILE_DIR="$BASE_DROPBOX_PATH/Docs/dotfiles/.config/shell/bash";
+elif [ -d "$BASE_DROPBOX_PATH/Shared" ]; then DOTFILE_DIR="$BASE_DROPBOX_PATH/Shared/dotfiles/.config/shell/bash";
+else echo "Error: Dotfiles not found at: $BASE_DROPBOX_PATH" >&2; return 1; fi
 
 export DOTFILE_DIR;
 
@@ -23,7 +26,7 @@ export DOTFILE_DIR;
 
 # The global exports should be available to all programs, not just the interactive and login shells
 
-source "$DOTFILE_DIR/../.exports";
+source "$DOTFILE_DIR/.bashexports";
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
@@ -43,7 +46,7 @@ case $- in *i*) ;; *) return;; esac # don't do anything more if not an interacti
 HIST_IGNORE="ls:cd:cd -:df:ff:cls:reboot:restart:poweroff:pwd:exit:date:* --help:#*" && export HIST_IGNORE;
 
 # Store BASH histroy at a custom location
-if [ -d "$DOTFILE_DIR/../../../../Backup" ]; then HISTFILE="$DOTFILE_DIR/../../../../Backup/.bash_history"; fi
+export HISTFILE="$DOTFILE_DIR/../history/.history";
 
 HISTSIZE=1000000000      # number of entries from the history file to be kept in memory for the current session
 HISTFILESIZE=1000000000  # number of entries that are stored in the history file
@@ -103,16 +106,17 @@ bind -r "\C-s"                         # Disable CTRL-S from trigering forward-i
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
 # Load custom prompt - use starship if available, else use the custom defined prompt
-if command -v starship >/dev/null 2>&1; then
-    export STARSHIP_CONFIG="$DOTFILE_DIR/../starship_agnoster_gaps.toml" && eval "$(starship init bash)";
-else
-    source "$DOTFILE_DIR/.bashprompt";
-fi
+
+export STARSHIP_CONFIG="$DOTFILE_DIR/../starship/gaps.toml" && eval "$(starship init bash)";
+# source "$DOTFILE_DIR/.bashprompt";
+
+# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
 # Load aliases, fzf key-binds, and other functions
+
 source "$DOTFILE_DIR/.bashfzf";
-source "$DOTFILE_DIR/../.functions";
-source "$DOTFILE_DIR/../.aliases";
+source "$DOTFILE_DIR/.bashfunctions";
+source "$DOTFILE_DIR/.bashaliases";
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 

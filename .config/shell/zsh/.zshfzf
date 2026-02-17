@@ -11,27 +11,66 @@ if ! command -v fzf >/dev/null 2>&1; then echo "fzf no found."; return; fi
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 export FZF_DEFAULT_COMMAND='find -type f';
-export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border=rounded --info=inline-right';
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border=rounded --info=inline-right --pointer="󰜴" --color="gutter:-1,pointer:yellow"';
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ CTRL-R - Fuzzy search history and then paste the selected entry                                                     ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 # Fuzzy search history and then paste the selected entry
-# For truncated entries, use ? key to toggle a preview window
-
-# TODO: Implement Ctr-X to delete an entry from history
+#    - ?        - toggle a preview window for truncated entries
+#    - CTRL-E   - open the history file in $VISUAL for editing
+#    - CTRL-X   - delete the selected entry from history
+# Search query is preserved across edits and deletions
 
 fzf_history_widget()
 {
-    local selected;
-    if selected=$(fc -rl 1 | awk '{$1="";print substr($0,2)}' |
-                  fzf --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview'         \
-                      --border-label=" Search Shell History " --border-label-pos=2  --color 'label:yellow:bold' \
-                      --header-first --header='↵:Paste' -q "$LBUFFER");
-    then
-        LBUFFER=$selected;
-    fi
+    local output query key selected;
+    local fzf_query="$LBUFFER";
+
+    while true; do
+        output=$(fc -rl 1 | awk '{$1="";print substr($0,2)}' |
+                  fzf --print-query --expect=ctrl-e,ctrl-x                                                             \
+                      --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview' --border=bold  \
+                      --border-label=" Search Shell History " --border-label-pos=2  --color 'label:yellow:bold'        \
+                      --prompt='▶ ' --header-first --header='↵:Paste | ^E: Edit History | ^X: Delete Entry'           \
+                      -q "$fzf_query");
+
+        query=$(head -1 <<< "$output");
+        key=$(sed -n '2p' <<< "$output");
+        selected=$(sed -n '3p' <<< "$output");
+
+        if [[ "$key" == "ctrl-e" ]]; then
+            fzf_query="$query";
+            "$VISUAL" "$HISTFILE";
+            # Reload: clear in-memory history, then re-read from edited file
+            local hs=$HISTSIZE;
+            HISTSIZE=0;
+            HISTSIZE=$hs;
+            fc -R "$HISTFILE";
+            continue;
+        fi
+
+        if [[ "$key" == "ctrl-x" && -n "$selected" ]]; then
+            fzf_query="$query";
+            # Remove all matching entries from HISTFILE (handles both extended and plain formats)
+            SELECTED="$selected" awk 'BEGIN{cmd=ENVIRON["SELECTED"]} {
+                line = $0; c = line;
+                sub(/^: [0-9]+:[0-9]+;/, "", c);
+                if (c != cmd) print line;
+            }' "$HISTFILE" > "$HISTFILE.tmp" && mv "$HISTFILE.tmp" "$HISTFILE";
+            # Reload: clear in-memory history, then re-read from edited file
+            local hs=$HISTSIZE;
+            HISTSIZE=0;
+            HISTSIZE=$hs;
+            fc -R "$HISTFILE";
+            continue;
+        fi
+
+        [[ -n "$selected" ]] && LBUFFER=$selected;
+        break;
+    done
+
     zle redisplay;
 }
 
@@ -45,6 +84,7 @@ bindkey '^R' fzf_history_widget;
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 # Fuzzy search files & directories and then press
+#    - CTRL-D   - switch between filtering for files/directories
 #    - ENTER    - paste the selected entry
 #    - CTRL + V - open the selected entry in the default $VISUAL editor
 #    - CTRL + N - open the selected entry in the default $EDITOR
@@ -53,21 +93,37 @@ bindkey '^R' fzf_history_widget;
 #    - CTRL + Y - yank the selected entry to the clipboard
 #   For truncated entries, use ? key to toggle a preview window
 
-fzf_file_widget()
-{
-    entries=("$(fd -I --full-path --hidden --exclude ".git" --color=never . / |                                   \
-                fzf --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview' --exit-0    \
-                    --expect=ctrl-o,ctrl-v,ctrl-n,ctrl-y,ctrl-e --header-first                                    \
-                    --border-label=" Find Files & Directories " --border-label-pos=2  --color 'label:yellow:bold' \
-                    --header='↵:Paste | ^E: File Explorer | ^V: $VISUAL | ^N: $EDITOR | ^O: System App | ^Y: Copy')");
+fzf_file_widget() {
+    local find_cmd="fd -I --full-path --hidden --exclude .git";
+    local search_path="/";
 
+    local -a fzf_opts=(
+        --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview' --exit-0
+        --expect=ctrl-o,ctrl-v,ctrl-n,ctrl-y,ctrl-e
+        --border=bold
+        --border-label=" Find Files & Directories (CTRL-D: Switch between Files/Directories)"
+        --border-label-pos=2
+        --color 'label:yellow:bold'
+        --header-first
+        --header=$'↵:Paste | ^E: File Explorer | ^V: $VISUAL | ^N: $EDITOR | ^O: System App | ^Y: Copy'
+        --prompt 'All ▶ '
+        --scheme=path
+        --bind "ctrl-d:transform:[[ ! \$FZF_PROMPT =~ Files ]]
+                && echo 'change-prompt(Files ▶ )+reload($find_cmd --type f . $search_path)'
+                || echo 'change-prompt(Directories ▶ )+reload($find_cmd --type d . $search_path)'"
+    );
+
+    entries=("$(eval "$find_cmd . $search_path" | fzf "${fzf_opts[@]}")");
+
+    # Extract the pressed key and selected item
     key="$(head -1 <<< "${entries[@]}")";
     sel="$(head -2 <<< "${entries[@]}" | tail -1)" || return;
 
-    if   [[ "$key" == ctrl-o ]]; then
+    # Execute commands based on the pressed key
+    if [[ "$key" == ctrl-o ]]; then
         case "$(uname)" in
             Darwin) open "$sel" ;;
-            Linux) xdg-open "$sel" ;;
+            Linux) xdg-open "$sel" >/dev/null 2>&1 & disown ;;
         esac;
 
     elif [[ "$key" == ctrl-v ]]; then "$VISUAL" "$sel";
@@ -87,7 +143,7 @@ fzf_file_widget()
             esac;
         fi
 
-    elif [[ "$key" == ctrl-y ]]; then printf "$sel" | clipcopy;
+    elif [[ "$key" == ctrl-y ]]; then printf "%s" "$sel" | clipcopy;
 
     else LBUFFER="${LBUFFER}$sel";
 
@@ -104,3 +160,5 @@ zle      -N  fzf_file_widget;
 bindkey '^T' fzf_file_widget;
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
+
+#TODO: Fns in this file have a clipcopy() dependency. Rethink how to make the functions stand alone.

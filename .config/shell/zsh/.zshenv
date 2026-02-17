@@ -11,11 +11,15 @@
 
 # Set DOTFILE_DIR to point to the on-disk directory containing the .zshrc file
 
-if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
-    DOTFILE_DIR="$(wslpath -a "$(wslvar USERPROFILE)")/Dropbox/Docs/dotfiles/.config/shell/zsh";
-else
-    DOTFILE_DIR="$HOME/Dropbox/Docs/dotfiles/.config/shell/zsh";
-fi
+# Determine the Dropbox installation  path (Linux Home vs Windows User Profile)
+if grep -qEi "(Microsoft|WSL)" /proc/version >/dev/null 2>&1; then
+    BASE_DROPBOX_PATH="$(wslpath -a "$(wslvar USERPROFILE)")/Dropbox";
+else BASE_DROPBOX_PATH="$HOME/Dropbox"; fi
+
+# Check which subdirectory exists inside that dropbox path
+if [ -d "$BASE_DROPBOX_PATH/Docs" ]; then DOTFILE_DIR="$BASE_DROPBOX_PATH/Docs/dotfiles/.config/shell/zsh";
+elif [ -d "$BASE_DROPBOX_PATH/Shared" ]; then DOTFILE_DIR="$BASE_DROPBOX_PATH/Shared/dotfiles/.config/shell/zsh";
+else echo "Error: Dotfiles not found at: $BASE_DROPBOX_PATH" >&2; return 1; fi
 
 export DOTFILE_DIR;
 
@@ -37,6 +41,6 @@ export skip_global_compinit;
 
 # The global exports should be available to all programs, not just the interactive and login shells
 
-source "$ZDOTDIR/../.exports";
+source "$ZDOTDIR/.zshexports";
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #

@@ -18,12 +18,18 @@
     untracked     = cyan
 
 [core]
-    editor        = nvim
-    pager         = delta --color-only
+    editor        = micro
+    pager         = delta
+
+[interactive]
+    diffFilter = delta --color-only
 
 [delta]
-    line-numbers  = true
-    side-by-side  = true
+    features = decorations
+    hyperlinks = true
+    line-numbers = true
+    navigate = true
+    side-by-side = true
 
 # Use separate file for user info, github token etc
 [include]
@@ -31,3 +37,4 @@
 
 [merge]
     conflictstyle = diff3
+

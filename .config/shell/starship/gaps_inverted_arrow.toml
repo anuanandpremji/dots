@@ -1,0 +1,95 @@
+format = """
+$cmd_duration\
+$os\
+$username\
+$directory\
+$git_branch\
+$git_commit\
+$git_status\
+$python\
+$docker_context\
+\r
+$character\
+"""
+
+#add_newline = false
+
+[line_break]
+disabled = false
+
+[os]
+style = "bg:blue bold fg:#ffffff"
+disabled = false # Disabled by default
+
+# This is the default symbols table.
+[os.symbols]
+Debian = " "
+Fedora = " "
+Macos = " "
+Ubuntu = " "
+Unknown = "❓ "
+Windows = " "
+
+[username]
+show_always = true
+style_user = "bg:blue bold fg:#ffffff"
+style_root = "bg:blue bold fg:#ffffff"
+format = '[$user]($style)[](fg:blue)'
+disabled = false
+
+[directory]
+style = "bg:#f4d03f bold fg:#000000"
+read_only = ""
+format = '[](fg:#f4d03f)[ $read_only ]($style)[$path ]($style)[](fg:#f4d03f)'
+truncation_length = 10
+truncate_to_repo = false
+truncation_symbol = "…/"
+
+[git_branch]
+symbol = ""
+style = "bg:cyan bold fg:#ffffff"
+format = '[](fg:cyan)[ $symbol $branch ]($style)'
+
+[git_commit]
+format = '[($hash$tag)]($style)'
+style = "bg:cyan bold fg:#ffffff"
+only_detached = true
+
+[git_status]
+style = "bg:cyan bold fg:#ffffff"
+format = '[ $stashed]($style)[](fg:cyan)'
+
+[python]
+symbol = "  "
+style = "bg:#4c566a bold fg:#ffffff"
+format = '[](fg:#4c566a)[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)[](fg:#4c566a)'
+
+[docker_context]
+symbol = " "
+style = "bg:#5e81ac"
+format = '[](fg:#4c566a)[ $symbol $context ]($style) $path [](fg:4c566a)'
+
+[c]
+symbol = " "
+style = "bg:#4c566a bold fg:#ffffff"
+format = '[](fg:#4c566a)[ $symbol ($version) ]($style)[](fg:#4c566a)'
+
+[rust]
+symbol = ""
+style = "bg:cyan"
+format = '[ $symbol ($version) ]($style)'
+
+[time]
+disabled = false
+time_format = "%R" # Hour:Minute Format
+style = "bg:#6272a4 bold fg:#ffffff"
+format = '[](fg:#6272a4)[  $time ]($style)[](fg:#6272a4)'
+
+[character]
+success_symbol = '[❯](#6272a4)'
+error_symbol = '[❯](bold red)'
+#style = "bg:#6272a4"
+
+[cmd_duration]
+min_time = 1000 # Milliseconds
+format = "Took [$duration](#6272a4)\n\n"
