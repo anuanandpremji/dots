@@ -244,18 +244,23 @@ glog()
 
 gco()
 {
-    if ! git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi;
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi
 
-    local tags branches target;
+    local branches tags target;
 
-    branches=$(git --no-pager branch --all --format="%1B[0;34;1mbranch%09%1B[m%(refname:short)" | sed '/^$/d') || return;
-
+    branches=$(git --no-pager branch --all --format="%1B[0;36;1mbranch%09%1B[m%(refname:short)" | sed '/^$/d') || return;
     tags=$(git --no-pager tag | awk '{print "\x1b[35;1mtag\x1b[m\t" $1}') || return;
 
-    target=$((echo "$branches"; echo "$tags") | \
-              fzf --border-label=" Git checkout a branch or a tag across all remotes " \
-                  --border-label-pos=2 --ansi --color 'label:yellow:bold') \
-            || return;
+    local -a fzf_opts=(
+        --ansi
+        --border-label=" Git checkout a branch or a tag across all remotes "
+        --border-label-pos=2
+        --color 'label:yellow:bold'
+    );
+
+    target=$({ [[ -n "$branches" ]] && printf '%s\n' "$branches";
+               [[ -n "$tags" ]] && printf '%s\n' "$tags"; } |
+              fzf "${fzf_opts[@]}") || return;
 
     git checkout "$(awk '{print $2}' <<< "$target")";
 }
@@ -267,94 +272,124 @@ gco()
 #        - CTRL-S - switch between Unstaged and Staged views
 #        For truncated entries, use ? key to toggle a preview window
 
-# Dependencies: git, fzf
+# Dependencies: git, fzf, bat/batcat (optional, for syntax-highlighted preview)
 
 ga()
 {
     if ! git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi
 
-    local toplevel;
+    local toplevel bat_cmd preview_cmd;
     toplevel=$(git rev-parse --show-toplevel);
 
-    local unstaged_cmd='git ls-files --modified --deleted --other --exclude-standard --deduplicate "'"$toplevel"'"';
-    local staged_cmd='git diff --cached --name-only';
+    local unstaged_cmd="git ls-files --modified --deleted --other --exclude-standard --deduplicate \"$toplevel\"";
+    local staged_cmd="git diff --cached --name-only";
 
     if [[ -z "$(eval "$unstaged_cmd")" && -z "$(eval "$staged_cmd")" ]]; then
         printf "Nothing to stage or commit.\n";
         return 0;
     fi
 
-    local preview_cmd='if [[ $FZF_PROMPT =~ Unstaged ]]; then git diff --color=always -- {}; \
-                       else git diff --cached --color=always -- {}; fi | nl -ba -w3 -s" │ "';
+    # Detect bat/batcat for syntax-highlighted untracked file preview
+    local show_new;
+    if   command -v batcat >/dev/null 2>&1; then show_new="batcat --color=always --style=numbers,changes --paging=never {}";
+    elif command -v bat    >/dev/null 2>&1; then show_new="bat --color=always --style=numbers,changes --paging=never {}";
+    else show_new="git diff --no-index --color=always -- /dev/null {}";
+    fi
 
-    eval "$unstaged_cmd" | fzf                                                       \
-        --multi --no-sort --height=100%                                              \
-        --prompt='Unstaged ▶ '                                                       \
-        --preview="$preview_cmd"                                                     \
-        --preview-window 'down:75%:wrap'                                             \
-        --bind '?:toggle-preview'                                                    \
-        --border=bold                                                                \
-        --border-label=" Git Stage/Unstage " --border-label-pos=2                    \
-        --color 'label:yellow:bold'                                                  \
-        --header-first                                                               \
-        --header='↵: Stage/Unstage | ^S: Switch Staged/Unstaged'                     \
-        --bind "ctrl-s:transform:[[ \$FZF_PROMPT =~ Unstaged ]]                      \
-            && echo 'change-prompt(Staged ▶ )+reload($staged_cmd)'                   \
-            || echo 'change-prompt(Unstaged ▶ )+reload($unstaged_cmd)'"              \
-        --bind "enter:transform:[[ \$FZF_PROMPT =~ Unstaged ]]                       \
-            && echo 'execute-silent(git add -- {+})+reload($unstaged_cmd)'           \
-            || echo 'execute-silent(git restore --staged -- {+})+reload($staged_cmd)'"
+    preview_cmd='if [[ $FZF_PROMPT =~ Unstaged ]]; then \
+        d=$(git diff --color=always -- {}); \
+        if [ -n "$d" ]; then printf "%s\n" "$d"; \
+        else '"$show_new"'; fi; \
+    else git diff --cached --color=always -- {}; fi'
+
+    local -a fzf_opts=(
+        --multi --no-sort --height=100%
+        --prompt 'Unstaged ▶ '
+        --preview "$preview_cmd"
+        --preview-window 'down:75%:wrap'
+        --bind '?:toggle-preview'
+        --border=bold
+        --border-label=" Git Stage/Unstage "
+        --border-label-pos=2
+        --color 'label:yellow:bold'
+        --header-first
+        --header='↵: Stage/Unstage | ^S: Switch Staged/Unstaged'
+        --bind "ctrl-s:transform:
+            if [[ \$FZF_PROMPT =~ Unstaged ]]; then
+                echo 'change-prompt(Staged ▶ )+reload($staged_cmd)';
+            else
+                echo 'change-prompt(Unstaged ▶ )+reload($unstaged_cmd)';
+            fi"
+        --bind "enter:transform:
+            if [[ \$FZF_PROMPT =~ Unstaged ]]; then
+                echo 'execute-silent(git add -- {+})+reload($unstaged_cmd)';
+            else
+                echo 'execute-silent(git restore --staged -- {+})+reload($staged_cmd)';
+            fi"
+    );
+
+    eval "$unstaged_cmd" | fzf "${fzf_opts[@]}";
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
 # ff() - Fuzzy find a file or directory and then press:
-#        - CTRL-D   - switch between filtering for files/directories
+#        - CTRL-D   - cycle between All/Files/Directories
 #        - ENTER    - cd to the selected entry
 #        - CTRL + V - open the selected entry in the default $VISUAL editor
 #        - CTRL + N - open the selected entry in the default $EDITOR
 #        - CTRL + O - open the selected entry in the default system app
 #        - CTRL + E - open the selected entry in the default file explorer
-#        - CTRL + Y - yank the selected entry to the clipboard
+#        - CTRL + Y - yank the absolute path to the clipboard
 #        For truncated entries, use ? key to toggle a preview window
 
 # Usage:
 # ff <path/to/search>  (if invoked without a path, search under $HOME)
 
-# Dependencies: fzf, fd/locate, copyabsolutepath(), open_command(), open_path()
+# Dependencies: fzf, fd, copyabsolutepath(), open_command(), open_path()
 
 ff()
 {
-    local entries key sel;
-    local search_path="${1:-~}";
+    local output key sel;
+    local -a lines;
+    local search_path="${1:-$HOME}";
     local fd_cmd="fd -I --full-path --hidden --exclude .git";
 
     local -a fzf_opts=(
         --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview' --exit-0
         --expect=ctrl-o,ctrl-v,ctrl-n,ctrl-y,ctrl-e
-        --border-label=" Find Files & Directories (CTRL-D: Switch between Files/Directories)"
+        --border-label=" Find Files & Directories (CTRL-D: Cycle All/Files/Directories)"
         --border-label-pos=2
         --color 'label:yellow:bold'
         --header-first
-        --header=$'↵:Paste | ^E: File Explorer | ^V: $VISUAL | ^N: $EDITOR | ^O: System App | ^Y: Copy'
+        --header=$'↵:cd | ^E: File Explorer | ^V: $VISUAL | ^N: $EDITOR | ^O: System App | ^Y: Copy'
         --prompt 'All ▶ '
         --scheme=path
-        --bind "ctrl-d:transform:[[ ! \$FZF_PROMPT =~ Files ]]
-                && echo 'change-prompt(Files ▶ )+reload($fd_cmd --type f . $search_path)'
-                || echo 'change-prompt(Directories ▶ )+reload($fd_cmd --type d . $search_path)'"
+        --bind "ctrl-d:transform:
+            if [[ \$FZF_PROMPT =~ All ]]; then
+                echo 'change-prompt(Files ▶ )+reload($fd_cmd --type f . $search_path)';
+            elif [[ \$FZF_PROMPT =~ Files ]]; then
+                echo 'change-prompt(Directories ▶ )+reload($fd_cmd --type d . $search_path)';
+            else
+                echo 'change-prompt(All ▶ )+reload($fd_cmd . $search_path)';
+            fi"
     );
 
-    entries=("$(eval "$fd_cmd . $search_path" | fzf "${fzf_opts[@]}")");
+    output=$($=fd_cmd . "$search_path" | fzf "${fzf_opts[@]}") || return 0;
 
-    key="$(head -1 <<< "${entries[@]}")";
-    sel="$(head -2 <<< "${entries[@]}" | tail -1)" || return;
+    lines=("${(@f)output}");
+    key=${lines[1]};
+    sel=${lines[2]};
+
+    [[ -z "$sel" ]] && return 0;
 
     if   [[ "$key" == ctrl-o ]]; then open_command "$sel";
     elif [[ "$key" == ctrl-v ]]; then "$VISUAL" "$sel";
     elif [[ "$key" == ctrl-n ]]; then "$EDITOR" "$sel";
     elif [[ "$key" == ctrl-e ]]; then open_path "$sel";
-    elif [[ "$key" == ctrl-y ]]; then copyabsolutepath "$(printf "%s" "$sel")";
-    elif [[ -d "$sel" ]] ;       then cd "$sel"; else cd "$(dirname "$sel")";
+    elif [[ "$key" == ctrl-y ]]; then copyabsolutepath "$sel";
+    elif [[ -d "$sel" ]];        then cd "$sel";
+    else cd "$(dirname "$sel")";
     fi
 }
 
