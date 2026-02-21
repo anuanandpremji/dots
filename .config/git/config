@@ -29,7 +29,7 @@
     hyperlinks = true
     line-numbers = true
     navigate = true
-    side-by-side = true
+    side-by-side = false
 
 # Use separate file for user info, github token etc
 [include]

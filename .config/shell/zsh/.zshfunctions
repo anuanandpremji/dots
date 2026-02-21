@@ -16,7 +16,7 @@
 #║ copyabsolutepath() - Copy the absolute path of a file or directory to the clipboard                                 ║
 #║ glog()             - Browse, inspect, diff, or checkout git commits with fzf                                        ║
 #║ gco()              - Browse and checkout git branches or tags with fzf                                              ║
-#║ ga()               - Stage or unstage git changes interactively with fzf                                            ║
+#║ ga()               - Stage or unstage with status + diff preview via fzf                                            ║
 #║ ff()               - Find and open files or directories with fzf                                                    ║
 #║ fkill()            - Find and kill a running process with fzf                                                       ║
 #║ cdgr()             - cd to the git repository root (outermost superproject)                                         ║
@@ -267,65 +267,85 @@ gco()
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
-# ga() - Fuzzy git stage/unstage and then press:
-#        - ENTER  - stage the selected file(s) or unstage if viewing staged files
-#        - CTRL-S - switch between Unstaged and Staged views
-#        For truncated entries, use ? key to toggle a preview window
+# ga() - Fuzzy git stage/unstage with combined status + diff preview, then press:
+#          - ENTER  - stage the selected file(s) or unstage if viewing staged files
+#          - CTRL-S - switch between Unstaged and Staged views
+#          - ALT-E  - open the selected file(s) in $EDITOR
+#          For truncated entries, use ? key to toggle a preview window
 
-# Dependencies: git, fzf, bat/batcat (optional, for syntax-highlighted preview)
+# Dependencies: git, fzf, delta
 
 ga()
 {
-    if ! git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi
+    if ! command git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi
 
-    local toplevel bat_cmd preview_cmd;
-    toplevel=$(git rev-parse --show-toplevel);
+    local toplevel;
+    toplevel=$(command git rev-parse --show-toplevel);
 
-    local unstaged_cmd="git ls-files --modified --deleted --other --exclude-standard --deduplicate \"$toplevel\"";
-    local staged_cmd="git diff --cached --name-only";
+    local unstaged_cmd="command git ls-files --modified --deleted --other --exclude-standard --deduplicate \"$toplevel\"";
+    local staged_cmd="command git diff --cached --name-only";
 
     if [[ -z "$(eval "$unstaged_cmd")" && -z "$(eval "$staged_cmd")" ]]; then
         printf "Nothing to stage or commit.\n";
         return 0;
     fi
 
-    # Detect bat/batcat for syntax-highlighted untracked file preview
-    local show_new;
-    if   command -v batcat >/dev/null 2>&1; then show_new="batcat --color=always --style=numbers,changes --paging=never {}";
-    elif command -v bat    >/dev/null 2>&1; then show_new="bat --color=always --style=numbers,changes --paging=never {}";
-    else show_new="git diff --no-index --color=always -- /dev/null {}";
-    fi
+    # Match the width to the fzf pane.
+    # Set specific styles to ensure text is colored but backgrounds are clean.
+    local delta_cmd="delta --paging=never \
+                     --width=\$FZF_PREVIEW_COLUMNS \
+                     --line-numbers \
+                     --minus-style='red' \
+                     --plus-style='green' \
+                     --minus-emph-style='red bold' \
+                     --plus-emph-style='green bold'"
 
-    preview_cmd='if [[ $FZF_PROMPT =~ Unstaged ]]; then \
-        d=$(git diff --color=always -- {}); \
-        if [ -n "$d" ]; then printf "%s\n" "$d"; \
-        else '"$show_new"'; fi; \
-    else git diff --cached --color=always -- {}; fi'
+    local preview_cmd="
+    printf '\e[32;1m── Staged ──\e[0m\n';
+    command git status --porcelain | command grep '^[^ ?]' || printf '  (none)\n';
+    printf '\n\e[31;1m── Unstaged ──\e[0m\n';
+    command git status --porcelain | command grep '^.[^ ]' || printf '  (none)\n';
+    [ -n {} ] || exit 0;
+    printf '\n\e[1m── Diff ──\e[0m\n';
+    if [[ {fzf:prompt} =~ Unstaged ]]; then
+        if command git ls-files --error-unmatch {} >/dev/null 2>&1; then
+            command git --no-pager diff --color=never -- {} | $delta_cmd;
+        else
+            command git --no-pager diff --color=never --no-index /dev/null -- {} | $delta_cmd;
+        fi;
+    else
+        command git --no-pager diff --cached --color=never -- {} | $delta_cmd;
+    fi"
+
+    local bind_toggle_mode="ctrl-s:transform:
+        if [[ \$FZF_PROMPT =~ Unstaged ]]; then
+            echo 'change-prompt(Staged ▶ )+reload($staged_cmd)+refresh-preview';
+        else
+            echo 'change-prompt(Unstaged ▶ )+reload($unstaged_cmd)+refresh-preview';
+        fi"
+
+    local bind_enter="enter:transform:
+        if [[ \$FZF_PROMPT =~ Unstaged ]]; then
+            echo 'execute-silent(git add -- {+})+reload($unstaged_cmd)+refresh-preview';
+        else
+            echo 'execute-silent(git restore --staged -- {+})+reload($staged_cmd)+refresh-preview';
+        fi"
 
     local -a fzf_opts=(
         --multi --no-sort --height=100%
         --prompt 'Unstaged ▶ '
         --preview "$preview_cmd"
-        --preview-window 'down:75%:wrap'
+        --preview-window 'down:75%'
         --bind '?:toggle-preview'
         --border=bold
         --border-label=" Git Stage/Unstage "
         --border-label-pos=2
         --color 'label:yellow:bold'
         --header-first
-        --header='↵: Stage/Unstage | ^S: Switch Staged/Unstaged'
-        --bind "ctrl-s:transform:
-            if [[ \$FZF_PROMPT =~ Unstaged ]]; then
-                echo 'change-prompt(Staged ▶ )+reload($staged_cmd)';
-            else
-                echo 'change-prompt(Unstaged ▶ )+reload($unstaged_cmd)';
-            fi"
-        --bind "enter:transform:
-            if [[ \$FZF_PROMPT =~ Unstaged ]]; then
-                echo 'execute-silent(git add -- {+})+reload($unstaged_cmd)';
-            else
-                echo 'execute-silent(git restore --staged -- {+})+reload($staged_cmd)';
-            fi"
+        --header='↵: Stage/Unstage | ^S: Staged/Unstaged | Alt-E: Editor'
+        --bind "$bind_toggle_mode"
+        --bind "$bind_enter"
+        --bind 'alt-e:execute(${EDITOR:-vim} {+})'
     );
 
     eval "$unstaged_cmd" | fzf "${fzf_opts[@]}";
@@ -400,18 +420,15 @@ ff()
 # Dependencies: fzf, sed, awk
 
 fkill() {
-    local pid fzf_kill;
-
-    pid=""
-    fzf_kill='fzf -m --border-label=" Find and Kill a Process " --border-label-pos=2 --color="label:yellow:bold"';
+    local pid
 
     if [ "$UID" != "0" ]; then
-        pid="$(ps -f -u "$UID" | sed 1d | eval "$fzf_kill" | awk "{print \$2}")"
+        pid=$(ps -f -u "$UID" | sed 1d | fzf -m --border-label=" Find and Kill a Process " --border-label-pos=2 --color="label:yellow:bold" | awk '{print $2}')
     else
-        pid=$(ps -ef | sed 1d | eval "$fzf_kill" | awk "{print \$2}")
+        pid=$(ps -ef | sed 1d | fzf -m --border-label=" Find and Kill a Process " --border-label-pos=2 --color="label:yellow:bold" | awk '{print $2}')
     fi
 
-    if [ "x$pid" != "x" ]; then
+    if [ -n "$pid" ]; then
         printf "%s" "$pid" | xargs kill -"${1:-9}"
     fi
 }
@@ -440,7 +457,7 @@ cdgr()
 # gh() - Open GitHub page of a repository from the terminal
 
 # Usage:
-# gh from a non git repo gives you an error message and exists
+# gh from a non git repo gives you an error message and exits
 # gh from a repo opens it. Works with github, gitlab, etc...
 # gh <remote> opens the remote. For eg, gh upstream.
 
@@ -494,8 +511,9 @@ tre()
 
 sshf()
 {
-    host=$(grep '^[[:space:]]*Host[[:space:]]' ~/.ssh/config | cut -d ' ' -f 2 | fzf);
-    [ $? -eq 0 ] && ssh "$host";
+    local host
+    host=$(grep '^[[:space:]]*Host[[:space:]]' ~/.ssh/config | grep -v '[*?]' | cut -d ' ' -f 2 | fzf)
+    [ $? -eq 0 ] && ssh "$host"
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
@@ -617,10 +635,10 @@ do_update()
 {
     printf "\nStarting system update...\n";
 
-    if _has apt-get; then update_apt;      fi ;
-    if _has dnf;     then update_dnf;      fi ;
-    if _has flatpak; then update_flatpaks; fi ;
-    if _has snap;    then update_snaps;    fi ;
+    if _has apt-get; then update_apt;      fi
+    if _has dnf;     then update_dnf;      fi
+    if _has flatpak; then update_flatpaks; fi
+    if _has snap;    then update_snaps;    fi
 
     printf "Done. It's good practice to do a system reboot now.\n"
 }

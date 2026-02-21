@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ Shell functions compatible with BASH & ZSH                                                                          ║
@@ -95,7 +95,7 @@ open_command()
 
     esac
 
-    ${=open_cmd} "$@" >/dev/null 2>&1;
+    $open_cmd "$@" >/dev/null 2>&1
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
@@ -179,16 +179,15 @@ detect_clipboard || true;
 
 copyabsolutepath() {
     # If no argument passed, use current directory
-    local file="${1:-$PWD}";
+    local file="${1:-$PWD}"
 
     # If argument is not an absolute path, prepend $PWD
-    [[ $file = /* ]] || file="$PWD/$file";
+    [[ $file = /* ]] || file="$PWD/$file"
 
-    # Copy the absolute path without resolving symlinks and if clipcopy fails, exit with an error
-    print -n "${file:a}" | clipcopy || return 1;
+    # Copy the absolute path and if clipcopy fails, exit with an error
+    printf '%s' "$file" | clipcopy || return 1
 
-    # Message with the path in bold letters
-    printf ${(%):-"%B\"${file:a}\"%b copied to clipboard.\n"};
+    printf '"%s" copied to clipboard.\n' "$file"
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
@@ -313,18 +312,15 @@ ga()
 # Dependencies: fzf, sed, awk
 
 fkill() {
-    local pid fzf_kill;
-
-    pid=""
-    fzf_kill='fzf -m --border-label=" Find and Kill a Process " --border-label-pos=2 --color="label:yellow:bold"';
+    local pid
 
     if [ "$UID" != "0" ]; then
-        pid="$(ps -f -u "$UID" | sed 1d | eval "$fzf_kill" | awk "{print \$2}")"
+        pid=$(ps -f -u "$UID" | sed 1d | fzf -m --border-label=" Find and Kill a Process " --border-label-pos=2 --color="label:yellow:bold" | awk '{print $2}')
     else
-        pid=$(ps -ef | sed 1d | eval "$fzf_kill" | awk "{print \$2}")
+        pid=$(ps -ef | sed 1d | fzf -m --border-label=" Find and Kill a Process " --border-label-pos=2 --color="label:yellow:bold" | awk '{print $2}')
     fi
 
-    if [ "x$pid" != "x" ]; then
+    if [ -n "$pid" ]; then
         printf "%s" "$pid" | xargs kill -"${1:-9}"
     fi
 }
@@ -353,7 +349,7 @@ cdgr()
 # gh() - Open GitHub page of a repository from the terminal
 
 # Usage:
-# gh from a non git repo gives you an error message and exists
+# gh from a non git repo gives you an error message and exits
 # gh from a repo opens it. Works with github, gitlab, etc...
 # gh <remote> opens the remote. For eg, gh upstream.
 
@@ -407,8 +403,9 @@ tre()
 
 sshf()
 {
-    host=$(grep '^[[:space:]]*Host[[:space:]]' ~/.ssh/config | cut -d ' ' -f 2 | fzf);
-    [ $? -eq 0 ] && ssh "$host";
+    local host
+    host=$(grep '^[[:space:]]*Host[[:space:]]' ~/.ssh/config | grep -v '[*?]' | cut -d ' ' -f 2 | fzf)
+    [ $? -eq 0 ] && ssh "$host"
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
@@ -530,10 +527,10 @@ do_update()
 {
     printf "\nStarting system update...\n";
 
-    if _has apt-get; then update_apt;      fi ;
-    if _has dnf;     then update_dnf;      fi ;
-    if _has flatpak; then update_flatpaks; fi ;
-    if _has snap;    then update_snaps;    fi ;
+    if _has apt-get; then update_apt;      fi
+    if _has dnf;     then update_dnf;      fi
+    if _has flatpak; then update_flatpaks; fi
+    if _has snap;    then update_snaps;    fi
 
     printf "Done. It's good practice to do a system reboot now.\n"
 }

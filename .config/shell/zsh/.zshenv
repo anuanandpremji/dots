@@ -11,8 +11,8 @@
 
 # Set DOTFILE_DIR to point to the on-disk directory containing the .zshrc file
 
-# Determine the Dropbox installation  path (Linux Home vs Windows User Profile)
-if grep -qEi "(Microsoft|WSL)" /proc/version >/dev/null 2>&1; then
+# Determine the Dropbox installation path (Linux Home vs Windows User Profile)
+if grep -qEi "(Microsoft|WSL)" /proc/version 2>/dev/null; then
     BASE_DROPBOX_PATH="$(wslpath -a "$(wslvar USERPROFILE)")/Dropbox";
 else BASE_DROPBOX_PATH="$HOME/Dropbox"; fi
 

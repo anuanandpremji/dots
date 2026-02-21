@@ -4,20 +4,19 @@
 #║ ZSH keybindings with FZF dependency                                                                                 ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-if ! command -v fzf >/dev/null 2>&1; then echo "fzf no found."; return; fi
+if ! command -v fzf >/dev/null 2>&1; then echo "fzf not found."; return; fi
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ FZF Default Options                                                                                                 ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-export FZF_DEFAULT_COMMAND='find -type f';
-export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border=rounded --info=inline-right --pointer="󰜴" --color="gutter:-1,pointer:yellow"';
+export FZF_DEFAULT_COMMAND='fd --type f'
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border=rounded --info=inline-right --pointer="󰜴" --color="gutter:-1,pointer:yellow"'
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ CTRL-R - Fuzzy search history and then paste the selected entry                                                     ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-# Fuzzy search history and then paste the selected entry
 #    - ?        - toggle a preview window for truncated entries
 #    - CTRL-E   - open the history file in $VISUAL for editing
 #    - CTRL-X   - delete the selected entry from history
@@ -25,9 +24,9 @@ export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border=rounded --info=i
 
 fzf_history_widget()
 {
-    local output query key selected hs;
-    local -a lines;
-    local fzf_query="$LBUFFER";
+    local output query key selected hs
+    local -a lines
+    local fzf_query="$LBUFFER"
 
     local -a fzf_opts=(
         --print-query --expect=ctrl-e,ctrl-x
@@ -43,47 +42,46 @@ fzf_history_widget()
 
     while true; do
         output=$(fc -rl 1 | awk '{$1="";print substr($0,2)}' |
-                  fzf "${fzf_opts[@]}" -q "$fzf_query") || break;
+                  fzf "${fzf_opts[@]}" -q "$fzf_query") || break
 
-        lines=("${(@f)output}");
-        query=${lines[1]};
-        key=${lines[2]};
-        selected=${lines[3]};
+        lines=("${(@f)output}")
+        query=${lines[1]}
+        key=${lines[2]}
+        selected=${lines[3]}
 
         if [[ "$key" == "ctrl-e" ]]; then
-            fzf_query="$query";
-            "$VISUAL" "$HISTFILE";
+            fzf_query="$query"
+            "$VISUAL" "$HISTFILE"
             # Reload: clear in-memory history, then re-read from edited file
-            hs=$HISTSIZE; HISTSIZE=0; HISTSIZE=$hs;
-            fc -R "$HISTFILE";
-            continue;
+            hs=$HISTSIZE; HISTSIZE=0; HISTSIZE=$hs
+            fc -R "$HISTFILE"
+            continue
         fi
 
         if [[ "$key" == "ctrl-x" && -n "$selected" ]]; then
-            fzf_query="$query";
+            fzf_query="$query"
             # Remove all matching entries from HISTFILE (handles both extended and plain formats)
             SELECTED="$selected" awk 'BEGIN{cmd=ENVIRON["SELECTED"]} {
                 line = $0; c = line;
                 sub(/^: [0-9]+:[0-9]+;/, "", c);
                 if (c != cmd) print line;
-            }' "$HISTFILE" > "$HISTFILE.tmp" && mv "$HISTFILE.tmp" "$HISTFILE";
+            }' "$HISTFILE" > "$HISTFILE.tmp" && mv "$HISTFILE.tmp" "$HISTFILE"
             # Reload: clear in-memory history, then re-read from edited file
-            hs=$HISTSIZE; HISTSIZE=0; HISTSIZE=$hs;
-            fc -R "$HISTFILE";
-            continue;
+            hs=$HISTSIZE; HISTSIZE=0; HISTSIZE=$hs
+            fc -R "$HISTFILE"
+            continue
         fi
 
-        [[ -n "$selected" ]] && LBUFFER=$selected;
-        break;
+        [[ -n "$selected" ]] && LBUFFER=$selected
+        break
     done
 
-    zle redisplay;
+    zle redisplay
 }
 
 # Bind CTRL-R to fzf_history_widget()
-autoload -U  fzf_history_widget;
-zle      -N  fzf_history_widget;
-bindkey '^R' fzf_history_widget;
+zle      -N  fzf_history_widget
+bindkey '^R' fzf_history_widget
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ CTRL-T - Fuzzy search files & directories                                                                           ║
@@ -101,10 +99,10 @@ bindkey '^R' fzf_history_widget;
 
 fzf_file_widget()
 {
-    local output key sel;
-    local -a lines;
-    local find_cmd="fd -I --full-path --hidden --exclude .git";
-    local search_path="/";
+    local output key sel
+    local -a lines
+    local find_cmd="fd -I --full-path --hidden --exclude .git"
+    local search_path="/"
 
     local -a fzf_opts=(
         --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview' --exit-0
@@ -129,27 +127,26 @@ fzf_file_widget()
 
     output=$($=find_cmd . "$search_path" | fzf "${fzf_opts[@]}") || { zle redisplay; return 0; }
 
-    lines=("${(@f)output}");
-    key=${lines[1]};
-    sel=${lines[2]};
+    lines=("${(@f)output}")
+    key=${lines[1]}
+    sel=${lines[2]}
 
     [[ -z "$sel" ]] && { zle redisplay; return 0; }
 
-    if   [[ "$key" == ctrl-o ]]; then open_command "$sel";
-    elif [[ "$key" == ctrl-v ]]; then "$VISUAL" "$sel";
-    elif [[ "$key" == ctrl-n ]]; then "$EDITOR" "$sel";
-    elif [[ "$key" == ctrl-e ]]; then open_path "$sel";
-    elif [[ "$key" == ctrl-y ]]; then copyabsolutepath "$sel";
-    else LBUFFER="${LBUFFER}${sel}";
+    if   [[ "$key" == ctrl-o ]]; then open_command "$sel"
+    elif [[ "$key" == ctrl-v ]]; then "$VISUAL" "$sel"
+    elif [[ "$key" == ctrl-n ]]; then "$EDITOR" "$sel"
+    elif [[ "$key" == ctrl-e ]]; then open_path "$sel"
+    elif [[ "$key" == ctrl-y ]]; then copyabsolutepath "$sel"
+    else LBUFFER="${LBUFFER}${sel}"
     fi
 
-    zle redisplay;
+    zle redisplay
 }
 
 # Bind CTRL-T to fzf_file_widget()
-autoload -U  fzf_file_widget;
-zle      -N  fzf_file_widget;
-bindkey '^T' fzf_file_widget;
+zle      -N  fzf_file_widget
+bindkey '^T' fzf_file_widget
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 

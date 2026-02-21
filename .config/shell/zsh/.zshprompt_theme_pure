@@ -195,7 +195,7 @@ show_prompt_status() {
   [[ $LAST_EXIT_CODE -ne 0 ]] && symbols+="${FG_RED}${ICON_ERROR}"
   (( ${#jobstates} > 0 )) && symbols+="${FG_WHITE}${ICON_JOBS}"
 
-  [[ -n "$symbols" ]] && draw_prompt_segment "$BG_DEFAULT" "$FG_DEFAULT" "$symbols"
+  [[ -n "$symbols" ]] && draw_prompt_segment "$BG_DEFAULT" "$FG_DEFAULT" "$symbols "
 }
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
@@ -207,7 +207,7 @@ show_user_context() {
   local default_user=${DEFAULT_USER:-"$(whoami)"}
   if [[ "$USER" != "$default_user" || -n "$SSH_CONNECTION" ]]; then
     local content="%(!.${FG_YELLOW}.)${USER//\%/%%}@%m"
-    draw_prompt_segment "$BG_DEFAULT" "$FG_BLACK_BOLD" "$content"
+    draw_prompt_segment "$BG_DEFAULT" "$FG_BLACK_BOLD" "$content "
   fi
 }
 
@@ -223,7 +223,7 @@ export VIRTUAL_ENV_DISABLE_PROMPT;
 show_python_venv() {
   if [[ -n "$VIRTUAL_ENV" ]]; then
     local content="${ICON_VENV} ${${VIRTUAL_ENV:t}//\%/%%}"
-    draw_prompt_segment "$BG_DEFAULT" "$FG_CYAN" "$content"
+    draw_prompt_segment "$BG_DEFAULT" "$FG_CYAN" "$content "
   fi
 }
 
@@ -238,7 +238,7 @@ show_current_dir() {
   if [[ ! -w "$PWD" ]]; then
       content+=" ${ICON_LOCKED}"
   fi
-  draw_prompt_segment "$BG_DEFAULT" "$FG_BLUE" "$content"
+  draw_prompt_segment "$BG_DEFAULT" "$FG_BLUE" "$content "
 }
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
@@ -264,7 +264,7 @@ show_git_info() {
         git_content+="  ${ICON_GIT_STASH} ${stash_count}"
     fi
 
-    draw_prompt_segment "$BG_DEFAULT" "$FG_GREEN" "$git_content"
+    draw_prompt_segment "$BG_DEFAULT" "$FG_GREEN" "$git_content "
   fi
 }
 

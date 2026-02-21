@@ -1,173 +1,271 @@
 # Shell Dotfiles
 
-A collection of personal dotfiles for bash and zsh
-This configuration is designed to be lightweight and fast, avoiding plugins and frameworks that can slow things down
+A lightweight, plugin-free shell configuration for **Zsh** and **Bash**.
+No frameworks, no bloat, just clean shell scripting with powerful fuzzy-finding and git integrations.
 
-## <u>Screenshots</u>
+---
 
-TODO:
+## Highlights
 
-## <u>Prerequisites</u>
+- **Zero frameworks** — no oh-my-zsh, no oh-my-bash, no slow plugin managers
+- **Cross-shell** — functions, aliases, and history shared between Bash and Zsh
+- **XDG compliant** — keeps `$HOME` clean by redirecting 25+ app configs to proper XDG directories
+- **Platform aware** — works on Linux, macOS, and WSL with auto-detection
+- **Git-first workflow** — interactive staging, log browsing, branch switching, all powered by fzf
 
-Before you begin, ensure you have the following installed:
+---
 
-1. **Nerd Fonts** – Required to render glyphs/icons properly. This setup is tested with `JetBrainsMono NF`, but any [Nerd Font](https://github.com/ryanoasis/nerd-fonts) should work.
-2. **fzf** – Provides fuzzy search for history and file navigation.
-3. **fd** – Required by the `Ctrl-T` keybinding to find files and directories.
+## Prerequisites
 
-## <u>Directory Structure</u>
+| Tool | Purpose | Install |
+|------|---------|---------|
+| [Nerd Font](https://github.com/ryanoasis/nerd-fonts) | Renders glyphs and icons in the prompt | Any Nerd Font works (tested with `JetBrainsMono NF`) |
+| [fzf](https://github.com/junegunn/fzf) | Fuzzy search for history, files, git | `apt install fzf` / `brew install fzf` |
+| [fd](https://github.com/sharkdp/fd) | Fast file finder used by `Ctrl-T` | `apt install fd-find` / `brew install fd` |
 
-```ascii
-.
-├── bash
-│   ├── .bashaliases --------------> Aliases
-│   ├── .bashexports --------------> Global exports, XDG path
-│   ├── .bashfunctions ------------> Shell functions that work across BASH
-│   ├── .bashfzf ------------------> BASH keybindings with FZF dependency
-│   ├── .bashprompt ---------------> Custom plugin-free BASH prompt
-│   └── .bashrc -------------------> BASH configuration file
+**Optional but recommended:**
+
+| Tool | Purpose |
+|------|---------|
+| [eza](https://github.com/eza-community/eza) | Modern `ls` replacement with color and icons |
+| [delta](https://github.com/dandavella/delta) | Pretty git diffs in the interactive staging function |
+| [tree](https://github.com/Old-Man-Programmer/tree) | Directory tree viewer used by `tre()` |
+
+---
+
+## Directory Structure
+
+```
+.config/shell/
 │
-├── history
-│   └── .history ------------------> Log of all shell commands (shared between shells)
+├── bash/
+│   ├── .bashrc ················ Main Bash config — sources everything below
+│   ├── .bashexports ··········· Environment variables, XDG paths, PATH
+│   ├── .bashaliases ··········· Shell aliases
+│   ├── .bashfunctions ········· Utility and git functions
+│   ├── .bashfzf ··············· Ctrl-R and Ctrl-T keybindings (fzf)
+│   └── .bashprompt ············ Custom Bash prompt
 │
-├── scripts
-│   └── convert_gpg_key_format ----> Convert GPG keys to the new format required by the APT package manager
+├── zsh/
+│   ├── .zshenv ················ Entry point — sets ZDOTDIR, sources exports
+│   ├── .zshrc ················· Main Zsh config — sources everything below
+│   ├── .zshexports ············ Environment variables, XDG paths, PATH
+│   ├── .zshaliases ············ Shell aliases
+│   ├── .zshfunctions ·········· Utility and git functions
+│   ├── .zshfzf ················ Ctrl-R and Ctrl-T keybindings (fzf)
+│   ├── .zshprompt_theme_cascade  Default prompt — agnoster-style segments
+│   ├── .zshprompt_theme_pure ·· Alternative prompt — minimal style
+│   └── .zshextra ·············· Optional extras (syntax highlighting)
 │
-├── starship
-│   └── gaps.toml -----------------> Starship prompt based on the original agnoster theme with added gaps
-│   └── pills.toml ----------------> Starship prompt with pill shaped segments
+├── history/
+│   └── .history ··············· Shared command history (both shells)
 │
-├── zsh
-│   ├── .zshaliases ---------------> Aliases
-│   ├── .zshenv -------------------> Sets ZDOTDIR and other global ZSH defaults
-│   ├── .zshexports ---------------> Global exports, XDG paths
-│   ├── .zshfunctions -------------> Shell functions that work across ZSH
-│   ├── .zshfzf -------------------> ZSH keybindings with FZF dependency
-│   ├── .zshprompt_theme_pure -----> Custom plugin-free ZSH prompt theme
-│   ├── .zshprompt_theme_cascade --> Custom plugin-free ZSH prompt theme
-│   └── .zshrc --------------------> ZSH configuration file
+├── starship/
+│   ├── gaps.toml ·············· Starship prompt — agnoster with gaps
+│   └── pills.toml ············· Starship prompt — pill-shaped segments
 │
-└── README.md ---------------------> This README file
+└── scripts/
+    └── convert_gpg_key_format · Convert GPG keys for APT
 ```
 
-## <u>Installation</u>
+### Load order
 
-### 1. Clone the repository to your PC
+```
+Zsh                                 Bash
+───                                 ────
+~/.zshenv                           ~/.bashrc
+ └─ .zshexports                      └─ .bashexports
+     └─ $ZDOTDIR/.zshrc                  ├─ .bashaliases
+         ├─ .zshprompt_theme_cascade      ├─ .bashfunctions
+         ├─ .zshaliases                   ├─ .bashfzf
+         ├─ .zshfunctions                 └─ .bashprompt
+         ├─ .zshfzf
+         └─ .zshextra
+```
+
+---
+
+## Installation
+
+### 1. Clone the repository
 
 ```shell
-$ git clone <URL> "$HOME/repo/"
+git clone <URL> "$HOME/repo/"
 ```
-> [!NOTE]
-> Replace `$HOME/repo/` with your preferred path if different.
 
-### 2. Install the required fonts and set it as your terminal font
+> Replace `$HOME/repo/` with your preferred path.
 
-To display all the extra glyphs and icons in the shell prompt properly, you need to install a some patched fonts.
-The Nerd Fonts are located at: `$HOME/repo/.config/fonts`.
+### 2. Install a Nerd Font
 
-To install the fonts, run:
+Copy the bundled fonts and refresh the font cache:
 
-  ```shell
-  # Copy the fonts from the repo to the fonts directory of the OS
-  $ cp -av "$HOME/repo/.config/fonts/." "$HOME/.local/share/fonts/"
+```shell
+cp -av "$HOME/repo/.config/fonts/." "$HOME/.local/share/fonts/"
+sudo fc-cache -f
+```
 
-  # Refresh the font cache for the OS to pick up the newly copied fonts
-  $ sudo fc-cache -f
-  ```
+Then set your terminal emulator to use one of the installed Nerd Fonts.
 
-After the installation is done, configure your preferred terminal to use one of the fonts installed above.
+### 3. Set the dotfile directory
 
-------
-
-### 3. Configure your shell to use the dotfiles
-
-#### 3.1. Set the dotfile directory
-
-Set the `DOTFILE_DIR`  environment variable to point to the location where the dotfiles live.
-
-**For Zsh:** Edit `$HOME/repo/.config/shell/zsh/.zshenv` and set `DOTFILE_DIR` to the following:
+**Zsh** — edit `$HOME/repo/.config/shell/zsh/.zshenv`:
 
 ```shell
 export DOTFILE_DIR="$HOME/repo/.config/shell/zsh"
 ```
 
-**For Bash:** Edit `$HOME/repo/.config/shell/bash/.bashrc` and set `DOTFILE_DIR` to the following:
+**Bash** — edit `$HOME/repo/.config/shell/bash/.bashrc`:
 
 ```shell
 export DOTFILE_DIR="$HOME/repo/.config/shell/bash"
 ```
 
-#### 3.2. Link your shell to use the custom dotfile directory
+### 4. Link your shell config
 
-Choose **one** of the following methods to point your system shell to your repository.
+Choose one method:
 
-##### 3.2.1. Option A: Source the File (appends to existing config)
-
-**For Zsh**: Open your terminal and run
+**Symlink (recommended)** — replaces the system file with a direct link:
 
 ```shell
-echo 'source "$HOME/repo/.config/shell/zsh/.zshenv"' >> "$HOME/.zshenv"
-```
-
-**For Bash**: Open your terminal and run
-
-```shell
-echo 'source "$HOME/repo/.config/shell/bash/.bashrc"' >> "$HOME/.bashrc"
-```
-
-##### 3.2.2. Option B: Symlink (Recommended)
-
-This replaces the system file with a direct link to your repo file.
-
-```shell
-# For Zsh
+# Zsh
 ln -sf "$HOME/repo/.config/shell/zsh/.zshenv" "$HOME/.zshenv"
 
-# For Bash
+# Bash
 ln -sf "$HOME/repo/.config/shell/bash/.bashrc" "$HOME/.bashrc"
 ```
 
-#### 3.3. Reload the shell to use the new configuration
+**Source** — appends to your existing config:
 
-Run this command to apply the changes immediately without restarting your terminal:
+```shell
+# Zsh
+echo 'source "$HOME/repo/.config/shell/zsh/.zshenv"' >> "$HOME/.zshenv"
+
+# Bash
+echo 'source "$HOME/repo/.config/shell/bash/.bashrc"' >> "$HOME/.bashrc"
+```
+
+### 5. Reload
 
 ```shell
 exec "$(ps -p $$ -ocomm=)"
 ```
------
 
-## <u>Prompt Features</u>
+---
 
-- For Bash, the custom prompt is defined in the file `./bash/.bashprompt`
-- For ZSH, 2 different prompt themes are available (cascade theme is default, can be changed in `.zshrc`):
-  - `./zsh/.zshprompt_theme_cascade`
-  - `./zsh/.zshprompt_theme_pure`
+## Prompt
 
-The prompts comes with the following features:
+Two custom, plugin-free Zsh prompt themes are included. The **Cascade** theme is active by default. To switch themes, comment/uncomment the corresponding `source` line in `.zshrc`.
 
-| Feature                       | Zsh  | Bash  |
-| ----------------------------- | -----| ----- |
-| Username                      | ✅   | ✅    |
-| Hostname                      | ✅   | ✅    |
-| Working directory name        | ✅   | ✅    |
-| Read-only directory indicator | ✅   | ✅    |
-| Git branch                    | ✅   | ✅    |
-| Git submodule detection       | ✅   | ✅    |
-| Git stash count               | ✅   | ✅    |
-| Python venv indicator         | ✅   | ✅    |
-| Exit status color (green/red) | ✅   | ❌    |
-| Last command duration         | ✅   | ❌    |
+### Cascade theme
 
-## <u>Keybindings</u>
+Like the agnoster theme, but with gaps.
 
-These are the keybindings that are currently defined across BASH and ZSH
+![Cascade theme](screenshots/ZSH_theme_cascade.png)
 
-| Keybinding | Action                                                            | Dependency | ZSH  | BASH  |
-|------------|-------------------------------------------------------------------|------------|------|-------|
-| `Ctrl-R`   | Fuzzy search history and then paste the selected entry            | `fzf`      |  ✅  |  ✅   |
-| `Ctrl-T`   | Fuzzy search files & directories and paste the selected entry     | `fzf`, `fd`|  ✅  |  ✅   |
-| `Up`/`Down`| Start typing + `Up`/`Down` to fuzzy find history backward/forward |      —     |  ✅  |  ✅   |
+### Pure theme
 
-## <u>Extra</u>
+A minimal variant with the same feature set but a cleaner separator style.
 
-ZSH is additionally configured to only save valid commands to its history file.
+![Pure theme](screenshots/ZSH_theme_pure.png)
+
+### Starship (alternative)
+
+Starship-based equivalents of the custom themes are available in `starship/`. However, in my experience Starship is noticeably slower than the native plugin-free prompts above.
+
+### Feature matrix
+
+| Feature                        | Zsh | Bash |
+|--------------------------------|:---:|:----:|
+| Username and hostname          |  +  |  +   |
+| Working directory              |  +  |  +   |
+| Read-only directory indicator  |  +  |  +   |
+| Git branch                     |  +  |  +   |
+| Git submodule detection        |  +  |  +   |
+| Git stash count                |  +  |  +   |
+| Python venv indicator          |  +  |  +   |
+| Exit status color (green/red)  |  +  |  -   |
+| Last command duration          |  +  |  -   |
+
+---
+
+## Keybindings
+
+### `Ctrl-R` — Fuzzy history search
+
+Fuzzy search through shell history. Select an entry to paste it onto the command line.
+
+![Ctrl-R history search](screenshots/Ctrl-R.png)
+
+| Key inside fzf | Action |
+|-----------------|--------|
+| `Enter` | Paste selected command |
+| `?` | Toggle preview |
+| `Ctrl-E` | Open history file in `$VISUAL` |
+| `Ctrl-X` | Delete selected entry |
+
+### `Ctrl-T` — Fuzzy file and directory search
+
+System-wide fuzzy search for files and directories (searches from `/` using `fd`).
+
+![Ctrl-T file search](screenshots/Ctrl-T.png)
+
+| Key inside fzf | Action |
+|-----------------|--------|
+| `Enter` | Paste selected path onto command line |
+| `Ctrl-D` | Cycle filter: All / Files only / Directories only |
+| `?` | Toggle preview |
+| `Ctrl-E` | Open in file explorer |
+| `Ctrl-V` | Open in `$VISUAL` |
+| `Ctrl-N` | Open in `$EDITOR` |
+| `Ctrl-O` | Open with system default app |
+| `Ctrl-Y` | Copy path to clipboard |
+
+### Other keybindings
+
+| Key | Action |
+|-----|--------|
+| `Up` / `Down` | Prefix history search — type a prefix, then arrow to filter |
+| `Home` / `End` | Jump to start / end of line |
+| `Ctrl-Left` / `Ctrl-Right` | Jump word backward / forward |
+| `Ctrl-Backspace` | Delete previous word |
+| `Shift-Tab` | Reverse-cycle completion menu |
+
+---
+
+### Utility functions
+
+| Function | Description |
+|----------|-------------|
+| `open_command <file>` | Open a file or URL in the system default app (Linux / macOS / WSL aware) |
+| `open_path <file>` | Open the containing directory in a file manager |
+| `detect_clipboard` | Auto-detect the clipboard command (Wayland / X11 / macOS / WSL / tmux) |
+| `copyabsolutepath <file>` | Copy the absolute path of a file to the clipboard |
+| `confirm <prompt>` | Show a Y/N confirmation prompt |
+
+---
+
+## Zsh-specific features
+
+**History** — only saves commands that exit successfully. Commands that fail are kept in memory for the session but never written to the history file.
+
+**Completion** — case-insensitive, auto-menu on second tab press, colored candidates, auto-slash for directories.
+
+**Globbing** — `extended_glob` enabled (`#`, `~`, `^` patterns), `glob_dots` includes dotfiles.
+
+**Auto-cd** — type a directory path without `cd` to navigate to it.
+
+---
+
+## XDG compliance
+
+Both shells redirect config and cache paths for 25+ applications to proper XDG directories, keeping `$HOME` clean:
+
+`Docker` `Dotnet` `Go` `Java` `Kubernetes` `Rust` `Python` `Jupyter` `Git` `GnuPG` `Ripgrep` `AWS` `Ansible` `Android SDK` `LaTeX` `Tmux` `Wget` `GTK` `Subversion` `Aspell` and more.
+
+---
+
+## Editor detection
+
+The `EDITOR` and `VISUAL` variables are set automatically based on what's installed, in order of preference:
+
+`micro` > `nvim` > `vim` > `vi`

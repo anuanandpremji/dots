@@ -199,7 +199,7 @@
     "workbench.iconTheme": "vscode-icons",
     "workbench.layoutControl.enabled": false,
     "workbench.preferredDarkColorTheme": "Gruvbox Dark Hard",
-    "workbench.preferredLightColorTheme": "Experimental Light",
+    "workbench.preferredLightColorTheme": "Github Light Theme - Gray",
     "workbench.secondarySideBar.defaultVisibility": "hidden",
     "workbench.startupEditor": "newUntitledFile",
     "workbench.tree.indent": 20,
