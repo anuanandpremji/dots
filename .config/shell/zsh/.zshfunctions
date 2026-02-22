@@ -282,8 +282,8 @@ ga()
     local toplevel;
     toplevel=$(command git rev-parse --show-toplevel);
 
-    local unstaged_cmd="command git ls-files --modified --deleted --other --exclude-standard --deduplicate \"$toplevel\"";
-    local staged_cmd="command git diff --cached --name-only";
+    local unstaged_cmd="command git ls-files --modified --deleted --other --exclude-standard --deduplicate -z \"$toplevel\" | tr '\\0' '\\n'";
+    local staged_cmd="command git diff --cached --name-only -z | tr '\\0' '\\n'";
 
     if [[ -z "$(eval "$unstaged_cmd")" && -z "$(eval "$staged_cmd")" ]]; then
         printf "Nothing to stage or commit.\n";
@@ -324,11 +324,16 @@ ga()
             echo 'change-prompt(Unstaged ▶ )+reload($unstaged_cmd)+refresh-preview';
         fi"
 
-    local bind_enter="enter:transform:
-        if [[ \$FZF_PROMPT =~ Unstaged ]]; then
-            echo 'execute-silent(git add -- {+})+reload($unstaged_cmd)+refresh-preview';
+    local bind_enter="enter:execute-silent(
+        if [[ {fzf:prompt} =~ Unstaged ]]; then
+            git add -- {+};
         else
-            echo 'execute-silent(git restore --staged -- {+})+reload($staged_cmd)+refresh-preview';
+            git restore --staged -- {+};
+        fi)+transform:
+        if [[ \$FZF_PROMPT =~ Unstaged ]]; then
+            echo 'reload($unstaged_cmd)+refresh-preview';
+        else
+            echo 'reload($staged_cmd)+refresh-preview';
         fi"
 
     local -a fzf_opts=(
