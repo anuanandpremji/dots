@@ -1,0 +1,247 @@
+#!/bin/bash
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Set a custom BASH prompt (Pure theme style)                                                                          ║
+#║ Install a nerd font to render all the characters correctly: https://github.com/ryanoasis/nerd-fonts                 ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Overview                                                                                                            ║
+#║ ------------------                                                                                                  ║
+#║ draw_prompt_segment()     - A utility function to draw the individual, colored segments of the prompt.              ║
+#║ show_cmd_duration()       - Displays the execution time of the last command.                                        ║
+#║ show_prompt_symbol()      - Draws the final prompt symbol (❱) on the last line.                                     ║
+#║ show_prompt_status()      - Displays status symbols for errors and background jobs.                                 ║
+#║ show_user_context()       - Shows user@hostname if not the default user or connected via SSH.                       ║
+#║ show_python_venv()        - Displays the current Python virtual environment name.                                   ║
+#║ show_current_dir()        - Shows the current working directory, shortened.                                         ║
+#║ show_git_info()           - Displays the current Git branch and stash count.                                        ║
+#║ set_prompt()              - The main function that assembles the prompt by calling the component functions.         ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Style, Color, Icon & Content Palette                                                                                ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+# Color Codes (Gruvbox Dark Scheme)
+# Foreground
+FG_BLACK=$'\e[38;2;0;0;0m'
+FG_RED=$'\e[38;2;204;36;29m'
+FG_GREEN=$'\e[38;2;152;151;26m'
+FG_YELLOW=$'\e[38;2;215;153;33m'
+FG_BLUE=$'\e[38;2;69;133;136m'
+FG_MAGENTA=$'\e[38;2;177;98;134m'
+FG_CYAN=$'\e[38;2;104;157;106m'
+FG_WHITE=$'\e[38;2;255;255;255m'
+FG_RESET=$'\e[39m'
+
+S_BOLD=$'\e[1m'
+S_RESET=$'\e[0m'
+
+# Icons (Nerd Font codepoints)
+ICON_ERROR=$'\u2718'   # ✘ Cross
+ICON_JOBS=$'\u2699'    # ⚙ Gear
+ICON_CLOCK="󱎫"
+ICON_VENV=""
+ICON_DIR=""
+ICON_GIT_BRANCH=""
+ICON_GIT_STASH=""
+ICON_LOCKED=""
+ICON_PROMPT="❱"
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Timer Hooks                                                                                                         ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+# The DEBUG trap fires before every simple command. We use it as a preexec equivalent
+# to start a timer when the user runs a command. prompt_in_command acts as a guard:
+# it is set to 1 after set_prompt finishes (meaning the next DEBUG = user's command)
+# and set to 0 inside set_prompt (meaning DEBUGs during prompt construction are ignored).
+
+prompt_in_command=0
+
+preexec_start_timer() {
+  if [[ $prompt_in_command -eq 1 ]]; then
+    preexec_timer=${EPOCHREALTIME}
+    prompt_in_command=0
+  fi
+}
+
+trap 'preexec_start_timer' DEBUG
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Prompt Segment Drawing Utility                                                                                      ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+# Pure theme: plain colored text, no backgrounds, no separators.
+# Args: $1=fg_raw  $2=text
+
+draw_prompt_segment() {
+  local fg_raw=$1
+  local text=$2
+  ps1+="\001${fg_raw}\002${text}\001${S_RESET}\002"
+}
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Prompt Segment - Command Duration                                                                                   ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+show_cmd_duration() {
+  if [[ -n "$CMD_DURATION" ]]; then
+    draw_prompt_segment "" "${ICON_CLOCK} Took ${CMD_DURATION}s"
+    ps1+=$'\n\n'
+  fi
+}
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Prompt Segment - Prompt Symbol                                                                                      ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+show_prompt_symbol() {
+  local symbol_color
+  if [[ $LAST_EXIT_CODE -ne 0 ]]; then
+    symbol_color="${FG_RED}${S_BOLD}"
+  else
+    symbol_color="${FG_GREEN}${S_BOLD}"
+  fi
+  ps1+=$'\n'
+  draw_prompt_segment "$symbol_color" "${ICON_PROMPT} "
+}
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Prompt Segment - Prompt Status                                                                                      ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+show_prompt_status() {
+  local symbols=""
+  [[ $LAST_EXIT_CODE -ne 0 ]] && symbols+="${FG_RED}${ICON_ERROR}"
+  [[ -n "$(jobs -p 2>/dev/null)" ]] && symbols+="${FG_WHITE}${ICON_JOBS}"
+
+  if [[ -n "$symbols" ]]; then
+    draw_prompt_segment "" "$symbols "
+  fi
+}
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Prompt Segment - User Context                                                                                       ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+show_user_context() {
+  local default_user=${DEFAULT_USER:-"$(whoami)"}
+  if [[ "$USER" != "$default_user" || -n "$SSH_CONNECTION" ]]; then
+    local content
+    if [[ $EUID -eq 0 ]]; then
+      content="${FG_YELLOW}${USER}@${HOSTNAME%%.*}"
+    else
+      content="${USER}@${HOSTNAME%%.*}"
+    fi
+    draw_prompt_segment "${FG_BLACK}${S_BOLD}" "$content "
+  fi
+}
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Prompt Segment - Python Virtual Environment                                                                         ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+VIRTUAL_ENV_DISABLE_PROMPT=1
+export VIRTUAL_ENV_DISABLE_PROMPT
+
+show_python_venv() {
+  if [[ -n "$VIRTUAL_ENV" ]]; then
+    local content="${ICON_VENV} ${VIRTUAL_ENV##*/}"
+    draw_prompt_segment "${FG_CYAN}" "$content "
+  fi
+}
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Prompt Segment - Current Working Directory                                                                          ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+show_current_dir() {
+  local dir="${PWD/#$HOME/\~}"
+  local content="${ICON_DIR} ${dir}"
+  if [[ ! -w "$PWD" ]]; then
+    content+=" ${ICON_LOCKED}"
+  fi
+  draw_prompt_segment "${FG_BLUE}" "$content "
+}
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Prompt Segment - Git Information                                                                                    ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+show_git_info() {
+  if command git rev-parse --git-dir > /dev/null 2>&1; then
+    local branch_name
+    branch_name="$(git branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')"
+    local git_content="${ICON_GIT_BRANCH} ${branch_name}"
+
+    # Check for submodule
+    if [[ -n "$(git rev-parse --show-superproject-working-tree 2>/dev/null)" ]]; then
+      git_content+=" [submodule]"
+    fi
+
+    # Check for stashes
+    if command git rev-parse --verify refs/stash >/dev/null 2>&1; then
+      local stash_count
+      stash_count=$(git stash list 2>/dev/null | wc -l | tr -d ' ')
+      git_content+="  ${ICON_GIT_STASH} ${stash_count}"
+    fi
+
+    draw_prompt_segment "${FG_GREEN}" "$git_content "
+  fi
+}
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Prompt Construction                                                                                                 ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+set_prompt() {
+  # Capture exit code FIRST, before anything else
+  LAST_EXIT_CODE=$?
+
+  # Calculate command duration
+  CMD_DURATION=""
+  if [[ -n "$preexec_timer" ]]; then
+    local elapsed
+    elapsed=$(awk "BEGIN {printf \"%.2f\", ${EPOCHREALTIME} - ${preexec_timer}}")
+    local elapsed_int=${elapsed%%.*}
+    if [[ $elapsed_int -ge 1 ]]; then
+      CMD_DURATION="$elapsed"
+    fi
+    unset preexec_timer
+  fi
+
+  # Set terminal title
+  printf '\e]0;%s\a' "${PWD/#$HOME/\~}"
+
+  # Build PS1 using \x01/\x02 (RL_PROMPT_START_IGNORE / RL_PROMPT_END_IGNORE)
+  ps1=""
+
+  # Leading newline
+  ps1+=$'\n'
+
+  # Line 1: Duration Segment
+  show_cmd_duration
+
+  # Line 2: Main Segments
+  show_prompt_status
+  show_user_context
+  show_python_venv
+  show_current_dir
+  show_git_info
+
+  # Line 3: Prompt Symbol
+  show_prompt_symbol
+
+  PS1="$ps1"
+
+  # Re-enable the DEBUG trap for the next user command
+  prompt_in_command=1
+}
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ Initialize Prompt                                                                                                   ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+PROMPT_COMMAND='set_prompt'
