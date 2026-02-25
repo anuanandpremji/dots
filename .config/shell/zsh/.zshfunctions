@@ -82,17 +82,13 @@ open_command()
     local open_cmd;
 
     case "$OSTYPE" in
-
         darwin*)    open_cmd='open' ;;
-
         linux*)     if [[ "$(uname -r)" == *icrosoft* ]]; then
                         open_cmd='wslview';
                     else
                         open_cmd='nohup xdg-open';
                     fi ;;
-
         *)          printf "Platform %s not supported.\n" "$OSTYPE"; return 1 ;;
-
     esac
 
     ${=open_cmd} "$@" >/dev/null 2>&1;
@@ -282,8 +278,8 @@ ga()
     local toplevel;
     toplevel=$(command git rev-parse --show-toplevel);
 
-    local unstaged_cmd="command git ls-files --modified --deleted --other --exclude-standard --deduplicate -z \"$toplevel\" | tr '\\0' '\\n'";
-    local staged_cmd="command git diff --cached --name-only -z | tr '\\0' '\\n'";
+    local unstaged_cmd="command git ls-files --modified --deleted --other --exclude-standard --deduplicate \"$toplevel\"";
+    local staged_cmd="command git diff --cached --name-only";
 
     if [[ -z "$(eval "$unstaged_cmd")" && -z "$(eval "$staged_cmd")" ]]; then
         printf "Nothing to stage or commit.\n";
@@ -354,6 +350,9 @@ ga()
     );
 
     eval "$unstaged_cmd" | fzf "${fzf_opts[@]}";
+    local rc=$?;
+    [[ $rc -eq 1 || $rc -eq 130 ]] && return 0;
+    return $rc;
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
@@ -427,10 +426,17 @@ ff()
 fkill() {
     local pid
 
+    local -a fzf_opts=(
+        -m
+        --border-label=" Find and Kill a Process "
+        --border-label-pos=2
+        --color 'label:yellow:bold'
+    );
+
     if [ "$UID" != "0" ]; then
-        pid=$(ps -f -u "$UID" | sed 1d | fzf -m --border-label=" Find and Kill a Process " --border-label-pos=2 --color="label:yellow:bold" | awk '{print $2}')
+        pid=$(ps -f -u "$UID" | sed 1d | fzf "${fzf_opts[@]}" | awk '{print $2}')
     else
-        pid=$(ps -ef | sed 1d | fzf -m --border-label=" Find and Kill a Process " --border-label-pos=2 --color="label:yellow:bold" | awk '{print $2}')
+        pid=$(ps -ef | sed 1d | fzf "${fzf_opts[@]}" | awk '{print $2}')
     fi
 
     if [ -n "$pid" ]; then

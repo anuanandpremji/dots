@@ -14,22 +14,28 @@ export FZF_DEFAULT_COMMAND='fd --type f'
 export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border=rounded --info=inline-right --pointer="󰜴" --color="gutter:-1,pointer:yellow"'
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
-#║ CTRL-R - Fuzzy search history and then paste the selected entry                                                     ║
+#║ CTRL-R - Fuzzy search history with multi-select, editing, and deletion                                               ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-#    - ?        - toggle a preview window for truncated entries
-#    - CTRL-E   - open the history file in $VISUAL for editing
-#    - CTRL-X   - delete the selected entry from history
-# Search query is preserved across edits and deletions
+# Runs in a loop: after every edit/delete, history reloads and fzf reopens with the same query.
+#
+#    ?        - toggle a preview window for truncated entries
+#    TAB      - multi-select entries (works with Enter, Ctrl-E, and Ctrl-X)
+#    ENTER    - paste selected entries onto the command line (newline-separated if multi)
+#    CTRL-E   - open selected entries in $VISUAL; on save, original lines are removed
+#               from $HISTFILE and edited content is appended
+#    CTRL-O   - open the raw $HISTFILE in $VISUAL for free-form editing
+#    CTRL-X   - delete selected entries from $HISTFILE
 
 fzf_history_widget()
 {
-    local output query key selected hs
-    local -a lines
+    local output query key hs
+    local -a lines selected
     local fzf_query="$LBUFFER"
 
     local -a fzf_opts=(
-        --print-query --expect=ctrl-e,ctrl-x
+        --multi
+        --print-query --expect=ctrl-o,ctrl-e,ctrl-x
         --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview'
         --border=bold
         --border-label=" Search Shell History "
@@ -37,42 +43,69 @@ fzf_history_widget()
         --color 'label:yellow:bold'
         --prompt '▶ '
         --header-first
-        --header='↵:Paste | ^E: Edit History | ^X: Delete Entry'
+        --header='↵:Paste | TAB: Multi-select | ^E: Edit Entry | ^O: Open History | ^X: Delete Entry'
     );
 
     while true; do
-        output=$(fc -rl 1 | awk '{$1="";print substr($0,2)}' |
+        output=$(tac "$HISTFILE" | awk '!seen[$0]++' |
                   fzf "${fzf_opts[@]}" -q "$fzf_query") || break
 
         lines=("${(@f)output}")
         query=${lines[1]}
         key=${lines[2]}
-        selected=${lines[3]}
+        selected=("${(@)lines[3,-1]}")  # lines 3+ are the fzf-selected entries
 
-        if [[ "$key" == "ctrl-e" ]]; then
+        # ── Ctrl-O: open raw history file ────────────────────────────────
+        if [[ "$key" == "ctrl-o" ]]; then
             fzf_query="$query"
             "$VISUAL" "$HISTFILE"
-            # Reload: clear in-memory history, then re-read from edited file
+            # Flush in-memory history and re-read the edited file
             hs=$HISTSIZE; HISTSIZE=0; HISTSIZE=$hs
             fc -R "$HISTFILE"
             continue
         fi
 
-        if [[ "$key" == "ctrl-x" && -n "$selected" ]]; then
+        # ── Ctrl-E: edit selected entries, replace in history ────────────
+        # Flow: write selections to two temp files (one to edit, one to
+        # remember originals) → open editor → remove originals from
+        # HISTFILE → append edits
+        if [[ "$key" == "ctrl-e" && ${#selected} -gt 0 && -n "${selected[1]}" ]]; then
             fzf_query="$query"
-            # Remove all matching entries from HISTFILE (handles both extended and plain formats)
-            SELECTED="$selected" awk 'BEGIN{cmd=ENVIRON["SELECTED"]} {
-                line = $0; c = line;
-                sub(/^: [0-9]+:[0-9]+;/, "", c);
-                if (c != cmd) print line;
-            }' "$HISTFILE" > "$HISTFILE.tmp" && mv "$HISTFILE.tmp" "$HISTFILE"
-            # Reload: clear in-memory history, then re-read from edited file
+            local tmpfile="${TMPDIR:-/tmp}/zsh_hist_edit.$$"
+            local tmpremove="${TMPDIR:-/tmp}/zsh_hist_remove.$$"
+
+            printf '%s\n' "${selected[@]}" > "$tmpremove"
+            cp "$tmpremove" "$tmpfile"
+            "$VISUAL" "$tmpfile"
+
+            # Remove original lines (fixed-string, whole-line match)
+            grep -Fxvf "$tmpremove" "$HISTFILE" > "$HISTFILE.tmp" \
+                && mv "$HISTFILE.tmp" "$HISTFILE"
+            [[ -s "$tmpfile" ]] && cat "$tmpfile" >> "$HISTFILE"
+
+            rm -f "$tmpfile" "$tmpremove"
             hs=$HISTSIZE; HISTSIZE=0; HISTSIZE=$hs
             fc -R "$HISTFILE"
             continue
         fi
 
-        [[ -n "$selected" ]] && LBUFFER=$selected
+        # ── Ctrl-X: delete selected entries ──────────────────────────────
+        if [[ "$key" == "ctrl-x" && ${#selected} -gt 0 && -n "${selected[1]}" ]]; then
+            fzf_query="$query"
+            local tmpremove="${TMPDIR:-/tmp}/zsh_hist_remove.$$"
+            printf '%s\n' "${selected[@]}" > "$tmpremove"
+            grep -Fxvf "$tmpremove" "$HISTFILE" > "$HISTFILE.tmp" \
+                && mv "$HISTFILE.tmp" "$HISTFILE"
+            rm -f "$tmpremove"
+            hs=$HISTSIZE; HISTSIZE=0; HISTSIZE=$hs
+            fc -R "$HISTFILE"
+            continue
+        fi
+
+        # ── Enter: paste onto command line ───────────────────────────────
+        if [[ ${#selected} -gt 0 && -n "${selected[1]}" ]]; then
+            LBUFFER=${(F)selected}  # (F) joins array elements with newlines
+        fi
         break
     done
 
