@@ -44,7 +44,8 @@ No frameworks, no bloat, just clean shell scripting with powerful fuzzy-finding 
 │   ├── .bashaliases ··········· Shell aliases
 │   ├── .bashfunctions ········· Utility and git functions
 │   ├── .bashfzf ··············· Ctrl-R and Ctrl-T keybindings (fzf)
-│   └── .bashprompt ············ Custom Bash prompt
+│   ├── .bashprompt_theme_cascade  Default prompt — agnoster-style segments
+│   └── .bashprompt_theme_pure ·· Alternative prompt — minimal style
 │
 ├── zsh/
 │   ├── .zshenv ················ Entry point — sets ZDOTDIR, sources exports
@@ -75,10 +76,10 @@ Zsh                                 Bash
 ───                                 ────
 ~/.zshenv                           ~/.bashrc
  └─ .zshexports                      └─ .bashexports
-     └─ $ZDOTDIR/.zshrc                  ├─ .bashaliases
-         ├─ .zshprompt_theme_cascade      ├─ .bashfunctions
-         ├─ .zshaliases                   ├─ .bashfzf
-         ├─ .zshfunctions                 └─ .bashprompt
+     └─ $ZDOTDIR/.zshrc                  ├─ .bashprompt_theme_cascade
+         ├─ .zshprompt_theme_cascade      ├─ .bashfzf
+         ├─ .zshaliases                   ├─ .bashfunctions
+         ├─ .zshfunctions                 └─ .bashaliases
          ├─ .zshfzf
          └─ .zshextra
 ```
@@ -154,7 +155,7 @@ exec "$(ps -p $$ -ocomm=)"
 
 ## Prompt
 
-Two custom, plugin-free Zsh prompt themes are included. The **Cascade** theme is active by default. To switch themes, comment/uncomment the corresponding `source` line in `.zshrc`.
+Two custom, plugin-free prompt themes are included for both **Zsh** and **Bash** with full feature parity. The **Cascade** theme is active by default. To switch themes, comment/uncomment the corresponding `source` line in `.zshrc` or `.bashrc`.
 
 ### Cascade theme
 
@@ -183,8 +184,9 @@ Starship-based equivalents of the custom themes are available in `starship/`. Ho
 | Git submodule detection        |  +  |  +   |
 | Git stash count                |  +  |  +   |
 | Python venv indicator          |  +  |  +   |
-| Exit status color (green/red)  |  +  |  -   |
-| Last command duration          |  +  |  -   |
+| Exit status color (green/red)  |  +  |  +   |
+| Last command duration          |  +  |  +   |
+| Background jobs indicator      |  +  |  +   |
 
 ---
 
@@ -192,16 +194,18 @@ Starship-based equivalents of the custom themes are available in `starship/`. Ho
 
 ### `Ctrl-R` — Fuzzy history search
 
-Fuzzy search through shell history. Select an entry to paste it onto the command line.
+Fuzzy search through shell history with multi-select support. Use `TAB` to select multiple entries, then act on them with any key below. After edits or deletions the history reloads and fzf reopens with the same query.
 
 ![Ctrl-R history search](screenshots/Ctrl-R.png)
 
 | Key inside fzf | Action |
 |-----------------|--------|
-| `Enter` | Paste selected command |
+| `Enter` | Paste selected command(s) onto the command line (newline-separated) |
+| `TAB` | Toggle multi-select on the focused entry |
 | `?` | Toggle preview |
-| `Ctrl-E` | Open history file in `$VISUAL` |
-| `Ctrl-X` | Delete selected entry |
+| `Ctrl-E` | Edit selected entries in `$VISUAL` — originals are removed and edited content is appended |
+| `Ctrl-O` | Open the raw history file in `$VISUAL` |
+| `Ctrl-X` | Delete selected entry/entries from history |
 
 ### `Ctrl-T` — Fuzzy file and directory search
 

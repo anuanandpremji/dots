@@ -103,14 +103,12 @@ bind -r "\C-s"                           # Disable CTRL-S from triggering forwar
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
-# Load custom prompt - use starship if available, else use the custom defined prompt
+# Load custom prompt
 
-if _has starship; then
-    export STARSHIP_CONFIG="$DOTFILE_DIR/../starship/gaps.toml"
-    eval "$(starship init bash)"
-else
-    source "$DOTFILE_DIR/.bashprompt"
-fi
+source "$DOTFILE_DIR/.bashprompt_theme_cascade"
+# source "$DOTFILE_DIR/.bashprompt_theme_pure"
+# source "$DOTFILE_DIR/.bashprompt"
+# if _has starship; then export STARSHIP_CONFIG="$DOTFILE_DIR/../starship/gaps.toml"; eval "$(starship init bash)"; fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
