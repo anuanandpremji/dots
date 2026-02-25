@@ -10,49 +10,177 @@ if ! command -v fzf >/dev/null 2>&1; then printf "fzf not found.\n"; return; fi
 #║ FZF Default Options                                                                                                 ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-export FZF_DEFAULT_COMMAND='find -type f';
-export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border=rounded --info=inline-right --pointer="󰜴" --color="gutter:-1,pointer:yellow"';
+export FZF_DEFAULT_COMMAND='fd --type f'
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border=rounded --info=inline-right --pointer="󰜴" --color="gutter:-1,pointer:yellow"'
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
-#║ Utility function used to write the command to the shell                                                             ║
+#║ CTRL-R - Fuzzy search history with multi-select, editing, and deletion                                               ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-writecmd()
-{
-    perl -e 'ioctl STDOUT, 0x5412, $_ for split //, do { chomp($_ = <>); $_ }'
-}
+# Runs in a loop: after every edit/delete, history reloads and fzf reopens with the same query.
+#
+#    ?        - toggle a preview window for truncated entries
+#    TAB      - multi-select entries (works with Enter, Ctrl-E, and Ctrl-X)
+#    ENTER    - paste selected entries onto the command line (newline-separated if multi)
+#    CTRL-E   - open selected entries in $VISUAL; on save, original lines are removed
+#               from $HISTFILE and edited content is appended
+#    CTRL-O   - open the raw $HISTFILE in $VISUAL for free-form editing
+#    CTRL-X   - delete selected entries from $HISTFILE
 
-#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
-#║ CTRL-R - Fuzzy search history and then paste the selected entry                                                     ║
-#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
-
-# Fuzzy search history and then paste the selected entry
 fzf_history_widget()
 {
-    fc -rl 1                          |\
-    awk '{$1="";print substr($0,2)}'  |\
-    fzf +s --tac                      |\
-    sed -re 's/^\s*[0-9]+\s*//'       |\
-    writecmd;
+    local output query key
+    local -a lines selected
+    local fzf_query="$READLINE_LINE"
+
+    local -a fzf_opts=(
+        --multi
+        --print-query --expect=ctrl-o,ctrl-e,ctrl-x
+        --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview'
+        --border=bold
+        --border-label=" Search Shell History "
+        --border-label-pos=2
+        --color 'label:yellow:bold'
+        --prompt '▶ '
+        --header-first
+        --header='↵:Paste | TAB: Multi-select | ^E: Edit Entry | ^O: Open History | ^X: Delete Entry'
+    )
+
+    while true; do
+        history -a  # flush current session to file before reading
+        output=$(tac "$HISTFILE" | awk '!seen[$0]++' |
+                  fzf "${fzf_opts[@]}" -q "$fzf_query") || break
+
+        mapfile -t lines <<< "$output"  # bash equivalent of zsh's ("${(@f)output}")
+        query="${lines[0]}"
+        key="${lines[1]}"
+        selected=("${lines[@]:2}")  # lines index 2+ are the fzf-selected entries
+
+        # ── Ctrl-O: open raw history file ────────────────────────────────
+        if [[ "$key" == "ctrl-o" ]]; then
+            fzf_query="$query"
+            "$VISUAL" "$HISTFILE"
+            # Flush in-memory history and re-read the edited file
+            history -c
+            history -r
+            continue
+        fi
+
+        # ── Ctrl-E: edit selected entries, replace in history ────────────
+        # Flow: write selections to two temp files (one to edit, one to
+        # remember originals) → open editor → remove originals from
+        # HISTFILE → append edits
+        if [[ "$key" == "ctrl-e" && ${#selected[@]} -gt 0 && -n "${selected[0]}" ]]; then
+            fzf_query="$query"
+            local tmpfile="${TMPDIR:-/tmp}/bash_hist_edit.$$"
+            local tmpremove="${TMPDIR:-/tmp}/bash_hist_remove.$$"
+
+            printf '%s\n' "${selected[@]}" > "$tmpremove"
+            cp "$tmpremove" "$tmpfile"
+            "$VISUAL" "$tmpfile"
+
+            # Remove original lines (fixed-string, whole-line match)
+            grep -Fxvf "$tmpremove" "$HISTFILE" > "$HISTFILE.tmp" \
+                && mv "$HISTFILE.tmp" "$HISTFILE"
+            [[ -s "$tmpfile" ]] && cat "$tmpfile" >> "$HISTFILE"
+
+            rm -f "$tmpfile" "$tmpremove"
+            history -c
+            history -r
+            continue
+        fi
+
+        # ── Ctrl-X: delete selected entries ──────────────────────────────
+        if [[ "$key" == "ctrl-x" && ${#selected[@]} -gt 0 && -n "${selected[0]}" ]]; then
+            fzf_query="$query"
+            local tmpremove="${TMPDIR:-/tmp}/bash_hist_remove.$$"
+            printf '%s\n' "${selected[@]}" > "$tmpremove"
+            grep -Fxvf "$tmpremove" "$HISTFILE" > "$HISTFILE.tmp" \
+                && mv "$HISTFILE.tmp" "$HISTFILE"
+            rm -f "$tmpremove"
+            history -c
+            history -r
+            continue
+        fi
+
+        # ── Enter: paste onto command line ───────────────────────────────
+        if [[ ${#selected[@]} -gt 0 && -n "${selected[0]}" ]]; then
+            local IFS=$'\n'
+            READLINE_LINE="${selected[*]}"  # join with newlines for multi-select
+            READLINE_POINT=${#READLINE_LINE}
+        fi
+        break
+    done
 }
 
-# CTRL-R - bind to fzf_history_widget()
+# Bind CTRL-R to fzf_history_widget()
 bind -m emacs-standard -x '"\C-r": fzf_history_widget'
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ CTRL-T - Fuzzy search files & directories                                                                           ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-# Fuzzy search files & directories and then paste the selected entry
+# Fuzzy search files & directories and then press
+#    - CTRL-D   - cycle between All/Files/Directories
+#    - ENTER    - paste the selected entry
+#    - CTRL + V - open the selected entry in the default $VISUAL editor
+#    - CTRL + N - open the selected entry in the default $EDITOR
+#    - CTRL + O - open the selected entry in the default system app
+#    - CTRL + E - open the selected entry in the default file explorer
+#    - CTRL + Y - yank the absolute path to the clipboard
+#   For truncated entries, use ? key to toggle a preview window
+
 fzf_file_widget()
 {
-    locate /                          |\
-    fzf -m "$@"                       |\
-    sed -re 's/^\s*[0-9]+\s*//'       |\
-    writecmd;
+    local output key sel
+    local -a lines
+    local find_cmd="fd -I --full-path --hidden --exclude .git"
+    local search_path="/"
+
+    local -a fzf_opts=(
+        --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview' --exit-0
+        --expect=ctrl-o,ctrl-v,ctrl-n,ctrl-y,ctrl-e
+        --border=bold
+        --border-label=" Find Files & Directories (CTRL-D: Cycle All/Files/Directories)"
+        --border-label-pos=2
+        --color 'label:yellow:bold'
+        --header-first
+        --header=$'↵:Paste | ^E: File Explorer | ^V: $VISUAL | ^N: $EDITOR | ^O: System App | ^Y: Copy'
+        --prompt 'All ▶ '
+        --scheme=path
+        --bind "ctrl-d:transform:
+            if [[ \$FZF_PROMPT =~ All ]]; then
+                echo 'change-prompt(Files ▶ )+reload($find_cmd --type f . $search_path)';
+            elif [[ \$FZF_PROMPT =~ Files ]]; then
+                echo 'change-prompt(Directories ▶ )+reload($find_cmd --type d . $search_path)';
+            else
+                echo 'change-prompt(All ▶ )+reload($find_cmd . $search_path)';
+            fi"
+    )
+
+    output=$($find_cmd . "$search_path" | fzf "${fzf_opts[@]}") || return 0
+
+    mapfile -t lines <<< "$output"
+    key="${lines[0]}"
+    sel="${lines[1]}"
+
+    [[ -z "$sel" ]] && return 0
+
+    if   [[ "$key" == ctrl-o ]]; then open_command "$sel"
+    elif [[ "$key" == ctrl-v ]]; then "$VISUAL" "$sel"
+    elif [[ "$key" == ctrl-n ]]; then "$EDITOR" "$sel"
+    elif [[ "$key" == ctrl-e ]]; then open_path "$sel"
+    elif [[ "$key" == ctrl-y ]]; then copyabsolutepath "$sel"
+    else
+        # Insert selection at cursor position
+        READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}${sel}${READLINE_LINE:$READLINE_POINT}"
+        READLINE_POINT=$(( READLINE_POINT + ${#sel} ))
+    fi
 }
 
-# CTRL-T - bind to fzf_file_widget()
+# Bind CTRL-T to fzf_file_widget()
 bind -m emacs-standard -x '"\C-t": fzf_file_widget'
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
+
+#TODO: Fns in this file have a clipcopy() dependency. Rethink how to make the functions stand alone.
