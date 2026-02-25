@@ -43,7 +43,7 @@
     },
     // Split the terminal horizontally
     {
-        "key": "ctrl+alt+v",
+        "key": "ctrl+alt+j",
         "command": "workbench.action.terminal.splitInActiveWorkspace",
         "when": "terminalFocus" // Shortcut to split the terminal horizontally
     },
