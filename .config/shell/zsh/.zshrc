@@ -193,7 +193,8 @@ source "$ZDOTDIR/.zshprompt_theme_cascade"
 #║ Extras                                                                                                              ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-# Load aliases, fzf features, and other functions
+# Load utils, fzf features, functions, and aliases
+source "$ZDOTDIR/.zshutils"
 source "$ZDOTDIR/.zshfzf"
 source "$ZDOTDIR/.zshfunctions"
 source "$ZDOTDIR/.zshaliases"

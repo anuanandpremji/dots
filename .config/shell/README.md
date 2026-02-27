@@ -28,7 +28,7 @@ No frameworks, no bloat, just clean shell scripting with powerful fuzzy-finding 
 | Tool | Purpose |
 |------|---------|
 | [eza](https://github.com/eza-community/eza) | Modern `ls` replacement with color and icons |
-| [delta](https://github.com/dandavella/delta) | Pretty git diffs in the interactive staging function |
+| [delta](https://github.com/dandavison/delta) | Pretty git diffs in the interactive staging function |
 | [tree](https://github.com/Old-Man-Programmer/tree) | Directory tree viewer used by `tre()` |
 
 ---
@@ -39,49 +39,51 @@ No frameworks, no bloat, just clean shell scripting with powerful fuzzy-finding 
 .config/shell/
 │
 ├── bash/
-│   ├── .bashrc ················ Main Bash config — sources everything below
-│   ├── .bashexports ··········· Environment variables, XDG paths, PATH
-│   ├── .bashaliases ··········· Shell aliases
-│   ├── .bashfunctions ········· Utility and git functions
-│   ├── .bashfzf ··············· Ctrl-R and Ctrl-T keybindings (fzf)
-│   ├── .bashprompt_theme_cascade  Default prompt — agnoster-style segments
-│   └── .bashprompt_theme_pure ·· Alternative prompt — minimal style
+│   ├── .bashrc ·························· Entry point — main Bash config — sources everything below
+│   ├── .bashexports ····················· Environment variables, XDG paths, PATH
+│   ├── .bashutils ······················· Low-level helpers (clipboard, open, confirm)
+│   ├── .bashfzf ························· FZF keybindings (Ctrl-R, Ctrl-T) and interactive functions
+│   ├── .bashfunctions ··················· Git helpers, system update functions
+│   ├── .bashaliases ····················· Shell aliases
+│   ├── .bashextra ······················· Optional extras
+│   ├── .bashprompt_theme_cascade ········ Default prompt — agnoster-style segments
+│   └── .bashprompt_theme_pure ··········· Alternative prompt — minimal style
 │
 ├── zsh/
-│   ├── .zshenv ················ Entry point — sets ZDOTDIR, sources exports
-│   ├── .zshrc ················· Main Zsh config — sources everything below
-│   ├── .zshexports ············ Environment variables, XDG paths, PATH
-│   ├── .zshaliases ············ Shell aliases
-│   ├── .zshfunctions ·········· Utility and git functions
-│   ├── .zshfzf ················ Ctrl-R and Ctrl-T keybindings (fzf)
-│   ├── .zshprompt_theme_cascade  Default prompt — agnoster-style segments
-│   ├── .zshprompt_theme_pure ·· Alternative prompt — minimal style
-│   └── .zshextra ·············· Optional extras (syntax highlighting)
+│   ├── .zshenv ·························· Entry point — sets ZDOTDIR where zshrc lives, sources exports
+│   ├── .zshexports ······················ Environment variables, XDG paths, PATH
+│   ├── .zshrc ··························· Main Zsh config — sources everything below
+│   ├── .zshutils ························ Low-level helpers (clipboard, open, confirm)
+│   ├── .zshfzf ·························· FZF keybindings (Ctrl-R, Ctrl-T) and interactive functions
+│   ├── .zshfunctions ···················· Git helpers, system update functions
+│   ├── .zshaliases ······················ Shell aliases
+│   ├── .zshextra ························ Optional extras (syntax highlighting)
+│   ├── .zshprompt_theme_cascade ········· Default prompt — agnoster-style segments
+│   └── .zshprompt_theme_pure ············ Alternative prompt — minimal style
 │
 ├── history/
-│   └── .history ··············· Shared command history (both shells)
+│   └── .history ························· Shared command history (both shells)
 │
-├── starship/
-│   ├── gaps.toml ·············· Starship prompt — agnoster with gaps
-│   └── pills.toml ············· Starship prompt — pill-shaped segments
-│
-└── scripts/
-    └── convert_gpg_key_format · Convert GPG keys for APT
+└── starship/
+    ├── gaps.toml ························ Starship prompt — agnoster with gaps
+    ├── gaps_inverted_arrow.toml ········· Starship prompt — inverted arrow variant
+    └── pills.toml ······················· Starship prompt — pill-shaped segments
 ```
 
 ### Load order
 
 ```
-Zsh                                 Bash
-───                                 ────
-~/.zshenv                           ~/.bashrc
- └─ .zshexports                      └─ .bashexports
-     └─ $ZDOTDIR/.zshrc                  ├─ .bashprompt_theme_cascade
-         ├─ .zshprompt_theme_cascade      ├─ .bashfzf
-         ├─ .zshaliases                   ├─ .bashfunctions
-         ├─ .zshfunctions                 └─ .bashaliases
-         ├─ .zshfzf
-         └─ .zshextra
+Zsh                                          │   Bash
+───                                          │   ────
+~/.zshenv                                    │   ~/.bashrc
+ ├─ .zshexports                              │        ├─ .bashexports
+ └─ $ZDOTDIR/.zshrc                          │        ├─ .bashprompt_theme_cascade
+               ├─ .zshprompt_theme_cascade   │        ├─ .bashutils
+               ├─ .zshutils                  │        ├─ .bashfzf
+               ├─ .zshfzf                    │        ├─ .bashfunctions
+               ├─ .zshfunctions              │        └─ .bashaliases
+               ├─ .zshaliases                │
+               └─ .zshextra                  │
 ```
 
 ---
@@ -248,9 +250,20 @@ System-wide fuzzy search for files and directories (searches from `/` using `fd`
 
 ---
 
-## Zsh-specific features
+## History
 
-**History** — only saves commands that exit successfully. Commands that fail are kept in memory for the session but never written to the history file.
+Both shells share a single history file at `history/.history`. Two behaviors are enforced in both Zsh and Bash to keep it clean:
+
+**No timestamps** — Zsh is configured with `setopt no_extended_history`, and Bash explicitly unsets `HISTTIMEFORMAT`, so `#<timestamp>` lines never appear in the shared file.
+
+**Only successful commands are saved** — commands that fail are kept in the shell's in-memory history (available via arrow keys for the current session) but are never written to the on-disk history file. Ctrl-C (exit 130) is treated as success since the user intentionally interrupted.
+
+- **Zsh** achieves this with the `zshaddhistory` / `precmd` / `zshexit` hooks (see `.zshrc`).
+- **Bash** achieves this with a `PROMPT_COMMAND` handler that writes successful commands immediately, an `EXIT` trap that prevents Bash's default flush of in-memory history, and avoidance of `history -a` in the fzf widget (see `.bashrc`).
+
+---
+
+## Zsh-specific features
 
 **Completion** — case-insensitive, auto-menu on second tab press, colored candidates, auto-slash for directories.
 
@@ -264,7 +277,7 @@ System-wide fuzzy search for files and directories (searches from `/` using `fd`
 
 Both shells redirect config and cache paths for 25+ applications to proper XDG directories, keeping `$HOME` clean:
 
-`Docker` `Dotnet` `Go` `Java` `Kubernetes` `Rust` `Python` `Jupyter` `Git` `GnuPG` `Ripgrep` `AWS` `Ansible` `Android SDK` `LaTeX` `Tmux` `Wget` `GTK` `Subversion` `Aspell` and more.
+`Android` `Ansible` `Aspell` `AWS` `Bash (INPUTRC)` `Docker` `Dotnet` `Git` `GnuPG` `Go` `GTK` `Java` `Kubernetes` `LaTeX` `Less` `Nvidia` `Python` `Jupyter` `Ripgrep` `Rust` `Subversion` `Terminfo` `Tmux` `Wget` and more.
 
 ---
 

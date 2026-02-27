@@ -54,6 +54,78 @@ HISTCONTROL=ignoreboth:erasedups   # ignore and erase duplicate lines and lines 
 
 shopt -s histappend      # append to the history file, don't overwrite it
 
+# Guard against system profile scripts (e.g. wezterm.sh, bash-preexec) setting HISTTIMEFORMAT,
+# which would cause BASH to write #<timestamp> lines into the shared history file.
+unset HISTTIMEFORMAT
+
+# ── Exclude failed commands from the on-disk history ──────────────────────────
+#
+# ZSH has the `zshaddhistory` hook which lets you intercept a command before it
+# is written to the history file (see .zshrc). BASH has no equivalent hook, so
+# we emulate it with PROMPT_COMMAND + an EXIT trap:
+#
+# 1. __bash_save_successful_history() runs as the first entry in PROMPT_COMMAND,
+#    BEFORE the prompt's set_prompt(). It captures $? immediately, decides
+#    whether to append the command to $HISTFILE, and then `return`s the original
+#    exit code so set_prompt() still sees it for the prompt symbol color.
+#
+# 2. On shell exit, BASH would normally flush the entire in-memory history list
+#    (which includes failed commands) to $HISTFILE. The EXIT trap prevents this
+#    by unsetting HISTFILE before the flush. No data is lost because successful
+#    commands have already been written one-by-one by the function above.
+#
+# 3. The fzf history widget (Ctrl-R in .bashfzf) must NOT call `history -a`,
+#    since that would also flush failed commands. The widget reads $HISTFILE
+#    directly via `tac`, so it already sees every successful command written
+#    by our handler — no flush needed.
+#
+# Edge cases handled:
+#   - Empty Enter (no command)   → `history 1` returns the same entry as last
+#                                   time; the __bash_last_hist guard skips it.
+#   - First prompt after startup → __bash_last_hist is pre-initialized below,
+#                                   so the last-loaded entry isn't re-written.
+#   - Multi-line commands        → `sed` strips only the leading history number;
+#                                   subsequent lines pass through intact.
+#   - Ctrl-C (exit 130)         → treated as success, matching ZSH behavior.
+#   - Whitespace-only input     → filtered out before writing.
+
+__bash_save_successful_history() {
+  local last_exit=$?
+  local last_hist
+  last_hist=$(HISTTIMEFORMAT='' builtin history 1)
+
+  # Skip if same as last processed entry (empty Enter, first prompt)
+  [[ "$last_hist" == "$__bash_last_hist" ]] && return $last_exit
+  __bash_last_hist=$last_hist
+
+  # Only save successful commands (exit 0) and Ctrl-C (exit 130)
+  if [[ $last_exit -eq 0 || $last_exit -eq 130 ]]; then
+    local cmd
+    cmd=$(sed '1 s/^ *[0-9]\+  *//' <<< "$last_hist")
+    # Skip whitespace-only commands
+    if [[ -n "${cmd//[[:space:]]/}" ]]; then
+      printf '%s\n' "$cmd" >> "$HISTFILE"
+    fi
+  fi
+
+  # Pass through the original exit code so set_prompt() captures it correctly
+  return $last_exit
+}
+
+# Pre-seed with the current last entry so the very first prompt doesn't
+# re-write an already-persisted command from a previous session.
+__bash_last_hist=$(HISTTIMEFORMAT='' builtin history 1)
+
+# Prevent BASH from flushing in-memory history (including failed commands) to
+# $HISTFILE on exit. Unsetting HISTFILE inside the EXIT trap means bash's
+# internal save_history() finds nothing to write to. All successful commands
+# have already been appended one-by-one by the handler above.
+trap 'unset HISTFILE' EXIT
+
+# Register the handler in PROMPT_COMMAND. Prompt themes loaded later append to
+# this (e.g. set_prompt) rather than overwriting, so the handler always runs first.
+PROMPT_COMMAND="__bash_save_successful_history"
+
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
 # Completion
@@ -112,8 +184,9 @@ source "$DOTFILE_DIR/.bashprompt_theme_cascade"
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
-# Load aliases, fzf key-binds, and other functions
+# Load utils, fzf features, functions, and aliases
 
+source "$DOTFILE_DIR/.bashutils";
 source "$DOTFILE_DIR/.bashfzf";
 source "$DOTFILE_DIR/.bashfunctions";
 source "$DOTFILE_DIR/.bashaliases";

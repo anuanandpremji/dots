@@ -244,4 +244,7 @@ set_prompt() {
 #║ Initialize Prompt                                                                                                   ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-PROMPT_COMMAND='set_prompt'
+# Append to PROMPT_COMMAND rather than overwriting — .bashrc registers the
+# history handler first, and it must remain the earliest entry so it can
+# capture $? before anything else runs.
+PROMPT_COMMAND="${PROMPT_COMMAND:+${PROMPT_COMMAND};}set_prompt"

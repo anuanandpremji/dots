@@ -1,329 +1,22 @@
 #!/bin/bash
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
-#║ Shell functions compatible with BASH & ZSH                                                                          ║
+#║ Miscellaneous shell functions                                                                                       ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ Overview                                                                                                            ║
 #║ --------                                                                                                            ║
-#║ _has()             - Check if a command exists                                                                      ║
-#║ __has()            - Check if a command exists, print error if not                                                  ║
-#║ confirm()          - Prompt for yes/no confirmation before proceeding                                               ║
-#║ open_command()     - Open a file, directory, or URL in the default system app (Linux, macOS, WSL)                   ║
-#║ open_path()        - Open a path in the system file explorer (Linux, macOS, WSL)                                    ║
-#║ detect_clipboard() - Define clipcopy() and clippaste() for the detected platform                                    ║
-#║ copyabsolutepath() - Copy the absolute path of a file or directory to the clipboard                                 ║
-#║ glog()             - Browse, inspect, diff, or checkout git commits with fzf                                        ║
-#║ gco()              - Browse and checkout git branches or tags with fzf                                              ║
-#║ ga()               - Stage or unstage git changes interactively with fzf                                            ║
-#║ ff()               - Find and open files or directories with fzf                                                    ║
-#║ fkill()            - Find and kill a running process with fzf                                                       ║
-#║ cdgr()             - cd to the git repository root (outermost superproject)                                         ║
-#║ gh()               - Open the remote repository page (GitHub, GitLab, etc.) in a browser                            ║
-#║ od()               - Run a command in the background and disown it                                                  ║
-#║ tre()              - tree with color, hidden files, .git exclusion, piped through less                              ║
-#║ sshf()             - SSH into a host from ~/.ssh/config with fzf                                                    ║
-#║ update_dnf()       - Update, upgrade, and clean DNF packages                                                        ║
-#║ update_apt()       - Update, upgrade, and clean APT packages                                                        ║
-#║ update_flatpaks()  - Update and clean Flatpak packages                                                              ║
-#║ update_snaps()     - Update Snap packages                                                                           ║
-#║ do_update()        - Run system updates across all detected package managers                                        ║
+#║ cdgr()            - cd to the git repository root (outermost superproject)                                          ║
+#║ gh()              - Open the remote repository page (GitHub, GitLab, etc.) in a browser                             ║
+#║ od()              - Run a command in the background and disown it                                                   ║
+#║ tre()             - tree with color, hidden files, .git exclusion, piped through less                               ║
+#║ update_dnf()      - Update, upgrade, and clean DNF packages                                                         ║
+#║ update_apt()      - Update, upgrade, and clean APT packages                                                         ║
+#║ update_flatpaks() - Update and clean Flatpak packages                                                               ║
+#║ update_snaps()    - Update Snap packages                                                                            ║
+#║ do_update()       - Run system updates across all detected package managers                                         ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# _has() - Check if a program is installed
-
-_has()
-{
-    command -v "$1" >/dev/null 2>&1;
-}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# __has() - Check if a program is installed and return a message if not found
-
-__has()
-{
-    if ! _has "$1"; then printf "%s not found.\n" "$1"; return 1; fi
-}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# confirm() - Confirm user input and based on it, proceed or abort the operation at hand
-
-# Usage (call with a prompt string or use a default):
-# - With custom user input:
-#        $ if confirm 'Install Software?'; then echo "Installing Software"; else echo "Cancelled"; fi
-# - Without user input (uses default message):
-#        $ if confirm; then echo "Done"; else echo "Cancelled"; fi
-
-confirm()
-{
-    printf "%s\n" "${1:-Are you sure you want to continue? Reply with [Y]es or [N]o and then press ENTER.}";
-
-    while true; do
-        read -r REPLY;
-        case "$REPLY" in
-            [yY][eE][sS]|[yY])  return 0; ;;
-            [nN][oO]|[nN])      return 1; ;;
-            *)                  printf 'Please reply with either [Y]es or [N]o.\n'; ;;
-        esac
-    done
-}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# open_command() - Open the given dir/file/link in the default system app across Linux, MacOS or WSL
-
-open_command()
-{
-    local open_cmd;
-
-    case "$OSTYPE" in
-
-        darwin*)    open_cmd='open' ;;
-
-        linux*)     if [[ "$(uname -r)" == *icrosoft* ]]; then
-                        open_cmd='wslview';
-                    else
-                        open_cmd='nohup xdg-open';
-                    fi ;;
-
-        *)          printf "Platform %s not supported.\n" "$OSTYPE"; return 1 ;;
-
-    esac
-
-    $open_cmd "$@" >/dev/null 2>&1
-}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# open_path() - Open the given dir/file in the default file explorer across Linux, MacOS or WSL
-
-# Dependencies: open_command()
-
-open_path()
-{
-    if [ -d "$1" ]; then open_command "$1"; else open_command "$(dirname "$1")"; fi
-}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# detect_clipboard() - Defines two clipboard functions, clipcopy() and clippaste(), based on the detected platform
-
-# clipcopy() - Copy data to clipboard
-#    <command> | clipcopy  - copies stdin to clipboard
-#    clipcopy <file>       - copies a file's contents to clipboard
-
-# clippaste() - Paste data from clipboard to stdout
-#    clippaste             - paste clipboard's contents to stdout
-#    clippaste | <command> - pipe clipboard's content to another process
-#    clippaste > <file>    - paste contents to a file
-
-detect_clipboard()
-{
-    if [[ "${OSTYPE}" == darwin* ]] && _has pbcopy && _has pbpaste; then
-        clipcopy()  { pbcopy < "${1:-/dev/stdin}"; }
-        clippaste() { pbpaste; }
-
-    elif [[ "$(uname -r)" == *icrosoft* ]]; then
-        clipcopy()  { clip.exe < "${1:-/dev/stdin}"; }
-        clippaste() { powershell.exe -noprofile -command Get-Clipboard; }
-
-    elif [ -n "${WAYLAND_DISPLAY:-}" ] && _has wl-copy && _has wl-paste; then
-        clipcopy()  { wl-copy < "${1:-/dev/stdin}"; }
-        clippaste() { wl-paste; }
-
-    elif [ -n "${DISPLAY:-}" ] && _has xclip; then
-        clipcopy()  { xclip -in -selection clipboard < "${1:-/dev/stdin}"; }
-        clippaste() { xclip -out -selection clipboard; }
-
-    elif [ -n "${DISPLAY:-}" ] && _has xsel; then
-        clipcopy()  { xsel --clipboard --input < "${1:-/dev/stdin}"; }
-        clippaste() { xsel --clipboard --output; }
-
-    elif [ -n "${TMUX:-}" ] && _has tmux; then
-        clipcopy()  { tmux load-buffer "${1:--}"; }
-        clippaste() { tmux save-buffer -; }
-
-    else
-        _retry_clipboard_detection_or_fail()
-        {
-            local clipcmd="${1}"; shift
-            if detect_clipboard; then
-                "${clipcmd}" "$@"
-            else
-                print "${clipcmd}: Platform $OSTYPE not supported or xclip/xsel not installed" >&2
-                return 1
-            fi
-        }
-        clipcopy() { _retry_clipboard_detection_or_fail clipcopy "$@"; }
-        clippaste() { _retry_clipboard_detection_or_fail clippaste "$@"; }
-        return 1
-    fi
-}
-
-# Detect at startup. A non-zero exit here indicates that the dummy clipboards were set,
-# which is not really an error. If the user calls them, they will attempt to re-detect
-# (for example, perhaps the user has now installed xclip) and then either print an error
-# or proceed successfully.
-detect_clipboard || true;
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# copyabsolutepath() - Copy the absolute path of a given directory/file ($PWD if no parameter given) to the clipboard
-
-# Dependencies: clipcopy()
-
-copyabsolutepath() {
-    # If no argument passed, use current directory
-    local file="${1:-$PWD}"
-
-    # If argument is not an absolute path, prepend $PWD
-    [[ $file = /* ]] || file="$PWD/$file"
-
-    # Copy the absolute path and if clipcopy fails, exit with an error
-    printf '%s' "$file" | clipcopy || return 1
-
-    printf '"%s" copied to clipboard.\n' "$file"
-}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# glog() - Fuzzy search Git commits on the current branch and then press:
-#          - ENTER  - git show (what changed in that commit)
-#          - CTRL-D - git diff (between that commit and the working tree)
-#          - CTRL-Y - copy the commit hash
-#          - CTRL-O - checkout the commit
-#          For truncated entries, use ? key to toggle a preview window
-
-# Dependencies: git, fzf, awk, sed, clipcopy()
-
-glog()
-{
-    if ! git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi
-
-    local output query key sha;
-
-    local -a fzf_opts=(
-        --print-query --expect=ctrl-d,ctrl-y,ctrl-o --ignore-case --no-info
-        --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview'
-        --border=bold
-        --border-label=" Search Git commits on the current branch " --border-label-pos=2
-        --color 'label:yellow:bold'
-        --header-first --header='↵: Show | ^D: Diff | ^Y: Copy Hash | ^O: Checkout'
-    );
-
-    while true; do
-        output=$(git log --date=format:'%Y-%m-%d %a' --format=format:'%h  %ad  %<(16,trunc)%an  %>|(1)%s %d' "$@" |
-                  fzf "${fzf_opts[@]}" -q "$query") || break;
-
-        query=$(head -1 <<< "$output");
-        key=$(sed -n '2p' <<< "$output");
-        sha=$(sed -n '3p' <<< "$output" | awk '{print $1}');
-        [ -z "$sha" ] && continue;
-
-        if   [ "$key" = ctrl-d ]; then git diff --color=always "$sha";
-        elif [ "$key" = ctrl-y ]; then printf '%s' "$sha" | clipcopy && printf '%s copied to clipboard.\n' "$sha";
-        elif [ "$key" = ctrl-o ]; then git checkout "$sha";
-        else git show --color=always "$sha";
-        fi
-    done
-}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# gco() - Fuzzy git checkout a branch or a tag across all remotes
-
-# Dependencies: git, fzf, awk, sed
-
-gco()
-{
-    if ! git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi;
-
-    local tags branches target;
-
-    branches=$(git --no-pager branch --all --format="%1B[0;34;1mbranch%09%1B[m%(refname:short)" | sed '/^$/d') || return;
-
-    tags=$(git --no-pager tag | awk '{print "\x1b[35;1mtag\x1b[m\t" $1}') || return;
-
-    target=$((echo "$branches"; echo "$tags") | \
-              fzf --border-label=" Git checkout a branch or a tag across all remotes " \
-                  --border-label-pos=2 --ansi --color 'label:yellow:bold') \
-            || return;
-
-    git checkout "$(awk '{print $2}' <<< "$target")";
-}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# ga() - Fuzzy git stage/unstage and then press:
-#        - ENTER  - stage the selected file(s) or unstage if viewing staged files
-#        - CTRL-S - switch between Unstaged and Staged views
-#        For truncated entries, use ? key to toggle a preview window
-
-# Dependencies: git, fzf
-
-ga()
-{
-    if ! git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi
-
-    local toplevel;
-    toplevel=$(git rev-parse --show-toplevel);
-
-    local unstaged_cmd='git ls-files --modified --deleted --other --exclude-standard --deduplicate "'"$toplevel"'"';
-    local staged_cmd='git diff --cached --name-only';
-
-    if [[ -z "$(eval "$unstaged_cmd")" && -z "$(eval "$staged_cmd")" ]]; then
-        printf "Nothing to stage or commit.\n";
-        return 0;
-    fi
-
-    local preview_cmd='if [[ $FZF_PROMPT =~ Unstaged ]]; then git diff --color=always -- {}; \
-                       else git diff --cached --color=always -- {}; fi | nl -ba -w3 -s" │ "';
-
-    local -a fzf_opts=(
-        --multi --no-sort --height=100%
-        --preview="$preview_cmd"
-        --preview-window 'down:75%:wrap'
-        --bind '?:toggle-preview'
-        --border=bold
-        --border-label=" Git Stage/Unstage " --border-label-pos=2
-        --color 'label:yellow:bold'
-        --header-first
-        --header='↵: Stage/Unstage | ^S: Switch Staged/Unstaged'
-        --bind "ctrl-s:transform:[[ \$FZF_PROMPT =~ Unstaged ]]
-            && echo 'change-prompt(Staged ▶ )+reload($staged_cmd)'
-            || echo 'change-prompt(Unstaged ▶ )+reload($unstaged_cmd)'"
-        --bind "enter:transform:[[ \$FZF_PROMPT =~ Unstaged ]]
-            && echo 'execute-silent(git add -- {+})+reload($unstaged_cmd)'
-            || echo 'execute-silent(git restore --staged -- {+})+reload($staged_cmd)'"
-    );
-
-    eval "$unstaged_cmd" | fzf "${fzf_opts[@]}" --prompt='Unstaged ▶ ';
-}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# fkill() - Fuzzy find a process and kill it
-
-# Dependencies: fzf, sed, awk
-
-fkill() {
-    local pid
-
-    if [ "$UID" != "0" ]; then
-        pid=$(ps -f -u "$UID" | sed 1d | fzf -m --border-label=" Find and Kill a Process " --border-label-pos=2 --color="label:yellow:bold" | awk '{print $2}')
-    else
-        pid=$(ps -ef | sed 1d | fzf -m --border-label=" Find and Kill a Process " --border-label-pos=2 --color="label:yellow:bold" | awk '{print $2}')
-    fi
-
-    if [ -n "$pid" ]; then
-        printf "%s" "$pid" | xargs kill -"${1:-9}"
-    fi
-}
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
@@ -395,17 +88,6 @@ tre()
 {
     # The output gets piped into `less` with options to preserve color and line numbers, unless it fits in one screen.
     tree -aC -I ".git" --dirsfirst "$@" | less -FRNX;
-}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# sshf() - Fuzzy SSH into the saved SSH configs
-
-sshf()
-{
-    local host
-    host=$(grep '^[[:space:]]*Host[[:space:]]' ~/.ssh/config | grep -v '[*?]' | cut -d ' ' -f 2 | fzf)
-    [ $? -eq 0 ] && ssh "$host"
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
@@ -540,21 +222,11 @@ do_update()
 # Dependency check
 
 # External programs
-if ! _has fd;               then printf "fd: program not found. Install fd-find.\n";              fi
-if ! _has fzf;              then printf "fzf: program not found. Install fzf.\n";                 fi
 if ! _has git;              then printf "git: program not found. Install git.\n";                 fi
-if ! _has sed;              then printf "sed: program not found. Install sed.\n";                 fi
-if ! _has awk;              then printf "awk: program not found. Install awk.\n";                 fi
+if ! _has tree;             then printf "tree: program not found. Install tree.\n";               fi
 
-# Environment variables
-if ! _has "$EDITOR";        then printf "EDITOR: environment variable not set or invalid.\n";     fi
-if ! _has "$VISUAL";        then printf "VISUAL: environment variable not set or invalid.\n";     fi
-
-# Local functions (defined in this file)
+# Local functions (from .bashutils, sourced before this file)
 if ! _has confirm;          then printf "confirm(): function not loaded.\n";                      fi
-if ! _has clipcopy;         then printf "clipcopy(): function not loaded.\n";                     fi
-if ! _has copyabsolutepath; then printf "copyabsolutepath(): function not loaded.\n";             fi
 if ! _has open_command;     then printf "open_command(): function not loaded.\n";                 fi
-if ! _has open_path;        then printf "open_path(): function not loaded.\n";                    fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
