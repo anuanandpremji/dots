@@ -65,7 +65,7 @@ setopt hist_ignore_space        # do not write entries that start with a space
 setopt hist_reduce_blanks       # trim blank entries
 setopt hist_save_no_dups        # do not write a duplicate entry to the history file
 setopt hist_verify              # show before executing history commands
-setopt share_history            # share hist between zsh sessions
+setopt inc_append_history       # append commands to history file immediately (no timestamps)
 setopt no_extended_history      # do not write the history file in the ‘:start:elapsed;command’ format
 setopt no_hist_beep             # disable beep in ZLE when a widget attempts to access an entry which isn’t there
 

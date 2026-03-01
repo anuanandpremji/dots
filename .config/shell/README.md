@@ -218,6 +218,7 @@ System-wide fuzzy search for files and directories (searches from `/` using `fd`
 | Key inside fzf | Action |
 |-----------------|--------|
 | `Enter` | Paste selected path onto command line |
+| `Alt-C` | `cd` to directory (or parent directory of file) |
 | `Ctrl-D` | Cycle filter: All / Files only / Directories only |
 | `?` | Toggle preview |
 | `Ctrl-E` | Open in file explorer |

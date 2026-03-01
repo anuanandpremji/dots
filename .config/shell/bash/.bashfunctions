@@ -43,7 +43,8 @@ cdgr()
 
 # Usage:
 # gh from a non git repo gives you an error message and exits
-# gh from a repo opens it. Works with github, gitlab, etc...
+# gh from a repo opens the current branch on origin (or the default branch if
+#   the current branch doesn't exist on origin)
 # gh <remote> opens the remote. For eg, gh upstream.
 
 # Dependencies: git, sed, open_command()
@@ -59,6 +60,18 @@ gh()
         | sed -e "s|^ssh://git@|https://|" \
               -e "s|^git@\([^:]*\):|https://\1/|" \
               -e "s|\.git$||");
+
+    if [ -z "$1" ]; then
+        branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true);
+        if [ -n "$branch" ] && [ "$branch" != "HEAD" ] \
+            && git rev-parse --verify "origin/$branch" >/dev/null 2>&1; then
+            case "$URL" in
+                *gitlab*) URL="$URL/-/tree/$branch" ;;
+                *)        URL="$URL/tree/$branch" ;;
+            esac
+        fi
+    fi
+
     printf "Opening %s\n" "$URL";
     open_command "$URL" >/dev/null;
 )}

@@ -127,6 +127,7 @@ bind -m emacs-standard -x '"\C-r": fzf_history_widget'
 # Fuzzy search files & directories and then press
 #    - CTRL-D   - cycle between All/Files/Directories
 #    - ENTER    - paste the selected entry
+#    - ALT  + C - cd to directory (or parent directory of file)
 #    - CTRL + V - open the selected entry in the default $VISUAL editor
 #    - CTRL + N - open the selected entry in the default $EDITOR
 #    - CTRL + O - open the selected entry in the default system app
@@ -143,13 +144,13 @@ fzf_file_widget()
 
     local -a fzf_opts=(
         --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview' --exit-0
-        --expect=ctrl-o,ctrl-v,ctrl-n,ctrl-y,ctrl-e
+        --expect=ctrl-o,ctrl-v,ctrl-n,ctrl-y,ctrl-e,alt-c
         --border=bold
         --border-label=" Find Files & Directories (CTRL-D: Cycle All/Files/Directories)"
         --border-label-pos=2
         --color 'label:yellow:bold'
         --header-first
-        --header=$'↵:Paste | ^E: File Explorer | ^V: $VISUAL | ^N: $EDITOR | ^O: System App | ^Y: Copy'
+        --header=$'↵:Paste | Alt-C: cd | ^E: File Explorer | ^V: $VISUAL | ^N: $EDITOR | ^O: System App | ^Y: Copy'
         --prompt 'All ▶ '
         --scheme=path
         --bind "ctrl-d:transform:
@@ -175,6 +176,8 @@ fzf_file_widget()
     elif [[ "$key" == ctrl-n ]]; then "$EDITOR" "$sel"
     elif [[ "$key" == ctrl-e ]]; then open_path "$sel"
     elif [[ "$key" == ctrl-y ]]; then copyabsolutepath "$sel"
+    elif [[ "$key" == alt-c  ]]; then
+        if [[ -d "$sel" ]]; then cd "$sel"; else cd "$(dirname "$sel")"; fi
     else
         # Insert selection at cursor position
         READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}${sel}${READLINE_LINE:$READLINE_POINT}"
@@ -195,7 +198,6 @@ bind -m emacs-standard -x '"\C-t": fzf_file_widget'
 #║ glog()  - Browse, inspect, diff, or checkout git commits with fzf                                                  ║
 #║ gco()   - Browse and checkout git branches or tags with fzf                                                        ║
 #║ ga()    - Stage or unstage git changes interactively with fzf                                                      ║
-#║ ff()    - Find and open files or directories with fzf                                                              ║
 #║ fkill() - Find and kill a running process with fzf                                                                 ║
 #║ sshf()  - SSH into a host from ~/.ssh/config with fzf                                                              ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
@@ -313,68 +315,6 @@ ga()
     );
 
     eval "$unstaged_cmd" | fzf "${fzf_opts[@]}" --prompt='Unstaged ▶ ';
-}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# ff() - Fuzzy find a file or directory and then press:
-#        - CTRL-D   - cycle between All/Files/Directories
-#        - ENTER    - cd to the selected entry
-#        - CTRL + V - open the selected entry in the default $VISUAL editor
-#        - CTRL + N - open the selected entry in the default $EDITOR
-#        - CTRL + O - open the selected entry in the default system app
-#        - CTRL + E - open the selected entry in the default file explorer
-#        - CTRL + Y - yank the absolute path to the clipboard
-#        For truncated entries, use ? key to toggle a preview window
-
-# Usage:
-# ff <path/to/search>  (if invoked without a path, search under $HOME)
-
-# Dependencies: fzf, fd, copyabsolutepath(), open_command(), open_path()
-
-ff()
-{
-    local output key sel;
-    local search_path="${1:-$HOME}";
-    local fd_cmd="fd -I --full-path --hidden --exclude .git";
-
-    local -a fzf_opts=(
-        --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview' --exit-0
-        --expect=ctrl-o,ctrl-v,ctrl-n,ctrl-y,ctrl-e
-        --border-label=" Find Files & Directories (CTRL-D: Cycle All/Files/Directories)"
-        --border-label-pos=2
-        --color 'label:yellow:bold'
-        --header-first
-        --header=$'↵:cd | ^E: File Explorer | ^V: $VISUAL | ^N: $EDITOR | ^O: System App | ^Y: Copy'
-        --prompt 'All ▶ '
-        --scheme=path
-        --bind "ctrl-d:transform:
-            if [[ \$FZF_PROMPT =~ All ]]; then
-                echo 'change-prompt(Files ▶ )+reload($fd_cmd --type f . $search_path)';
-            elif [[ \$FZF_PROMPT =~ Files ]]; then
-                echo 'change-prompt(Directories ▶ )+reload($fd_cmd --type d . $search_path)';
-            else
-                echo 'change-prompt(All ▶ )+reload($fd_cmd . $search_path)';
-            fi"
-    );
-
-    output=$($fd_cmd . "$search_path" | fzf "${fzf_opts[@]}") || return 0;
-
-    local -a lines
-    mapfile -t lines <<< "$output"
-    key="${lines[0]}"
-    sel="${lines[1]}"
-
-    [[ -z "$sel" ]] && return 0;
-
-    if   [[ "$key" == ctrl-o ]]; then open_command "$sel";
-    elif [[ "$key" == ctrl-v ]]; then "$VISUAL" "$sel";
-    elif [[ "$key" == ctrl-n ]]; then "$EDITOR" "$sel";
-    elif [[ "$key" == ctrl-e ]]; then open_path "$sel";
-    elif [[ "$key" == ctrl-y ]]; then copyabsolutepath "$sel";
-    elif [[ -d "$sel" ]];        then cd "$sel";
-    else cd "$(dirname "$sel")";
-    fi
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #

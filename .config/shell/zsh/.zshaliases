@@ -106,7 +106,7 @@ alias dpsl='docker ps --format "{{.Names}}" --filter status=running'
 alias todo='"$EDITOR" "$DOTFILE_DIR/../../../../Notes/todo.md"'
 
 # Edit the shell config folder in the default $VISUAL editor
-alias edrc='"code" "$DOTFILE_DIR/../"'
+alias edrc='"zed" "$DOTFILE_DIR/../"'
 
 # cd into the shell config folder
 alias cdrc='cd "$DOTFILE_DIR/../"'
