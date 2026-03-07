@@ -18,8 +18,6 @@
 #║ do_update()      - Run system updates across all detected package managers                                          ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
 # cdgr() - cd to the outermost Git superproject root directory
 
 cdgr()
@@ -235,11 +233,11 @@ do_update()
 # Dependency check
 
 # External programs
-if ! _has git;              then printf "git: program not found. Install git.\n";                 fi
-if ! _has tree;             then printf "tree: program not found. Install tree.\n";               fi
+if ! _has git;              then printf "git: program not found. Install git.\n";   fi
+if ! _has tree;             then printf "tree: program not found. Install tree.\n"; fi
 
 # Local functions (from .zshutils, sourced before this file)
-if ! _has confirm;          then printf "confirm(): function not loaded.\n";                      fi
-if ! _has open_command;     then printf "open_command(): function not loaded.\n";                 fi
+if ! _has confirm;          then printf "confirm(): function not loaded.\n";        fi
+if ! _has open_command;     then printf "open_command(): function not loaded.\n";   fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #

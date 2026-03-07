@@ -173,15 +173,15 @@
             "diffEditor.border": "#e3dddd",
             "editorGroup.border": "#e3e3dd",
             "editorOverviewRuler.border": "#ffffff",
-            "panel.border": "#a7a7a7", // border between editor and terminal
+            "panel.border": "#a7a7a7",
             "sideBar.border": "#949496",
             "sideBySideEditor.verticalBorder": "#e3dddd",
             "statusBar.background": "#cfc9c9",
             "tab.activeBackground": "#d8d8d8",
             "window.activeBorder": "#949496"
         },
-        "editorHint.border": "#00ff66", // Underline the entire word with dots in your chosen color
-        "editorHint.foreground": "#ff0000" // Change the color of three dots to red
+        "editorHint.border": "#00ff66",
+        "editorHint.foreground": "#ff0000"
     },
     "workbench.colorTheme": "Github Light Theme - Gray",
     "workbench.editor.decorations.badges": true,
@@ -209,5 +209,8 @@
     "zenMode.centerLayout": false,
     "zenMode.fullScreen": false,
     "zenMode.hideLineNumbers": false,
-    "terminal.integrated.tabs.enabled": false
+    "terminal.integrated.tabs.enabled": false,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    }
 }

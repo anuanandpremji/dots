@@ -10,6 +10,10 @@ if wezterm.target_triple == 'x86_64-pc-windows-msvc' then
     config.default_prog = { 'pwsh.exe', '-NoLogo' }
 end
 
+-- Scrollback & Scrollbar
+config.enable_scroll_bar = true
+config.scrollback_lines  = 100000
+
 -- Window Padding
 config.window_frame    = {
   border_left_width    = '0.25cell',
@@ -33,10 +37,10 @@ config.font_size = 12
 config.keys = {
   { key = 'j', mods = 'CTRL|ALT', action = act.SplitVertical   { domain = 'CurrentPaneDomain' } },
   { key = 'h', mods = 'CTRL|ALT', action = act.SplitHorizontal { domain = 'CurrentPaneDomain' } },
-  { key = 'h', mods = 'CTRL',     action = act.ActivatePaneDirection 'Left' },
-  { key = 'j', mods = 'CTRL',     action = act.ActivatePaneDirection 'Down' },
-  { key = 'k', mods = 'CTRL',     action = act.ActivatePaneDirection 'Up' },
-  { key = 'l', mods = 'CTRL',     action = act.ActivatePaneDirection 'Right' },
+  { key = 'a', mods = 'ALT',     action = act.ActivatePaneDirection 'Left' },
+  { key = 's', mods = 'ALT',     action = act.ActivatePaneDirection 'Down' },
+  { key = 'w', mods = 'ALT',     action = act.ActivatePaneDirection 'Up' },
+  { key = 'd', mods = 'ALT',     action = act.ActivatePaneDirection 'Right' },
 }
 
 -- Set color scheme based on system theme
@@ -61,4 +65,3 @@ wezterm.on('window-config-reloaded', set_appearance)
 
 -- Return configuration
 return config
-

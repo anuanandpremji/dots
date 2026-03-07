@@ -185,8 +185,8 @@ bindkey '^x^e' edit-command-line
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 # Load custom prompt
-source "$ZDOTDIR/.zshprompt_theme_cascade"
-# source "$ZDOTDIR/.zshprompt_theme_pure"
+# source "$ZDOTDIR/.zshprompt_theme_cascade"
+source "$ZDOTDIR/.zshprompt_theme_pure"
 # if _has starship; then export STARSHIP_CONFIG="$ZDOTDIR/../starship/gaps.toml"; eval "$(starship init zsh)"; fi
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗

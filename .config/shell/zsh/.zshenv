@@ -11,16 +11,7 @@
 
 # Set DOTFILE_DIR to point to the on-disk directory containing the .zshrc file
 
-# Determine the Dropbox installation path (Linux Home vs Windows User Profile)
-if grep -qEi "(Microsoft|WSL)" /proc/version 2>/dev/null; then
-    BASE_DROPBOX_PATH="$(wslpath -a "$(wslvar USERPROFILE)")/Dropbox";
-else BASE_DROPBOX_PATH="$HOME/Dropbox"; fi
-
-# Check which subdirectory exists inside that dropbox path
-if [ -d "$BASE_DROPBOX_PATH/Docs" ]; then DOTFILE_DIR="$BASE_DROPBOX_PATH/Docs/dotfiles/.config/shell/zsh";
-elif [ -d "$BASE_DROPBOX_PATH/Shared" ]; then DOTFILE_DIR="$BASE_DROPBOX_PATH/Shared/dotfiles/.config/shell/zsh";
-else echo "Error: Dotfiles not found at: $BASE_DROPBOX_PATH" >&2; return 1; fi
-
+DOTFILE_DIR="$HOME/repo"; # Edit this to reflect your local config location
 export DOTFILE_DIR;
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #

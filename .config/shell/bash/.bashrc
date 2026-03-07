@@ -4,22 +4,14 @@
 #║ .bashrc is always loaded first and has to live at `$HOME/.bashrc`                                                   ║
 #║ So either source this file from `$HOME/.bashrc`                                                                     ║
 #║ Or symlink this file using:                                                                                         ║
-#║ ln -sf "<path/to/this/file>" "$HOME/.bashrc"                                                                            ║
+#║ ln -sf "<path/to/this/file>" "$HOME/.bashrc"                                                                        ║
 #║                                                                                                                     ║
 #║ Read http://mywiki.wooledge.org/BashFAQ/028 to know why we are doing this                                           ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 # Set DOTFILE_DIR to point to the on-disk directory containing the .bashrc file
 
-# Determine the Dropbox installation path (Linux Home vs Windows User Profile)
-if grep -qEi "(Microsoft|WSL)" /proc/version 2>/dev/null; then BASE_DROPBOX_PATH="$(wslpath -a "$(wslvar USERPROFILE)")/Dropbox";
-else BASE_DROPBOX_PATH="$HOME/Dropbox"; fi
-
-# Check which subdirectory exists inside that dropbox path
-if [ -d "$BASE_DROPBOX_PATH/Docs" ]; then DOTFILE_DIR="$BASE_DROPBOX_PATH/Docs/dotfiles/.config/shell/bash";
-elif [ -d "$BASE_DROPBOX_PATH/Shared" ]; then DOTFILE_DIR="$BASE_DROPBOX_PATH/Shared/dotfiles/.config/shell/bash";
-else echo "Error: Dotfiles not found at: $BASE_DROPBOX_PATH" >&2; return 1; fi
-
+DOTFILE_DIR="$HOME/repo"; # Edit this to reflect your local config location
 export DOTFILE_DIR;
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
@@ -169,9 +161,32 @@ shopt -s checkwinsize # to line wrap, check window size after each command and u
 bind '"\e[A": history-search-backward'  # Up arrow: backward history search
 bind '"\e[B": history-search-forward'   # Down arrow: forward history search
 
+bind '"\e[1~":beginning-of-line'        # Home key
+bind '"\e[7~":beginning-of-line'        # Home key (alternate)
+bind '"\eOH":beginning-of-line'         # Home key (alternate)
+bind '"\e[H":beginning-of-line'         # Home key (alternate)
+bind '"\e[4~":end-of-line'              # End key
+bind '"\e[8~":end-of-line'              # End key (alternate)
+bind '"\eOF":end-of-line'               # End key (alternate)
+bind '"\e[F":end-of-line'               # End key (alternate)
+
 bind '"\e[1;5C":forward-word'           # CTRL-RIGHT goes forward one word
 bind '"\e[1;5D":backward-word'          # CTRL-LEFT goes backward one word
+bind '"\C-H":backward-kill-word'        # CTRL-BACKSPACE deletes the previous word
+bind '"\e[3;5~":kill-word'              # CTRL-DEL deletes the next word
 bind -r "\C-s"                           # Disable CTRL-S from triggering forward-i-search
+
+# CTRL-X CTRL-E edits current command in $VISUAL editor
+__edit_command_line() {
+  local tmpf
+  tmpf=$(mktemp) || return 1
+  printf '%s' "$READLINE_LINE" > "$tmpf"
+  ${VISUAL:-${EDITOR:-vi}} "$tmpf" </dev/tty >/dev/tty
+  READLINE_LINE=$(cat "$tmpf")
+  READLINE_POINT=${#READLINE_LINE}
+  rm -f "$tmpf"
+}
+bind -x '"\C-x\C-e": __edit_command_line'
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 

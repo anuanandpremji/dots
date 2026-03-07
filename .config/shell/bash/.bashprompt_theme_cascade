@@ -239,6 +239,10 @@ set_prompt() {
   # Capture exit code FIRST, before anything else
   LAST_EXIT_CODE=$?
 
+  # Re-assert so venv activate never mangles PS1
+  VIRTUAL_ENV_DISABLE_PROMPT=1
+  export VIRTUAL_ENV_DISABLE_PROMPT
+
   # Calculate command duration
   CMD_DURATION=""
   if [[ -n "$preexec_timer" ]]; then

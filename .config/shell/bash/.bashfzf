@@ -14,7 +14,7 @@ export FZF_DEFAULT_COMMAND='fd --type f'
 export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border=rounded --info=inline-right --pointer="󰜴" --color="gutter:-1,pointer:yellow"'
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
-#║ CTRL-R - Fuzzy search history with multi-select, editing, and deletion                                               ║
+#║ CTRL-R - Fuzzy search history with multi-select, editing, and deletion                                              ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 # Runs in a loop: after every edit/delete, history reloads and fzf reopens with the same query.
@@ -36,14 +36,19 @@ fzf_history_widget()
     local -a fzf_opts=(
         --multi
         --print-query --expect=ctrl-o,ctrl-e,ctrl-x
-        --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview'
-        --border=bold
-        --border-label=" Search Shell History "
-        --border-label-pos=2
-        --color 'label:yellow:bold'
+        --highlight-line
+        --style=full
+        --preview 'echo {}'
+        --preview-window down:3:hidden:wrap
+        --preview-label=' Full Command '
+        --preview-label-pos=2
+        --ghost 'Search your shell command history...'
+        --header-border=line
+        --footer " ↵ Paste │ TAB Multi-select │ ^E Edit │ ^O Open History │ ^X Delete │ ? Preview"
+        --footer-border=line
+        --color 'label:yellow:bold,header:dim'
         --prompt '▶ '
-        --header-first
-        --header='↵:Paste | TAB: Multi-select | ^E: Edit Entry | ^O: Open History | ^X: Delete Entry'
+        --bind '?:toggle-preview'
     )
 
     while true; do
@@ -125,11 +130,11 @@ bind -m emacs-standard -x '"\C-r": fzf_history_widget'
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 # Fuzzy search files & directories and then press
-#    - CTRL-D   - cycle between All/Files/Directories
+#    - CTRL-S   - cycle between Directories/Files
 #    - ENTER    - paste the selected entry
 #    - ALT  + C - cd to directory (or parent directory of file)
-#    - CTRL + V - open the selected entry in the default $VISUAL editor
-#    - CTRL + N - open the selected entry in the default $EDITOR
+#    - CTRL + V - open the selected entry in zed editor
+#    - CTRL + N - open the selected entry in $VISUAL
 #    - CTRL + O - open the selected entry in the default system app
 #    - CTRL + E - open the selected entry in the default file explorer
 #    - CTRL + Y - yank the absolute path to the clipboard
@@ -143,27 +148,31 @@ fzf_file_widget()
     local search_path="/"
 
     local -a fzf_opts=(
-        --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview' --exit-0
+        --exit-0
         --expect=ctrl-o,ctrl-v,ctrl-n,ctrl-y,ctrl-e,alt-c
-        --border=bold
-        --border-label=" Find Files & Directories (CTRL-D: Cycle All/Files/Directories)"
-        --border-label-pos=2
-        --color 'label:yellow:bold'
-        --header-first
-        --header=$'↵:Paste | Alt-C: cd | ^E: File Explorer | ^V: $VISUAL | ^N: $EDITOR | ^O: System App | ^Y: Copy'
-        --prompt 'All ▶ '
+        --highlight-line
+        --style=full
+        --preview 'echo {}'
+        --preview-window down:3:hidden:wrap
+        --preview-label=' Full Path '
+        --preview-label-pos=2
+        --ghost 'Search directories system-wide...'
+        --header-border=line
+        --footer " ↵ Paste │ ^S Switch View │ Alt-C cd │ ^V Zed │ ^N \$VISUAL │ ^E Explorer │ ^O Open │ ^Y Copy │ ? Preview"
+        --footer-border=line
+        --color 'label:yellow:bold,header:dim'
+        --prompt 'Directories ▶ '
         --scheme=path
-        --bind "ctrl-d:transform:
-            if [[ \$FZF_PROMPT =~ All ]]; then
-                echo 'change-prompt(Files ▶ )+reload($find_cmd --type f . $search_path)';
-            elif [[ \$FZF_PROMPT =~ Files ]]; then
-                echo 'change-prompt(Directories ▶ )+reload($find_cmd --type d . $search_path)';
+        --bind '?:toggle-preview'
+        --bind "ctrl-s:transform:
+            if [[ \$FZF_PROMPT =~ Directories ]]; then
+                echo 'change-prompt(Files ▶ )+reload($find_cmd --type f . $search_path)+change-ghost(Search files system-wide...)';
             else
-                echo 'change-prompt(All ▶ )+reload($find_cmd . $search_path)';
+                echo 'change-prompt(Directories ▶ )+reload($find_cmd --type d . $search_path)+change-ghost(Search directories system-wide...)';
             fi"
     )
 
-    output=$($find_cmd . "$search_path" | fzf "${fzf_opts[@]}") || return 0
+    output=$($find_cmd --type d . "$search_path" | fzf "${fzf_opts[@]}") || return 0
 
     mapfile -t lines <<< "$output"
     key="${lines[0]}"
@@ -172,8 +181,8 @@ fzf_file_widget()
     [[ -z "$sel" ]] && return 0
 
     if   [[ "$key" == ctrl-o ]]; then open_command "$sel"
-    elif [[ "$key" == ctrl-v ]]; then "$VISUAL" "$sel"
-    elif [[ "$key" == ctrl-n ]]; then "$EDITOR" "$sel"
+    elif [[ "$key" == ctrl-v ]]; then zed "$sel"
+    elif [[ "$key" == ctrl-n ]]; then "$VISUAL" "$sel"
     elif [[ "$key" == ctrl-e ]]; then open_path "$sel"
     elif [[ "$key" == ctrl-y ]]; then copyabsolutepath "$sel"
     elif [[ "$key" == alt-c  ]]; then
@@ -195,126 +204,334 @@ bind -m emacs-standard -x '"\C-t": fzf_file_widget'
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ Overview                                                                                                            ║
 #║ --------                                                                                                            ║
-#║ glog()  - Browse, inspect, diff, or checkout git commits with fzf                                                  ║
-#║ gco()   - Browse and checkout git branches or tags with fzf                                                        ║
-#║ ga()    - Stage or unstage git changes interactively with fzf                                                      ║
-#║ fkill() - Find and kill a running process with fzf                                                                 ║
-#║ sshf()  - SSH into a host from ~/.ssh/config with fzf                                                              ║
+#║ gl()    - Browse git commits with delta-powered preview                                                             ║
+#║ gc()    - Checkout branches, tags, or commits with diff preview and branch management                               ║
+#║ ga()    - Stage, unstage, and commit with live status, diff preview, and delta                                      ║
+#║ fkill() - Find and kill a running process with fzf                                                                  ║
+#║ sshf()  - SSH into a host from ~/.ssh/config with fzf                                                               ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
+# gl() - Browse git commits with delta-powered preview
+#
+# ENTER    - git show (view the commit with full diff)
+# CTRL-D   - git diff (between that commit and the working tree)
+# CTRL-Y   - copy the commit hash to clipboard
+# CTRL-O   - open the commit on GitHub
+# ?        - toggle preview window
 
-# glog() - Fuzzy search Git commits on the current branch and then press:
-#          - ENTER  - git show (what changed in that commit)
-#          - CTRL-D - git diff (between that commit and the working tree)
-#          - CTRL-Y - copy the commit hash
-#          - CTRL-O - checkout the commit
-#          For truncated entries, use ? key to toggle a preview window
+# Dependencies: git, fzf (≥0.58), delta
 
-# Dependencies: git, fzf, awk, sed, clipcopy()
-
-glog()
+gl()
 {
     if ! git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi
 
-    local output query key sha;
+    local delta_cmd="delta
+        --paging=never
+        --width=\$FZF_PREVIEW_COLUMNS
+        --line-numbers
+        --syntax-theme=ansi
+        --minus-style='normal #b06060'
+        --plus-style='normal #408040'
+        --minus-emph-style='bold #a04040'
+        --plus-emph-style='bold #306030'
+        --line-numbers-minus-style='#b06060'
+        --line-numbers-plus-style='#408040'
+        --hunk-header-style=syntax"
+
+    local preview_cmd="
+    [ -n {1} ] || exit 0;
+    printf '\e[33;1m%s\e[0m\n' \"\$(git log -1 --format='%h  %ad  %an' --date=format:'%Y-%m-%d %a' {1})\";
+    printf '%s\n\n' \"\$(git log -1 --format='%s%n%n%b' {1})\";
+    git --no-pager show --stat --color=always --format='' {1} 2>/dev/null;
+    echo;
+    git --no-pager show --color=never --format='' {1} 2>/dev/null | $delta_cmd"
+
+    local github_url
+    github_url=$(git remote get-url origin 2>/dev/null | sed 's/\.git$//' | sed 's|git@github\.com:|https://github.com/|')
+
+    local open_cmd="xdg-open"
+    [[ "$OSTYPE" == darwin* ]] && open_cmd="open"
+
+    local clip_cmd="xclip -selection clipboard"
+    if [[ "$OSTYPE" == darwin* ]]; then clip_cmd="pbcopy"
+    elif [[ -n "$WAYLAND_DISPLAY" ]]; then clip_cmd="wl-copy"
+    fi
+
+    local -a git_log_opts=(
+        --color=always
+        --date=format:'%Y-%m-%d %a'
+        --format=format:'%C(yellow)%h%C(reset)  %ad  %<(16,trunc)%an  %>|(1)%s%C(auto)%d%C(reset)'
+    )
 
     local -a fzf_opts=(
-        --print-query --expect=ctrl-d,ctrl-y,ctrl-o --ignore-case --no-info
-        --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview'
-        --border=bold
-        --border-label=" Search Git commits on the current branch " --border-label-pos=2
-        --color 'label:yellow:bold'
-        --header-first --header='↵: Show | ^D: Diff | ^Y: Copy Hash | ^O: Checkout'
-    );
+        --ansi --no-sort --height=100%
+        --ghost 'Filter commits on the current branch...'
+        --highlight-line
+        --style=full
+        --preview "$preview_cmd"
+        --preview-window 'down:60%:hidden'
+        --preview-label=' Commit Details '
+        --preview-label-pos=2
+        --header-border=line
+        --footer " ↵ Show │ ^D Diff │ ^Y Copy Hash │ ^O GitHub │ ? Preview"
+        --footer-border=line
+        --color 'label:yellow:bold,header:dim'
+        --bind '?:toggle-preview'
+        --bind "start:bg-transform-header:printf '  On: %s' \"\$(git branch --show-current 2>/dev/null || echo 'detached')\""
+        --bind 'enter:execute(git show --color=always {1})'
+        --bind 'ctrl-d:execute(git diff --color=always {1})'
+        --bind "ctrl-y:execute-silent(printf '%s' {1} | $clip_cmd)+change-ghost(Copied commit hash to clipboard)"
+        --bind "ctrl-o:execute-silent[sha={1}; $open_cmd \"$github_url/commit/\$sha\" >/dev/null 2>&1 &]"
+    )
 
-    while true; do
-        output=$(git log --date=format:'%Y-%m-%d %a' --format=format:'%h  %ad  %<(16,trunc)%an  %>|(1)%s %d' "$@" |
-                  fzf "${fzf_opts[@]}" -q "$query") || break;
-
-        query=$(head -1 <<< "$output");
-        key=$(sed -n '2p' <<< "$output");
-        sha=$(sed -n '3p' <<< "$output" | awk '{print $1}');
-        [ -z "$sha" ] && continue;
-
-        if   [ "$key" = ctrl-d ]; then git diff --color=always "$sha";
-        elif [ "$key" = ctrl-y ]; then printf '%s' "$sha" | clipcopy && printf '%s copied to clipboard.\n' "$sha";
-        elif [ "$key" = ctrl-o ]; then git checkout "$sha";
-        else git show --color=always "$sha";
-        fi
-    done
+    git log "${git_log_opts[@]}" "$@" | fzf "${fzf_opts[@]}"
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
-# gco() - Fuzzy git checkout a branch or a tag across all remotes
+# gc() - Interactive git checkout for branches, tags, and recent commits
+#
+# ENTER    - checkout the selected branch, tag, or commit
+# CTRL-S   - cycle between Branches / Tags / Recent Commits views
+# CTRL-N   - create a new branch from the current HEAD
+# CTRL-O   - open the branch, tag, or commit on GitHub
+# ALT-X    - delete the selected local branch
+# ?        - toggle preview window
 
-# Dependencies: git, fzf, awk, sed
+# Dependencies: git, fzf (≥0.58), delta
 
-gco()
+gc()
 {
-    if ! git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi;
+    if ! git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi
 
-    local tags branches target;
+    local branch_cmd="git branch --all | cut -c3- | grep -v HEAD | grep ."
+    local tag_cmd="git tag --sort=-creatordate"
+    local recent_cmd="git log --oneline -50"
 
-    branches=$(git --no-pager branch --all --format="%1B[0;34;1mbranch%09%1B[m%(refname:short)" | sed '/^$/d') || return;
+    local delta_cmd="delta
+        --paging=never
+        --width=\$FZF_PREVIEW_COLUMNS
+        --line-numbers
+        --syntax-theme=ansi
+        --minus-style='normal #b06060'
+        --plus-style='normal #408040'
+        --minus-emph-style='bold #a04040'
+        --plus-emph-style='bold #306030'
+        --line-numbers-minus-style='#b06060'
+        --line-numbers-plus-style='#408040'
+        --hunk-header-style=syntax"
 
-    tags=$(git --no-pager tag | awk '{print "\x1b[35;1mtag\x1b[m\t" $1}') || return;
+    local github_url
+    github_url=$(git remote get-url origin 2>/dev/null | sed 's/\.git$//' | sed 's|git@github\.com:|https://github.com/|')
 
-    target=$((echo "$branches"; echo "$tags") | \
-              fzf --border-label=" Git checkout a branch or a tag across all remotes " \
-                  --border-label-pos=2 --ansi --color 'label:yellow:bold') \
-            || return;
+    local open_cmd="xdg-open"
+    [[ "$OSTYPE" == darwin* ]] && open_cmd="open"
 
-    git checkout "$(awk '{print $2}' <<< "$target")";
+    local preview_cmd="
+    [ -n {} ] || exit 0;
+    ref={1};
+    if git rev-parse --verify \"\$ref\" >/dev/null 2>&1; then
+        printf '\e[33;1m%s\e[0m\n' \"\$(git log -1 --format='%h  %ad  %an' --date=format:'%Y-%m-%d %a' \"\$ref\")\";
+        printf '%s\n\n' \"\$(git log -1 --format='%s%n%n%b' \"\$ref\")\";
+        git --no-pager diff --stat --color=always \"\$ref\"~1 \"\$ref\" 2>/dev/null;
+        echo;
+        git --no-pager diff --color=never \"\$ref\"~1 \"\$ref\" 2>/dev/null | $delta_cmd;
+    fi"
+
+    local bind_cycle="ctrl-s:transform:
+        if [[ \$FZF_PROMPT =~ Branches ]]; then
+            echo 'change-prompt(Tags ▶ )+reload[$tag_cmd]+change-ghost(Filter tags sorted by date...)+refresh-preview';
+        elif [[ \$FZF_PROMPT =~ Tags ]]; then
+            echo 'change-prompt(Commits ▶ )+reload[$recent_cmd]+change-ghost(Filter last 50 commits on the current branch...)+refresh-preview';
+        else
+            echo 'change-prompt(Branches ▶ )+reload[$branch_cmd]+change-ghost(Filter branches across all remotes...)+refresh-preview';
+        fi"
+
+    local bind_open="ctrl-o:transform:
+        if [[ \$FZF_PROMPT =~ Branches ]]; then
+            echo 'execute-silent(
+                ref={1};
+                remote=origin;
+                branch=\$ref;
+                tmp=\${ref#remotes/};
+                if [[ \$tmp != \$ref ]]; then
+                    remote=\${tmp%%/*};
+                    branch=\${tmp#*/};
+                fi;
+                url=\$(git remote get-url \$remote 2>/dev/null
+                    | sed \"s/\\.git\$//\"
+                    | sed \"s|git@github\\.com:|https://github.com/|\");
+                $open_cmd \"\$url/tree/\$branch\" >/dev/null 2>&1 &
+            )';
+        elif [[ \$FZF_PROMPT =~ Tags ]]; then
+            echo 'execute-silent[
+                tag={1};
+                $open_cmd \"$github_url/releases/tag/\$tag\" >/dev/null 2>&1 &
+            ]';
+        else
+            echo 'execute-silent[
+                sha={1};
+                $open_cmd \"$github_url/commit/\$sha\" >/dev/null 2>&1 &
+            ]';
+        fi"
+
+    local bind_delete="alt-x:transform:
+        if [[ \$FZF_PROMPT =~ Branches ]]; then
+            echo 'execute(git branch -d {1})+reload[$branch_cmd]+refresh-preview';
+        fi"
+
+    local bind_new_branch="ctrl-n:execute(
+        printf \"New branch name: \";
+        read branch_name;
+        if [ -n \"\$branch_name\" ]; then
+            git checkout -b \"\$branch_name\";
+        fi
+    )"
+
+    local -a fzf_opts=(
+        --ansi --no-sort --height=100%
+        --prompt 'Branches ▶ '
+        --ghost 'Filter branches across all remotes...'
+        --highlight-line
+        --style=full
+        --preview "$preview_cmd"
+        --preview-window 'down:60%:hidden'
+        --preview-label=' Commit Details '
+        --preview-label-pos=2
+        --header-border=line
+        --footer " ↵ Checkout │ ^S Cycle View │ ^N New Branch │ ^O GitHub │ Alt-X Delete │ ? Preview"
+        --footer-border=line
+        --color 'label:yellow:bold,header:dim'
+        --bind '?:toggle-preview'
+        --bind "start:bg-transform-header:printf '  On: %s' \"\$(git branch --show-current 2>/dev/null || echo 'detached')\""
+        --bind "$bind_cycle"
+        --bind "enter:become(git checkout {1})"
+        --bind "$bind_open"
+        --bind "$bind_delete"
+        --bind "$bind_new_branch"
+    )
+
+    eval "$branch_cmd" | fzf "${fzf_opts[@]}"
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
-# ga() - Fuzzy git stage/unstage and then press:
-#        - ENTER  - stage the selected file(s) or unstage if viewing staged files
-#        - CTRL-S - switch between Unstaged and Staged views
-#        For truncated entries, use ? key to toggle a preview window
+# ga() - Interactive git staging, unstaging, and committing
+#
+# ENTER  - stage selected file(s), or unstage if viewing staged files
+# CTRL-S - switch between Unstaged and Staged views
+# CTRL-C - commit staged changes (opens $VISUAL for commit message)
+# ALT-E  - open selected file(s) in $EDITOR
+# ALT-A  - stage all unstaged files at once
+# ?      - toggle preview window
 
-# Dependencies: git, fzf
+# Dependencies: git, fzf (≥0.58), delta
 
 ga()
 {
     if ! git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi
 
-    local toplevel;
-    toplevel=$(git rev-parse --show-toplevel);
+    local toplevel
+    toplevel=$(git rev-parse --show-toplevel)
 
-    local unstaged_cmd='git ls-files --modified --deleted --other --exclude-standard --deduplicate "'"$toplevel"'"';
-    local staged_cmd='git diff --cached --name-only';
+    local unstaged_cmd="git ls-files --modified --deleted --other --exclude-standard --deduplicate \"$toplevel\""
+    local staged_cmd="git diff --cached --name-only"
 
     if [[ -z "$(eval "$unstaged_cmd")" && -z "$(eval "$staged_cmd")" ]]; then
-        printf "Nothing to stage or commit.\n";
-        return 0;
+        printf "Nothing to stage or commit.\n"
+        return 0
     fi
 
-    local preview_cmd='if [[ $FZF_PROMPT =~ Unstaged ]]; then git diff --color=always -- {}; \
-                       else git diff --cached --color=always -- {}; fi | nl -ba -w3 -s" │ "';
+    local delta_cmd="delta
+        --paging=never
+        --width=\$FZF_PREVIEW_COLUMNS
+        --line-numbers
+        --syntax-theme=ansi
+        --minus-style='normal #b06060'
+        --plus-style='normal #408040'
+        --minus-emph-style='bold #a04040'
+        --plus-emph-style='bold #306030'
+        --line-numbers-minus-style='#b06060'
+        --line-numbers-plus-style='#408040'
+        --hunk-header-style=syntax"
+
+    local preview_cmd="
+    [ -n {} ] || exit 0;
+    if [[ {fzf:prompt} =~ Unstaged ]]; then
+        if git ls-files --error-unmatch {} >/dev/null 2>&1; then
+            git --no-pager diff --color=never -- {} | $delta_cmd;
+        else
+            git --no-pager diff --color=never --no-index /dev/null -- {} | $delta_cmd;
+        fi;
+    else
+        git --no-pager diff --cached --color=never -- {} | $delta_cmd;
+    fi"
+
+    # Dynamic header showing current git status summary
+    local status_header_cmd="
+    s=\$(git diff --cached --name-only | wc -l | tr -d ' ');
+    u=\$(git ls-files --modified --deleted --other --exclude-standard --deduplicate \"$toplevel\" | wc -l | tr -d ' ');
+    printf '  Staged: %s  │  Unstaged: %s' \"\$s\" \"\$u\""
+
+    local bind_toggle_mode="ctrl-s:transform:
+        if [[ \$FZF_PROMPT =~ Unstaged ]]; then
+            echo 'change-prompt(Staged ▶ )+reload($staged_cmd)+change-ghost(Filter files staged for commit...)+refresh-preview';
+        else
+            echo 'change-prompt(Unstaged ▶ )+reload($unstaged_cmd)+change-ghost(Filter unstaged changes in the working tree...)+refresh-preview';
+        fi"
+
+    local bind_enter="enter:execute-silent(
+        if [[ {fzf:prompt} =~ Unstaged ]]; then
+            git add -- {+};
+        else
+            git restore --staged -- {+};
+        fi)+transform:
+        if [[ \$FZF_PROMPT =~ Unstaged ]]; then
+            echo 'reload($unstaged_cmd)+refresh-preview';
+        else
+            echo 'reload($staged_cmd)+refresh-preview';
+        fi"
+
+    local bind_commit="ctrl-c:execute(
+        if [ -z \"\$(git diff --cached --name-only)\" ]; then
+            printf 'Nothing staged to commit. Press Enter to return.\n';
+            read;
+        else
+            git commit;
+        fi)+reload($unstaged_cmd)+change-prompt(Unstaged ▶ )+change-ghost(Filter unstaged changes in the working tree...)+refresh-preview"
+
+    local bind_stage_all="alt-a:transform:
+        if [[ \$FZF_PROMPT =~ Unstaged ]]; then
+            echo 'execute-silent(git add -- {*})+reload($unstaged_cmd)+refresh-preview';
+        fi"
 
     local -a fzf_opts=(
         --multi --no-sort --height=100%
-        --preview="$preview_cmd"
-        --preview-window 'down:75%:wrap'
+        --prompt 'Unstaged ▶ '
+        --ghost 'Filter unstaged changes in the working tree...'
+        --highlight-line
+        --style=full
+        --preview "$preview_cmd"
+        --preview-window 'down:60%:hidden'
+        --preview-label=' Diff '
+        --preview-label-pos=2
+        --header-border=line
+        --footer " ↵ Stage/Unstage │ ^S Switch View │ ^C Commit │ Alt-A Stage All │ Alt-E Editor │ ? Preview"
+        --footer-border=line
+        --color 'label:yellow:bold,header:dim'
         --bind '?:toggle-preview'
-        --border=bold
-        --border-label=" Git Stage/Unstage " --border-label-pos=2
-        --color 'label:yellow:bold'
-        --header-first
-        --header='↵: Stage/Unstage | ^S: Switch Staged/Unstaged'
-        --bind "ctrl-s:transform:[[ \$FZF_PROMPT =~ Unstaged ]]
-            && echo 'change-prompt(Staged ▶ )+reload($staged_cmd)'
-            || echo 'change-prompt(Unstaged ▶ )+reload($unstaged_cmd)'"
-        --bind "enter:transform:[[ \$FZF_PROMPT =~ Unstaged ]]
-            && echo 'execute-silent(git add -- {+})+reload($unstaged_cmd)'
-            || echo 'execute-silent(git restore --staged -- {+})+reload($staged_cmd)'"
-    );
+        --bind "start,focus:bg-transform-header($status_header_cmd)"
+        --bind "$bind_toggle_mode"
+        --bind "$bind_enter"
+        --bind "$bind_commit"
+        --bind "$bind_stage_all"
+        --bind 'alt-e:execute(${EDITOR:-vim} {+})+refresh-preview'
+    )
 
-    eval "$unstaged_cmd" | fzf "${fzf_opts[@]}" --prompt='Unstaged ▶ ';
+    eval "$unstaged_cmd" | fzf "${fzf_opts[@]}"
+    local rc=$?
+    [[ $rc -eq 1 || $rc -eq 130 ]] && return 0
+    return $rc
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
@@ -326,10 +543,17 @@ ga()
 fkill() {
     local pid
 
+    local -a fzf_opts=(
+        -m
+        --border-label=" Find and Kill a Process "
+        --border-label-pos=2
+        --color 'label:yellow:bold'
+    )
+
     if [ "$UID" != "0" ]; then
-        pid=$(ps -f -u "$UID" | sed 1d | fzf -m --border-label=" Find and Kill a Process " --border-label-pos=2 --color="label:yellow:bold" | awk '{print $2}')
+        pid=$(ps -f -u "$UID" | sed 1d | fzf "${fzf_opts[@]}" | awk '{print $2}')
     else
-        pid=$(ps -ef | sed 1d | fzf -m --border-label=" Find and Kill a Process " --border-label-pos=2 --color="label:yellow:bold" | awk '{print $2}')
+        pid=$(ps -ef | sed 1d | fzf "${fzf_opts[@]}" | awk '{print $2}')
     fi
 
     if [ -n "$pid" ]; then
@@ -353,15 +577,15 @@ sshf()
 # Dependency check
 
 # External programs
-if ! _has fd;               then printf "fd: program not found. Install fd-find.\n";              fi
-if ! _has git;              then printf "git: program not found. Install git.\n";                 fi
-if ! _has sed;              then printf "sed: program not found. Install sed.\n";                 fi
-if ! _has awk;              then printf "awk: program not found. Install awk.\n";                 fi
+if ! _has fd;               then printf "fd: program not found. Install fd-find.\n";  fi
+if ! _has git;              then printf "git: program not found. Install git.\n";     fi
+if ! _has sed;              then printf "sed: program not found. Install sed.\n";     fi
+if ! _has awk;              then printf "awk: program not found. Install awk.\n";     fi
 
 # Local functions (from .bashutils, sourced before this file)
-if ! _has clipcopy;         then printf "clipcopy(): function not loaded.\n";                     fi
-if ! _has copyabsolutepath; then printf "copyabsolutepath(): function not loaded.\n";             fi
-if ! _has open_command;     then printf "open_command(): function not loaded.\n";                 fi
-if ! _has open_path;        then printf "open_path(): function not loaded.\n";                    fi
+if ! _has clipcopy;         then printf "clipcopy(): function not loaded.\n";         fi
+if ! _has copyabsolutepath; then printf "copyabsolutepath(): function not loaded.\n"; fi
+if ! _has open_command;     then printf "open_command(): function not loaded.\n";     fi
+if ! _has open_path;        then printf "open_path(): function not loaded.\n";        fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #

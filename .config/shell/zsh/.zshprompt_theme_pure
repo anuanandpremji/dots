@@ -219,6 +219,7 @@ show_user_context() {
 
 VIRTUAL_ENV_DISABLE_PROMPT=1;
 export VIRTUAL_ENV_DISABLE_PROMPT;
+unset _OLD_VIRTUAL_PS1;  # Clear stale PS1 saved by a prior venv activate, so deactivate can't clobber PROMPT
 
 show_python_venv() {
   if [[ -n "$VIRTUAL_ENV" ]]; then
