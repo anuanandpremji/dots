@@ -103,8 +103,10 @@ export LESSHISTFILE="$XDG_STATE_HOME/less/history"
 export LESSKEY="$XDG_CONFIG_HOME/less/keyfile.bin"
 mkdir -p "$XDG_STATE_HOME/less" "$XDG_CONFIG_HOME/less"
 
-# Nvidia
-alias nvidia-settings='nvidia-settings --config="$XDG_CONFIG_HOME/nvidia/settings"'
+# Nvidia (Linux only)
+if [[ "$(uname)" != "Darwin" ]]; then
+    alias nvidia-settings='nvidia-settings --config="$XDG_CONFIG_HOME/nvidia/settings"'
+fi
 
 # Python & Jupyter
 export IPYTHONDIR="$XDG_CONFIG_HOME/jupyter"
@@ -133,8 +135,14 @@ mkdir -p "$XDG_DATA_HOME/terminfo"
 
 # Tmux
 alias tmux='tmux -f "$XDG_CONFIG_HOME/tmux/conf"'
-export TMUX_TMPDIR="$XDG_RUNTIME_DIR/tmux"
-mkdir -p "$XDG_CONFIG_HOME/tmux" "$XDG_RUNTIME_DIR/tmux"
+if [[ -n "${XDG_RUNTIME_DIR:-}" ]]; then
+    export TMUX_TMPDIR="$XDG_RUNTIME_DIR/tmux"
+    mkdir -p "$XDG_RUNTIME_DIR/tmux"
+else
+    export TMUX_TMPDIR="${TMPDIR:-/tmp}/tmux-$(id -u)"
+    mkdir -p "$TMUX_TMPDIR"
+fi
+mkdir -p "$XDG_CONFIG_HOME/tmux"
 
 # Wget
 export WGETRC="$XDG_CONFIG_HOME/wget/wgetrc"

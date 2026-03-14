@@ -1,0 +1,7 @@
+#!/usr/bin/zsh
+exec wezterm \
+  --config "window_background_opacity=0.9" \
+  --config "window_decorations='NONE'" \
+  start \
+    --class=dropdown-terminal \
+    --workspace dropdown

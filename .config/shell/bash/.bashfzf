@@ -225,17 +225,17 @@ gl()
 {
     if ! git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi
 
-    local delta_cmd="delta
-        --paging=never
-        --width=\$FZF_PREVIEW_COLUMNS
-        --line-numbers
-        --syntax-theme=ansi
-        --minus-style='normal #b06060'
-        --plus-style='normal #408040'
-        --minus-emph-style='bold #a04040'
-        --plus-emph-style='bold #306030'
-        --line-numbers-minus-style='#b06060'
-        --line-numbers-plus-style='#408040'
+    local delta_cmd="delta \
+        --paging=never \
+        --width=\$FZF_PREVIEW_COLUMNS \
+        --line-numbers \
+        --syntax-theme=ansi \
+        --minus-style='normal #b06060' \
+        --plus-style='normal #408040' \
+        --minus-emph-style='bold #a04040' \
+        --plus-emph-style='bold #306030' \
+        --line-numbers-minus-style='#b06060' \
+        --line-numbers-plus-style='#408040' \
         --hunk-header-style=syntax"
 
     local preview_cmd="
@@ -308,17 +308,17 @@ gc()
     local tag_cmd="git tag --sort=-creatordate"
     local recent_cmd="git log --oneline -50"
 
-    local delta_cmd="delta
-        --paging=never
-        --width=\$FZF_PREVIEW_COLUMNS
-        --line-numbers
-        --syntax-theme=ansi
-        --minus-style='normal #b06060'
-        --plus-style='normal #408040'
-        --minus-emph-style='bold #a04040'
-        --plus-emph-style='bold #306030'
-        --line-numbers-minus-style='#b06060'
-        --line-numbers-plus-style='#408040'
+    local delta_cmd="delta \
+        --paging=never \
+        --width=\$FZF_PREVIEW_COLUMNS \
+        --line-numbers \
+        --syntax-theme=ansi \
+        --minus-style='normal #b06060' \
+        --plus-style='normal #408040' \
+        --minus-emph-style='bold #a04040' \
+        --plus-emph-style='bold #306030' \
+        --line-numbers-minus-style='#b06060' \
+        --line-numbers-plus-style='#408040' \
         --hunk-header-style=syntax"
 
     local github_url
@@ -442,17 +442,17 @@ ga()
         return 0
     fi
 
-    local delta_cmd="delta
-        --paging=never
-        --width=\$FZF_PREVIEW_COLUMNS
-        --line-numbers
-        --syntax-theme=ansi
-        --minus-style='normal #b06060'
-        --plus-style='normal #408040'
-        --minus-emph-style='bold #a04040'
-        --plus-emph-style='bold #306030'
-        --line-numbers-minus-style='#b06060'
-        --line-numbers-plus-style='#408040'
+    local delta_cmd="delta \
+        --paging=never \
+        --width=\$FZF_PREVIEW_COLUMNS \
+        --line-numbers \
+        --syntax-theme=ansi \
+        --minus-style='normal #b06060' \
+        --plus-style='normal #408040' \
+        --minus-emph-style='bold #a04040' \
+        --plus-emph-style='bold #306030' \
+        --line-numbers-minus-style='#b06060' \
+        --line-numbers-plus-style='#408040' \
         --hunk-header-style=syntax"
 
     local preview_cmd="

@@ -1,3 +1,6 @@
 {
-    "colorscheme": "cmc-16"
+    "colorscheme": "cmc-16",
+    "softwrap": true,
+    "tabsize": 4,
+    "mouse": true
 }

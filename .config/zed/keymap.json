@@ -1,49 +1,45 @@
 [
-  {
-    "context": "Workspace",
-    "bindings": {
-      //"shift shift": "file_finder::Toggle",
-      "ctrl-t": null,
-      "alt-a": "workspace::ActivatePaneLeft",
-      "alt-d": "workspace::ActivatePaneRight",
-      "alt-w": "workspace::ActivatePaneUp",
-      "alt-s": "workspace::ActivatePaneDown",
+    {
+        "context": "Workspace",
+        "bindings": {
+            //"shift shift": "file_finder::Toggle",
+            "ctrl-t": null,
+            // Split
+            "ctrl-alt-v": "pane::SplitRight",
+            "ctrl-alt-s": "pane::SplitDown",
+            // Navigate
+            "ctrl-alt-left": "workspace::ActivatePaneLeft",
+            "ctrl-alt-down": "workspace::ActivatePaneDown",
+            "ctrl-alt-up": "workspace::ActivatePaneUp",
+            "ctrl-alt-right": "workspace::ActivatePaneRight",
+            // Resize (dock/sidebar/panel — editor pane resize not yet supported by Zed)
+            "ctrl-alt-shift-right": "workspace::IncreaseActiveDockSize",
+            "ctrl-alt-shift-down": "workspace::IncreaseActiveDockSize",
+            "ctrl-alt-shift-left": "workspace::DecreaseActiveDockSize",
+            "ctrl-alt-shift-up": "workspace::DecreaseActiveDockSize",
+        },
     },
-  },
-  {
-    "context": "Editor && vim_mode == insert",
-    "bindings": {
-      // "j k": "vim::NormalBefore"
+    {
+        "context": "Editor && vim_mode == insert",
+        "bindings": {
+            // "j k": "vim::NormalBefore"
+        },
     },
-  },
-  {
-    "context": "Editor",
-    "bindings": {
-      "alt-delete": "editor::DeleteLine",
+    {
+        "context": "Editor",
+        "bindings": {
+            "alt-delete": "editor::DeleteLine",
+        },
     },
-  },
-  {
-    "context": "Terminal",
-    "bindings": {
-      "ctrl-s": ["terminal::SendKeystroke", "ctrl-s"],
-      "ctrl-q": ["terminal::SendKeystroke", "ctrl-q"],
-      "ctrl-t": ["terminal::SendKeystroke", "ctrl-t"],
-      // Selecting to the beginning/end of the line
-      "shift-home": ["terminal::SendKeystroke", "shift-home"],
-      "shift-end": ["terminal::SendKeystroke", "shift-end"],
+    {
+        "context": "Terminal",
+        "bindings": {
+            "ctrl-s": ["terminal::SendKeystroke", "ctrl-s"],
+            "ctrl-q": ["terminal::SendKeystroke", "ctrl-q"],
+            "ctrl-t": ["terminal::SendKeystroke", "ctrl-t"],
+            // Selecting to the beginning/end of the line
+            "shift-home": ["terminal::SendKeystroke", "shift-home"],
+            "shift-end": ["terminal::SendKeystroke", "shift-end"],
+        },
     },
-  },
-  // Duplicate terminal bindings for when the terminal pane is zoomed.
-  // In zoom mode the context changes and "Terminal" bindings stop matching,
-  // but "Terminal && vim_mode == none" or the zoomed variant below will fire.
-  // {
-  //   "context": "Terminal && ZoomState == zoomed",
-  //   "bindings": {
-  //     "ctrl-s": ["terminal::SendKeystroke", "ctrl-s"],
-  //     "ctrl-q": ["terminal::SendKeystroke", "ctrl-q"],
-  //     "ctrl-t": ["terminal::SendKeystroke", "ctrl-t"],
-  //     "shift-home": ["terminal::SendKeystroke", "shift-home"],
-  //     "shift-end": ["terminal::SendKeystroke", "shift-end"],
-  //   },
-  // },
 ]

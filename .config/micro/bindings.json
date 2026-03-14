@@ -1,4 +1,7 @@
 {
     "Alt-/": "lua:comment.comment",
-    "CtrlUnderscore": "lua:comment.comment"
+    "CtrlUnderscore": "lua:comment.comment",
+    "Backspace2": "DeleteWordLeft",
+    "CtrlDelete": "DeleteWordRight",
+    "Alt-z": "lua:initlua.toggleSoftWrap"
 }

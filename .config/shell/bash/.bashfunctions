@@ -16,6 +16,7 @@
 #║ update_flatpaks() - Update and clean Flatpak packages                                                               ║
 #║ update_snaps()    - Update Snap packages                                                                            ║
 #║ do_update()       - Run system updates across all detected package managers                                         ║
+#║ sysinfo()         - Show system information (OS, CPU, memory, disk, network)                                        ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 # cdgr() - cd to the outermost Git superproject root directory
@@ -235,6 +236,32 @@ do_update()
 # External programs
 if ! _has git;              then printf "git: program not found. Install git.\n";   fi
 if ! _has tree;             then printf "tree: program not found. Install tree.\n"; fi
+
+# sysinfo() - Show system information using built-in tools (no external dependencies)
+sysinfo() {
+    if [[ "$(uname)" == "Darwin" ]]; then
+        system_profiler SPSoftwareDataType SPHardwareDataType SPDisplaysDataType SPStorageDataType
+        return
+    fi
+
+    echo "── OS ──"
+    grep PRETTY_NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"'
+    uname -r
+
+    echo -e "\n── CPU ──"
+    lscpu 2>/dev/null | grep -E "^(Model name|CPU\(s\)|Core|Thread|Architecture)" | sed 's/^[[:space:]]*//'
+
+    echo -e "\n── Memory ──"
+    free -h 2>/dev/null | grep -E "^(Mem|Swap)"
+
+    echo -e "\n── Disk ──"
+    lsblk -d -o NAME,SIZE,MODEL 2>/dev/null | grep -v "^loop"
+
+    echo -e "\n── Network ──"
+    ip -br addr 2>/dev/null | grep -v "^lo"
+}
+
+# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
 # Local functions (from .bashutils, sourced before this file)
 if ! _has confirm;          then printf "confirm(): function not loaded.\n";        fi

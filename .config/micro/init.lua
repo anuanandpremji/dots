@@ -1,16 +1,14 @@
--- Micro Editor Settings
+local micro = import("micro")
+local config = import("micro/config")
+local buffer = import("micro/buffer")
 
--- Enable true color if supported
-if os.getenv("COLORTERM") == "truecolor" then
-    truecolor = true
-else
-    truecolor = false
+-- Toggle soft wrap for the current buffer (bound to Alt-z in bindings.json)
+function toggleSoftWrap(bp)
+    local current = bp.Buf.Settings["softwrap"]
+    bp.Buf.Settings["softwrap"] = not current
+    if not current then
+        micro.InfoBar():Message("softwrap: on")
+    else
+        micro.InfoBar():Message("softwrap: off")
+    end
 end
-
-colorscheme = "cmc-16"   -- Set default color scheme
-linenumbers = true        -- Show line numbers
-softwrap = true           -- Enable soft wrapping
-tabsize = 4               -- Set tab size to 4 spaces
-mouse = true              -- Enable mouse support
-
-

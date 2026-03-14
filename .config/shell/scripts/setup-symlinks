@@ -1,0 +1,180 @@
+#!/usr/bin/env bash
+#
+# Symlink dotfiles to their expected locations on a fresh PC.
+# Run once after cloning or downloading the dotfiles repo.
+#
+# Usage: ./setup-symlinks [--dry-run]
+
+set -euo pipefail
+
+# Resolve DOTFILES from this script's own location:
+# This script lives at <dotfiles>/.config/shell/scripts/setup-symlinks
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DOTFILES="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+DRY_RUN=false
+
+if [[ "${1:-}" == "--dry-run" ]]; then
+    DRY_RUN=true
+    echo "=== DRY RUN — no changes will be made ==="
+    echo
+fi
+
+# Colours for output
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+link_path() {
+    local src="$1"
+    local dest="$2"
+
+    if [[ ! -e "$src" ]]; then
+        echo -e "${RED}[SKIP]${NC} Source does not exist: $src"
+        return
+    fi
+
+    if [[ -L "$dest" ]]; then
+        local current_target
+        current_target=$(readlink "$dest")
+        if [[ "$current_target" == "$src" ]]; then
+            echo -e "${GREEN}[OK]${NC}   $dest -> $src"
+            return
+        else
+            echo -e "${YELLOW}[UPDATE]${NC} $dest (was -> $current_target)"
+        fi
+    elif [[ -e "$dest" ]]; then
+        echo -e "${YELLOW}[BACKUP]${NC} $dest -> ${dest}.bak"
+        if [[ "$DRY_RUN" == false ]]; then
+            mv "$dest" "${dest}.bak"
+        fi
+    fi
+
+    # Ensure the parent directory exists
+    local parent
+    parent=$(dirname "$dest")
+    if [[ ! -d "$parent" ]]; then
+        echo -e "${YELLOW}[MKDIR]${NC}  $parent"
+        if [[ "$DRY_RUN" == false ]]; then
+            mkdir -p "$parent"
+        fi
+    fi
+
+    echo -e "${GREEN}[LINK]${NC}  $dest -> $src"
+    if [[ "$DRY_RUN" == false ]]; then
+        ln -sf "$src" "$dest"
+    fi
+}
+
+load_dconf() {
+    local src="$1"
+    local path="$2"
+
+    if [[ ! -f "$src" ]]; then
+        echo -e "${RED}[SKIP]${NC} Source does not exist: $src"
+        return
+    fi
+
+    echo -e "${GREEN}[DCONF]${NC} Loading $src -> dconf $path"
+    if [[ "$DRY_RUN" == false ]]; then
+        dconf load "$path" < "$src"
+    fi
+}
+
+IS_LINUX=false
+IS_MACOS=false
+case "$(uname -s)" in
+    Linux)  IS_LINUX=true ;;
+    Darwin) IS_MACOS=true ;;
+esac
+
+echo "========================================"
+echo " Dotfiles Symlink Setup"
+echo "========================================"
+echo
+
+# ── Shell ─────────────────────────────────────────────────────────────────────
+echo "── Shell ──"
+link_path "$DOTFILES/.config/shell/bash/.bashrc" "$HOME/.bashrc"
+link_path "$DOTFILES/.config/shell/zsh/.zshenv"  "$HOME/.zshenv"
+
+# ── Git ───────────────────────────────────────────────────────────────────────
+echo "── Git ──"
+link_path "$DOTFILES/.config/git/config" "$HOME/.config/git/config"
+# NOTE: config.default, config.private, and config.work are NOT symlinked.
+# They are machine-specific and created by setup-identities.
+
+# ── Terminals (directory symlinks) ────────────────────────────────────────────
+echo "── WezTerm ──"
+link_path "$DOTFILES/.config/wezterm" "$HOME/.config/wezterm"
+
+# ── Editors (directory symlinks) ──────────────────────────────────────────────
+echo "── Neovim ──"
+link_path "$DOTFILES/.config/nvim" "$HOME/.config/nvim"
+
+echo "── Zed ──"
+link_path "$DOTFILES/.config/zed" "$HOME/.config/zed"
+
+echo "── Micro ──"
+link_path "$DOTFILES/.config/micro/init.lua"      "$HOME/.config/micro/init.lua"
+link_path "$DOTFILES/.config/micro/bindings.json"  "$HOME/.config/micro/bindings.json"
+link_path "$DOTFILES/.config/micro/settings.json"  "$HOME/.config/micro/settings.json"
+
+# ── VS Code (individual file symlinks — VS Code manages the rest of the User dir) ──
+echo "── VS Code ──"
+if [[ "$IS_MACOS" == true ]]; then
+    link_path "$DOTFILES/.config/vscode/User/settings.json"    "$HOME/Library/Application Support/Code/User/settings.json"
+    link_path "$DOTFILES/.config/vscode/User/keybindings.json" "$HOME/Library/Application Support/Code/User/keybindings.json"
+else
+    link_path "$DOTFILES/.config/vscode/User/settings.json"    "$HOME/.config/Code/User/settings.json"
+    link_path "$DOTFILES/.config/vscode/User/keybindings.json" "$HOME/.config/Code/User/keybindings.json"
+fi
+
+# ── Fonts ─────────────────────────────────────────────────────────────────────
+echo "── Fonts ──"
+link_path "$DOTFILES/.local/share/fonts" "$HOME/.local/share/fonts"
+
+# ── Linux-only: WezTerm dropdown, dconf settings, GNOME extensions ───────────
+if [[ "$IS_LINUX" == true ]]; then
+
+    echo "── WezTerm Dropdown ──"
+    link_path "$DOTFILES/.local/bin/wezterm-dropdown"                              "$HOME/.local/bin/wezterm-dropdown"
+    link_path "$DOTFILES/.local/share/applications/wezterm-dropdown.desktop"       "$HOME/.local/share/applications/wezterm-dropdown.desktop"
+
+    if command -v dconf &>/dev/null; then
+        echo "── Meld (dconf load) ──"
+        load_dconf "$DOTFILES/.config/meld/meld-settings.dconf" "/org/gnome/meld/"
+
+        echo "── GNOME settings (dconf load) ──"
+        load_dconf "$DOTFILES/.config/gnome/gnome-settings.dconf" "/"
+
+        echo "── GNOME extensions (dconf load) ──"
+        load_dconf "$DOTFILES/.config/gnome/extensions/quake-terminal.dconf"      "/org/gnome/shell/extensions/quake-terminal/"
+        load_dconf "$DOTFILES/.config/gnome/extensions/nightthemeswitcher.dconf"  "/org/gnome/shell/extensions/nightthemeswitcher/"
+        load_dconf "$DOTFILES/.config/gnome/extensions/tiling-assistant.dconf"    "/org/gnome/shell/extensions/tiling-assistant/"
+        load_dconf "$DOTFILES/.config/gnome/extensions/ding.dconf"                "/org/gnome/shell/extensions/ding/"
+        load_dconf "$DOTFILES/.config/gnome/extensions/unblank.dconf"             "/org/gnome/shell/extensions/unblank/"
+    fi
+
+fi
+
+# ── Claude Code (~/.claude/) ──────────────────────────────────────────────
+echo "── Claude Code ──"
+link_path "$DOTFILES/.config/claude/CLAUDE.md"        "$HOME/.claude/CLAUDE.md"
+link_path "$DOTFILES/.config/claude/keybindings.json" "$HOME/.claude/keybindings.json"
+link_path "$DOTFILES/.config/claude/settings.json"    "$HOME/.claude/settings.json"
+link_path "$DOTFILES/.config/claude/projects/-home-anu-Dropbox-Docs-dotfiles--config-shell/memory/MEMORY.md" \
+          "$HOME/.claude/projects/-home-anu-Dropbox-Docs-dotfiles--config-shell/memory/MEMORY.md"
+
+# ── Post-setup ────────────────────────────────────────────────────────────────
+echo
+if [[ "$DRY_RUN" == false ]]; then
+    # Rebuild font cache if fonts were linked
+    if command -v fc-cache &>/dev/null; then
+        echo "Rebuilding font cache..."
+        fc-cache -f
+    fi
+    echo -e "${GREEN}Done!${NC}"
+else
+    echo "=== DRY RUN complete — re-run without --dry-run to apply ==="
+fi

@@ -31,9 +31,17 @@
     navigate = true
     side-by-side = false
 
-# Use separate file for user info, github token etc
+# Default identity — machine-specific, not tracked. Points to either
+# private or work identity depending on what setup-identities configured.
 [include]
-    path          = config.local
+    path          = config.default
+
+# Directory-specific overrides (always apply regardless of default)
+[includeIf "gitdir:~/private/"]
+    path          = config.private
+
+[includeIf "gitdir:~/work/"]
+    path          = config.work
 
 [merge]
     conflictstyle = diff3

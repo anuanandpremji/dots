@@ -103,31 +103,15 @@ git clone <URL> "$HOME/repo/"
 Copy the bundled fonts and refresh the font cache:
 
 ```shell
-cp -av "$HOME/repo/.config/fonts/." "$HOME/.local/share/fonts/"
+cp -av "$HOME/repo/.local/share/fonts/." "$HOME/.local/share/fonts/"
 sudo fc-cache -f
 ```
 
 Then set your terminal emulator to use one of the installed Nerd Fonts.
 
-### 3. Set the dotfile directory
+### 3. Link your shell config
 
-**Zsh** — edit `$HOME/repo/.config/shell/zsh/.zshenv`:
-
-```shell
-export DOTFILE_DIR="$HOME/repo/.config/shell/zsh"
-```
-
-**Bash** — edit `$HOME/repo/.config/shell/bash/.bashrc`:
-
-```shell
-export DOTFILE_DIR="$HOME/repo/.config/shell/bash"
-```
-
-### 4. Link your shell config
-
-Choose one method:
-
-**Symlink (recommended)** — replaces the system file with a direct link:
+**Symlink (recommended)** — `$DOTFILE_DIR` resolves automatically from the symlink target, so no manual editing is needed:
 
 ```shell
 # Zsh
@@ -137,7 +121,7 @@ ln -sf "$HOME/repo/.config/shell/zsh/.zshenv" "$HOME/.zshenv"
 ln -sf "$HOME/repo/.config/shell/bash/.bashrc" "$HOME/.bashrc"
 ```
 
-**Source** — appends to your existing config:
+**Source** — if you source instead of symlink, edit the `DOTFILE_DIR` fallback path in `.zshenv`/`.bashrc` to match your repo location:
 
 ```shell
 # Zsh
@@ -147,7 +131,7 @@ echo 'source "$HOME/repo/.config/shell/zsh/.zshenv"' >> "$HOME/.zshenv"
 echo 'source "$HOME/repo/.config/shell/bash/.bashrc"' >> "$HOME/.bashrc"
 ```
 
-### 5. Reload
+### 4. Reload
 
 ```shell
 exec "$(ps -p $$ -ocomm=)"

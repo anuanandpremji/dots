@@ -223,17 +223,17 @@ gl()
 {
     if ! command git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; return 1; fi
 
-    local delta_cmd="delta
-        --paging=never
-        --width=\$FZF_PREVIEW_COLUMNS
-        --line-numbers
-        --syntax-theme=ansi
-        --minus-style='normal #b06060'
-        --plus-style='normal #408040'
-        --minus-emph-style='bold #a04040'
-        --plus-emph-style='bold #306030'
-        --line-numbers-minus-style='#b06060'
-        --line-numbers-plus-style='#408040'
+    local delta_cmd="delta \
+        --paging=never \
+        --width=\$FZF_PREVIEW_COLUMNS \
+        --line-numbers \
+        --syntax-theme=ansi \
+        --minus-style='normal #b06060' \
+        --plus-style='normal #408040' \
+        --minus-emph-style='bold #a04040' \
+        --plus-emph-style='bold #306030' \
+        --line-numbers-minus-style='#b06060' \
+        --line-numbers-plus-style='#408040' \
         --hunk-header-style=syntax"
 
     local preview_cmd="
@@ -306,17 +306,17 @@ gc()
     local tag_cmd="command git tag --sort=-creatordate"
     local recent_cmd="command git log --oneline -50"
 
-    local delta_cmd="delta
-        --paging=never
-        --width=\$FZF_PREVIEW_COLUMNS
-        --line-numbers
-        --syntax-theme=ansi
-        --minus-style='normal #b06060'
-        --plus-style='normal #408040'
-        --minus-emph-style='bold #a04040'
-        --plus-emph-style='bold #306030'
-        --line-numbers-minus-style='#b06060'
-        --line-numbers-plus-style='#408040'
+    local delta_cmd="delta \
+        --paging=never \
+        --width=\$FZF_PREVIEW_COLUMNS \
+        --line-numbers \
+        --syntax-theme=ansi \
+        --minus-style='normal #b06060' \
+        --plus-style='normal #408040' \
+        --minus-emph-style='bold #a04040' \
+        --plus-emph-style='bold #306030' \
+        --line-numbers-minus-style='#b06060' \
+        --line-numbers-plus-style='#408040' \
         --hunk-header-style=syntax"
 
     local github_url
@@ -347,30 +347,17 @@ gc()
 
     local bind_open="ctrl-o:transform:
         if [[ \$FZF_PROMPT =~ Branches ]]; then
-            echo 'execute-silent(
-                ref={1};
-                remote=origin;
-                branch=\$ref;
-                tmp=\${ref#remotes/};
-                if [[ \$tmp != \$ref ]]; then
-                    remote=\${tmp%%/*};
-                    branch=\${tmp#*/};
-                fi;
-                url=\$(command git remote get-url \$remote 2>/dev/null
-                    | command sed \"s/\\.git\$//\"
-                    | command sed \"s|git@github\\.com:|https://github.com/|\");
-                $open_cmd \"\$url/tree/\$branch\" >/dev/null 2>&1 &
-            )';
+            echo 'execute-silent(\
+                 ref={1}; remote=origin; branch=\$ref; tmp=\${ref#remotes/}; \
+                 if [[ \$tmp != \$ref ]]; then remote=\${tmp%%/*}; branch=\${tmp#*/}; fi; \
+                 url=\$(command git remote get-url \$remote 2>/dev/null \
+                 | command sed \"s/\\.git\$//\" \
+                 | command sed \"s|git@github\\.com:|https://github.com/|\"); \
+                 $open_cmd \"\$url/tree/\$branch\" >/dev/null 2>&1 &)';
         elif [[ \$FZF_PROMPT =~ Tags ]]; then
-            echo 'execute-silent[
-                tag={1};
-                $open_cmd \"$github_url/releases/tag/\$tag\" >/dev/null 2>&1 &
-            ]';
+            echo 'execute-silent[tag={1}; $open_cmd \"$github_url/releases/tag/\$tag\" >/dev/null 2>&1 &]';
         else
-            echo 'execute-silent[
-                sha={1};
-                $open_cmd \"$github_url/commit/\$sha\" >/dev/null 2>&1 &
-            ]';
+            echo 'execute-silent[sha={1}; $open_cmd \"$github_url/commit/\$sha\" >/dev/null 2>&1 &]';
         fi"
 
     local bind_delete="alt-x:transform:
@@ -440,17 +427,17 @@ ga()
         return 0
     fi
 
-    local delta_cmd="delta
-        --paging=never
-        --width=\$FZF_PREVIEW_COLUMNS
-        --line-numbers
-        --syntax-theme=ansi
-        --minus-style='normal #b06060'
-        --plus-style='normal #408040'
-        --minus-emph-style='bold #a04040'
-        --plus-emph-style='bold #306030'
-        --line-numbers-minus-style='#b06060'
-        --line-numbers-plus-style='#408040'
+    local delta_cmd="delta \
+        --paging=never \
+        --width=\$FZF_PREVIEW_COLUMNS \
+        --line-numbers \
+        --syntax-theme=ansi \
+        --minus-style='normal #b06060' \
+        --plus-style='normal #408040' \
+        --minus-emph-style='bold #a04040' \
+        --plus-emph-style='bold #306030' \
+        --line-numbers-minus-style='#b06060' \
+        --line-numbers-plus-style='#408040' \
         --hunk-header-style=syntax"
 
     local preview_cmd="

@@ -18,3 +18,11 @@
 *.pyc
 *.o
 *.so
+
+# Sensitive / machine-specific files
+.claude/settings.local.json
+.config/git/config.default
+.config/git/config.private
+.config/git/config.work
+.config/espanso/
+

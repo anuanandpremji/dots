@@ -1,0 +1,8 @@
+[/]
+always-on-top=true
+auto-hide-window=true
+render-on-current-monitor=true
+skip-taskbar=true
+terminal-id='wezterm-dropdown.desktop'
+terminal-shortcut=['F1']
+vertical-size=50

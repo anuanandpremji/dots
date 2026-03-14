@@ -9,10 +9,32 @@
 #║ Read http://mywiki.wooledge.org/BashFAQ/028 to know why we are doing this                                           ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-# Set DOTFILE_DIR to point to the on-disk directory containing the .bashrc file
+# Resolve DOTFILE_DIR automatically from the symlink target of this file.
+# ~/.bashrc is a symlink → dotfiles/.config/shell/bash/.bashrc
+# So resolving the symlink gives us the real directory.
 
-DOTFILE_DIR="$HOME/repo"; # Edit this to reflect your local config location
-export DOTFILE_DIR;
+_resolve_dotfile_dir() {
+    local link="$HOME/.bashrc"
+    if [[ ! -L "$link" ]]; then return 1; fi
+
+    local target
+    # Prefer readlink -f (follows entire chain), available on Linux and Homebrew coreutils
+    if target="$(readlink -f "$link" 2>/dev/null)"; then
+        printf '%s' "$(dirname "$target")"
+    # macOS fallback: python3 is always available
+    elif target="$(python3 -c "import os; print(os.path.realpath('$link'))" 2>/dev/null)"; then
+        printf '%s' "$(dirname "$target")"
+    # Last resort: plain readlink + cd to resolve relative paths
+    elif target="$(readlink "$link" 2>/dev/null)"; then
+        (cd "$(dirname "$link")" && cd "$(dirname "$target")" && pwd)
+    else
+        return 1
+    fi
+}
+
+DOTFILE_DIR="$(_resolve_dotfile_dir)" || DOTFILE_DIR="$HOME/.config/shell/bash"
+unset -f _resolve_dotfile_dir
+export DOTFILE_DIR
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
@@ -131,7 +153,9 @@ bind "set completion-ignore-case on"
 # enable programmable completion features
 if ! shopt -oq posix; then
     if [ -f /usr/share/bash-completion/bash_completion ]; then . /usr/share/bash-completion/bash_completion;
-    elif [ -f /etc/bash_completion ]; then . /etc/bash_completion
+    elif [ -f /etc/bash_completion ]; then . /etc/bash_completion;
+    elif [ -f /opt/homebrew/etc/profile.d/bash_completion.sh ]; then . /opt/homebrew/etc/profile.d/bash_completion.sh;
+    elif [ -f /usr/local/etc/profile.d/bash_completion.sh ]; then . /usr/local/etc/profile.d/bash_completion.sh;
     fi
 fi
 

@@ -9,10 +9,32 @@
 #║ Read http://mywiki.wooledge.org/BashFAQ/028 to know why we are doing this                                           ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-# Set DOTFILE_DIR to point to the on-disk directory containing the .zshrc file
+# Resolve DOTFILE_DIR automatically from the symlink target of this file.
+# ~/.zshenv is a symlink → dotfiles/.config/shell/zsh/.zshenv
+# So resolving the symlink gives us the real directory.
 
-DOTFILE_DIR="$HOME/repo"; # Edit this to reflect your local config location
-export DOTFILE_DIR;
+_resolve_dotfile_dir() {
+    local link="$HOME/.zshenv"
+    if [[ ! -L "$link" ]]; then return 1; fi
+
+    local target
+    # Prefer readlink -f (follows entire chain), available on Linux and Homebrew coreutils
+    if target="$(readlink -f "$link" 2>/dev/null)"; then
+        printf '%s' "$(dirname "$target")"
+    # macOS fallback: python3 is always available
+    elif target="$(python3 -c "import os; print(os.path.realpath('$link'))" 2>/dev/null)"; then
+        printf '%s' "$(dirname "$target")"
+    # Last resort: plain readlink + cd to resolve relative paths
+    elif target="$(readlink "$link" 2>/dev/null)"; then
+        (cd "$(dirname "$link")" && cd "$(dirname "$target")" && pwd)
+    else
+        return 1
+    fi
+}
+
+DOTFILE_DIR="$(_resolve_dotfile_dir)" || DOTFILE_DIR="$HOME/.config/shell/zsh"
+unset -f _resolve_dotfile_dir
+export DOTFILE_DIR
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
@@ -35,3 +57,6 @@ export skip_global_compinit;
 source "$ZDOTDIR/.zshexports";
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
+# EOL Software
+[ -f "$HOME/.config/eol/env.sh" ] && . "$HOME/.config/eol/env.sh"
+case "$-" in *i*) [ -f "$HOME/.config/eol/env.sh" ] && . "$HOME/.config/eol/env.sh" ;; esac

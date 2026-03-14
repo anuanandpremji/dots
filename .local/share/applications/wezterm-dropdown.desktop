@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Dropdown Terminal
+Comment=WezTerm as a dropdown terminal
+Keywords=shell;prompt;command;commandline;cmd;
+Icon=org.wezfurlong.wezterm
+StartupWMClass=dropdown-terminal
+Exec=wezterm-dropdown
+Type=Application
+Categories=System;TerminalEmulator;Utility;
+Terminal=false

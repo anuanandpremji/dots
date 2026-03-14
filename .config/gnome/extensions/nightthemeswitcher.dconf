@@ -1,0 +1,10 @@
+[commands]
+enabled=true
+sunrise='guake --change-palette Tomorrow'
+sunset='guake --change-palette "Gruvbox Material Dark"'
+
+[time]
+manual-schedule=true
+nightthemeswitcher-ondemand-keybinding=['<Shift><Super>t']
+sunrise=8.0
+sunset=17.0

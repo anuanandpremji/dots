@@ -26,6 +26,10 @@ config.window_frame    = {
   border_top_color     = 'gray',
 }
 
+-- Initial Window Size
+config.initial_cols = 160
+config.initial_rows = 48
+
 -- Tab Bar
 config.hide_tab_bar_if_only_one_tab = true
 
@@ -35,12 +39,19 @@ config.font_size = 12
 
 -- Keybindings
 config.keys = {
-  { key = 'j', mods = 'CTRL|ALT', action = act.SplitVertical   { domain = 'CurrentPaneDomain' } },
-  { key = 'h', mods = 'CTRL|ALT', action = act.SplitHorizontal { domain = 'CurrentPaneDomain' } },
-  { key = 'a', mods = 'ALT',     action = act.ActivatePaneDirection 'Left' },
-  { key = 's', mods = 'ALT',     action = act.ActivatePaneDirection 'Down' },
-  { key = 'w', mods = 'ALT',     action = act.ActivatePaneDirection 'Up' },
-  { key = 'd', mods = 'ALT',     action = act.ActivatePaneDirection 'Right' },
+  -- Split
+  { key = 'v', mods = 'CTRL|ALT', action = act.SplitHorizontal { domain = 'CurrentPaneDomain' } }, -- Vertical (side-by-side)
+  { key = 's', mods = 'CTRL|ALT', action = act.SplitVertical   { domain = 'CurrentPaneDomain' } }, -- Horizontal (top-bottom)
+  -- Navigate
+  { key = 'LeftArrow',  mods = 'CTRL|ALT', action = act.ActivatePaneDirection 'Left' },
+  { key = 'DownArrow',  mods = 'CTRL|ALT', action = act.ActivatePaneDirection 'Down' },
+  { key = 'UpArrow',    mods = 'CTRL|ALT', action = act.ActivatePaneDirection 'Up' },
+  { key = 'RightArrow', mods = 'CTRL|ALT', action = act.ActivatePaneDirection 'Right' },
+  -- Resize
+  { key = 'LeftArrow',  mods = 'CTRL|ALT|SHIFT', action = act.AdjustPaneSize { 'Left', 5 } },
+  { key = 'DownArrow',  mods = 'CTRL|ALT|SHIFT', action = act.AdjustPaneSize { 'Down', 5 } },
+  { key = 'UpArrow',    mods = 'CTRL|ALT|SHIFT', action = act.AdjustPaneSize { 'Up', 5 } },
+  { key = 'RightArrow', mods = 'CTRL|ALT|SHIFT', action = act.AdjustPaneSize { 'Right', 5 } },
 }
 
 -- Set color scheme based on system theme

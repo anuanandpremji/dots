@@ -1,0 +1,482 @@
+[apps/seahorse/listing]
+keyrings-selected=['secret-service:///org/freedesktop/secrets/collection/login']
+
+[apps/seahorse/windows/key-manager]
+height=476
+width=600
+
+[apps/update-manager]
+first-run=false
+launch-count=10
+launch-time=int64 1773219205
+
+[com/ubuntu/update-notifier]
+release-check-time=uint32 1773070471
+
+[org/gnome/Disks]
+image-dir-uri='file:///home/anu/Downloads'
+
+[org/gnome/TextEditor]
+custom-font='JetBrainsMonoNL Nerd Font Bold 11'
+last-save-directory='file:///home/anu/Downloads'
+use-system-font=false
+
+[org/gnome/calendar]
+active-view='month'
+window-maximized=true
+window-size=(768, 600)
+
+[org/gnome/clocks/state/window]
+maximized=false
+panel-id='world'
+size=(870, 690)
+
+[org/gnome/control-center]
+last-panel='keyboard'
+window-state=(1567, 1503, true)
+
+[org/gnome/desktop/a11y]
+always-show-universal-access-status=true
+
+[org/gnome/desktop/a11y/interface]
+high-contrast=false
+show-status-shapes=true
+
+[org/gnome/desktop/app-folders]
+folder-children=['Utilities', 'YaST', 'Pardus']
+
+[org/gnome/desktop/app-folders/folders/Pardus]
+categories=['X-Pardus-Apps']
+name='X-Pardus-Apps.directory'
+translate=true
+
+[org/gnome/desktop/app-folders/folders/Utilities]
+apps=['gnome-abrt.desktop', 'gnome-system-log.desktop', 'nm-connection-editor.desktop', 'org.gnome.baobab.desktop', 'org.gnome.Connections.desktop', 'org.gnome.DejaDup.desktop', 'org.gnome.Dictionary.desktop', 'org.gnome.DiskUtility.desktop', 'org.gnome.Evince.desktop', 'org.gnome.FileRoller.desktop', 'org.gnome.fonts.desktop', 'org.gnome.Loupe.desktop', 'org.gnome.seahorse.Application.desktop', 'org.gnome.Usage.desktop', 'vinagre.desktop']
+categories=['X-GNOME-Utilities']
+excluded-apps=['org.gnome.tweaks.desktop']
+name='X-GNOME-Utilities.directory'
+translate=true
+
+[org/gnome/desktop/app-folders/folders/YaST]
+categories=['X-SuSE-YaST']
+name='suse-yast.directory'
+translate=true
+
+[org/gnome/desktop/calendar]
+show-weekdate=true
+
+[org/gnome/desktop/datetime]
+automatic-timezone=true
+
+[org/gnome/desktop/input-sources]
+mru-sources=[('xkb', 'us'), ('xkb', 'de+nodeadkeys')]
+show-all-sources=true
+sources=[('xkb', 'us'), ('xkb', 'de+nodeadkeys')]
+xkb-options=['compose:rctrl', 'lv3:ralt_switch', 'caps:menu']
+
+[org/gnome/desktop/interface]
+color-scheme='prefer-dark'
+cursor-size=32
+document-font-name='Sans Bold 11'
+enable-hot-corners=true
+font-hinting='full'
+font-name='Ubuntu Sans Bold 11 @wght=700'
+gtk-theme='Yaru-dark'
+icon-theme='Yaru-dark'
+overlay-scrolling=true
+show-battery-percentage=true
+text-scaling-factor=1.25
+
+[org/gnome/desktop/notifications]
+application-children=['snapd-desktop-integration-snapd-desktop-integration', 'org-gnome-software', 'slack', 'google-chrome', 'gnome-power-panel', 'org-gnome-settings', 'org-gnome-tweaks', 'guake', 'dev-zed-zed', 'obsidian', 'gnome-printers-panel', 'com-mattjakeman-extensionmanager', 'firefox-firefox', 'code', 'app-gui-variant-station', 'app-gui-commissioning', 'org-gnome-texteditor', 'org-gnome-nautilus', 'app-gui-node-test']
+
+[org/gnome/desktop/notifications/application/app-gui-commissioning]
+application-id='app_gui_commissioning.desktop'
+
+[org/gnome/desktop/notifications/application/app-gui-node-test]
+application-id='app_gui_node_test.desktop'
+
+[org/gnome/desktop/notifications/application/app-gui-variant-station]
+application-id='app_gui_variant_station.desktop'
+
+[org/gnome/desktop/notifications/application/code]
+application-id='code.desktop'
+
+[org/gnome/desktop/notifications/application/com-mattjakeman-extensionmanager]
+application-id='com.mattjakeman.ExtensionManager.desktop'
+
+[org/gnome/desktop/notifications/application/dev-zed-zed]
+application-id='dev.zed.Zed.desktop'
+
+[org/gnome/desktop/notifications/application/firefox-firefox]
+application-id='firefox_firefox.desktop'
+
+[org/gnome/desktop/notifications/application/gnome-power-panel]
+application-id='gnome-power-panel.desktop'
+
+[org/gnome/desktop/notifications/application/gnome-printers-panel]
+application-id='gnome-printers-panel.desktop'
+
+[org/gnome/desktop/notifications/application/google-chrome]
+application-id='google-chrome.desktop'
+
+[org/gnome/desktop/notifications/application/guake]
+application-id='guake.desktop'
+
+[org/gnome/desktop/notifications/application/obsidian]
+application-id='obsidian.desktop'
+
+[org/gnome/desktop/notifications/application/org-gnome-nautilus]
+application-id='org.gnome.Nautilus.desktop'
+
+[org/gnome/desktop/notifications/application/org-gnome-settings]
+application-id='org.gnome.Settings.desktop'
+
+[org/gnome/desktop/notifications/application/org-gnome-software]
+application-id='org.gnome.Software.desktop'
+
+[org/gnome/desktop/notifications/application/org-gnome-texteditor]
+application-id='org.gnome.TextEditor.desktop'
+
+[org/gnome/desktop/notifications/application/org-gnome-tweaks]
+application-id='org.gnome.tweaks.desktop'
+
+[org/gnome/desktop/notifications/application/slack]
+application-id='slack.desktop'
+
+[org/gnome/desktop/notifications/application/snapd-desktop-integration-snapd-desktop-integration]
+application-id='snapd-desktop-integration_snapd-desktop-integration.desktop'
+
+[org/gnome/desktop/peripherals/touchpad]
+two-finger-scrolling-enabled=true
+
+[org/gnome/desktop/privacy]
+old-files-age=uint32 30
+recent-files-max-age=-1
+
+[org/gnome/desktop/search-providers]
+disabled=['org.gnome.Terminal.desktop', 'org.gnome.Software.desktop', 'org.gnome.seahorse.Application.desktop', 'org.gnome.clocks.desktop', 'org.gnome.Calculator.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Characters.desktop']
+sort-order=['org.gnome.Contacts.desktop', 'org.gnome.Documents.desktop', 'org.gnome.Nautilus.desktop']
+
+[org/gnome/desktop/session]
+idle-delay=uint32 0
+
+[org/gnome/desktop/wm/keybindings]
+move-to-workspace-down=@as []
+move-to-workspace-left=['<Super><Shift>Page_Up', '<Super><Shift><Alt>Left']
+move-to-workspace-right=['<Super><Shift>Page_Down', '<Super><Shift><Alt>Right']
+move-to-workspace-up=@as []
+switch-to-workspace-down=@as []
+switch-to-workspace-left=['<Super>Page_Up', '<Super><Alt>Left']
+switch-to-workspace-right=['<Super>Page_Down', '<Super><Alt>Right']
+switch-to-workspace-up=@as []
+
+[org/gnome/evince]
+document-directory=@ms 'file:///home/anu/Downloads'
+
+[org/gnome/evince/default]
+continuous=true
+dual-page=false
+dual-page-odd-left=true
+enable-spellchecking=true
+fullscreen=false
+inverted-colors=false
+show-sidebar=true
+sidebar-page='thumbnails'
+sidebar-size=148
+sizing-mode='free'
+window-ratio=(3.1313205975043505, 1.5108862202900617)
+zoom=0.95295264816849745
+
+[org/gnome/evolution-data-server]
+migrated=true
+
+[org/gnome/meld]
+custom-font='JetBrainsMonoNL Nerd Font Bold 12'
+indent-width=4
+style-scheme='meld-base'
+use-system-editor=false
+use-system-font=false
+wrap-mode='char'
+
+[org/gnome/meld/window-state]
+height=301
+is-maximized=true
+width=591
+
+[org/gnome/mutter]
+edge-tiling=false
+workspaces-only-on-primary=false
+
+[org/gnome/mutter/keybindings]
+toggle-tiled-left=@as []
+toggle-tiled-right=@as []
+
+[org/gnome/nautilus/icon-view]
+default-zoom-level='medium'
+
+[org/gnome/nautilus/preferences]
+default-folder-viewer='list-view'
+migrated-gtk-settings=true
+search-filter-time-type='last_modified'
+
+[org/gnome/nautilus/window-state]
+initial-size=(1872, 1059)
+maximized=true
+
+[org/gnome/portal/filechooser/com.google.Chrome]
+last-folder-path='/home/anu/Downloads'
+
+[org/gnome/portal/filechooser/org.chromium.Chromium]
+last-folder-path='/home/anu/Downloads'
+
+[org/gnome/portal/filechooser/snap.firefox]
+last-folder-path='/home/anu/Downloads'
+
+[org/gnome/settings-daemon/plugins/media-keys]
+custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3/']
+terminal=@as []
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0]
+binding='disabled'
+command=''
+name='Guake (disabled)'
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1]
+binding='<Control><Alt>t'
+command='wezterm'
+name='Wezterm'
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2]
+binding='<Super>x'
+command='gnome-session-quit --power-off'
+name='Power Off'
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom3]
+binding='<Super>r'
+command='gnome-session-quit --reboot'
+name='Reboot'
+
+[org/gnome/settings-daemon/plugins/power]
+idle-dim=false
+power-button-action='nothing'
+power-saver-profile-on-low-battery=false
+sleep-inactive-ac-timeout=3600
+sleep-inactive-ac-type='nothing'
+sleep-inactive-battery-type='nothing'
+
+[org/gnome/shell]
+app-picker-layout=[{'software-properties-drivers.desktop': <{'position': <0>}>, 'firmware-updater_firmware-updater.desktop': <{'position': <1>}>, 'org.gnome.eog.desktop': <{'position': <2>}>, 'org.gnome.clocks.desktop': <{'position': <3>}>, 'gnome-language-selector.desktop': <{'position': <4>}>, 'org.gnome.PowerStats.desktop': <{'position': <5>}>, 'software-properties-gtk.desktop': <{'position': <6>}>, 'update-manager.desktop': <{'position': <7>}>, 'org.gnome.Calculator.desktop': <{'position': <8>}>, 'gnome-session-properties.desktop': <{'position': <9>}>, 'org.gnome.TextEditor.desktop': <{'position': <10>}>, 'org.gnome.Settings.desktop': <{'position': <11>}>, 'org.gnome.SystemMonitor.desktop': <{'position': <12>}>, 'snap-store_snap-store.desktop': <{'position': <13>}>, 'org.gnome.Terminal.desktop': <{'position': <14>}>, 'Utilities': <{'position': <15>}>, 'dropbox.desktop': <{'position': <16>}>, 'com.mattjakeman.ExtensionManager.desktop': <{'position': <17>}>, 'guake-prefs.desktop': <{'position': <18>}>, 'guake.desktop': <{'position': <19>}>, 'yelp.desktop': <{'position': <20>}>, 'micro.desktop': <{'position': <21>}>, 'obsidian.desktop': <{'position': <22>}>, 'org.gnome.Software.desktop': <{'position': <23>}>}, {'info.desktop': <{'position': <0>}>, 'dev.zed.Zed.desktop': <{'position': <1>}>, 'org.gnome.tweaks.desktop': <{'position': <2>}>}]
+disabled-extensions=@as []
+enabled-extensions=['ubuntu-appindicators@ubuntu.com', 'tiling-assistant@ubuntu.com', 'nightthemeswitcher@romainvigier.fr', 'ding@rastersoft.com', 'quake-terminal@diegodario88.github.io', 'grand-theft-focus@zalckos.github.com', 'multi-monitors-bar@frederykabryan', 'user-theme@gnome-shell-extensions.gcampax.github.com', 'date-menu-formatter@marcinjakubowski.github.com', 'unblank@sun.wxg@gmail.com', 'ubuntu-dock@ubuntu.com']
+favorite-apps=['org.gnome.Nautilus.desktop', 'google-chrome.desktop', 'slack.desktop', 'dev.zed.Zed.desktop', 'firefox_firefox.desktop', 'obsidian.desktop', 'code.desktop', 'org.wezfurlong.wezterm.desktop']
+last-selected-power-profile='performance'
+welcome-dialog-last-shown-version='46.0'
+
+[org/gnome/shell/extensions/dash-to-dock]
+always-center-icons=true
+apply-custom-theme=false
+background-opacity=0.80000000000000004
+click-action='minimize'
+dash-max-icon-size=48
+dock-fixed=false
+dock-position='BOTTOM'
+extend-height=false
+height-fraction=0.90000000000000002
+multi-monitor=true
+preferred-monitor=-2
+preferred-monitor-by-connector='eDP-1'
+show-apps-at-top=false
+show-mounts=true
+show-mounts-only-mounted=true
+show-trash=false
+
+[org/gnome/shell/extensions/date-menu-formatter]
+pattern="'W'nn EEE, dd-MM-yyyy, HH:mm"
+text-align='center'
+
+[org/gnome/shell/extensions/ding]
+check-x11wayland=true
+show-home=false
+
+[org/gnome/shell/extensions/multi-monitors-add-on]
+available-indicators=@as []
+
+[org/gnome/shell/extensions/nightthemeswitcher/commands]
+enabled=true
+sunrise='guake --change-palette Tomorrow'
+sunset='guake --change-palette "Gruvbox Material Dark"'
+
+[org/gnome/shell/extensions/nightthemeswitcher/time]
+manual-schedule=true
+nightthemeswitcher-ondemand-keybinding=['<Shift><Super>t']
+sunrise=8.0
+sunset=17.0
+
+[org/gnome/shell/extensions/quake-terminal]
+always-on-top=true
+auto-hide-window=true
+render-on-current-monitor=true
+skip-taskbar=true
+terminal-id='wezterm-dropdown.desktop'
+terminal-shortcut=['F1']
+vertical-size=50
+
+[org/gnome/shell/extensions/tiling-assistant]
+activate-layout0=@as []
+activate-layout1=@as []
+activate-layout2=@as []
+activate-layout3=@as []
+active-window-hint=2
+active-window-hint-color='rgb(211,70,21)'
+auto-tile=@as []
+center-window=@as []
+debugging-free-rects=@as []
+debugging-show-tiled-rects=@as []
+default-move-mode=0
+disable-tile-groups=true
+dynamic-keybinding-behavior=0
+enable-tiling-popup=false
+import-layout-examples=false
+last-version-installed=46
+maximize-with-gap=true
+overridden-settings={'org.gnome.mutter.edge-tiling': <@mb nothing>, 'org.gnome.mutter.keybindings.toggle-tiled-left': <@mb nothing>, 'org.gnome.mutter.keybindings.toggle-tiled-right': <@mb nothing>}
+restore-window=['<Super>Down']
+search-popup-layout=@as []
+single-screen-gap=2
+tile-bottom-half=['<Super>KP_2']
+tile-bottom-half-ignore-ta=@as []
+tile-bottomleft-quarter=['<Super>KP_1']
+tile-bottomleft-quarter-ignore-ta=@as []
+tile-bottomright-quarter=['<Super>KP_3']
+tile-bottomright-quarter-ignore-ta=@as []
+tile-edit-mode=@as []
+tile-left-half=['<Super>Left', '<Super>KP_4']
+tile-left-half-ignore-ta=@as []
+tile-maximize=['<Super>Up', '<Super>KP_5']
+tile-maximize-horizontally=@as []
+tile-maximize-vertically=@as []
+tile-right-half=['<Super>Right', '<Super>KP_6']
+tile-right-half-ignore-ta=@as []
+tile-top-half=['<Super>KP_8']
+tile-top-half-ignore-ta=@as []
+tile-topleft-quarter=['<Super>KP_7']
+tile-topleft-quarter-ignore-ta=@as []
+tile-topright-quarter=['<Super>KP_9']
+tile-topright-quarter-ignore-ta=@as []
+tiling-popup-all-workspace=true
+toggle-always-on-top=@as []
+toggle-tiling-popup=@as []
+window-gap=2
+
+[org/gnome/shell/extensions/unblank]
+time=0
+
+[org/gnome/shell/keybindings]
+show-screenshot-ui=['<Shift><Super>s']
+
+[org/gnome/shell/world-clocks]
+locations=@av []
+
+[org/gnome/software]
+check-timestamp=int64 1773482695
+flatpak-purge-timestamp=int64 1773484162
+
+[org/gnome/terminal/legacy]
+theme-variant='system'
+
+[org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9]
+audible-bell=false
+background-color='rgb(255,255,255)'
+background-transparency-percent=0
+bold-is-bright=true
+font='JetBrainsMonoNL Nerd Font 12'
+foreground-color='rgb(0,0,0)'
+palette=['rgb(0,0,0)', 'rgb(205,0,0)', 'rgb(0,205,0)', 'rgb(205,205,0)', 'rgb(0,0,205)', 'rgb(205,0,205)', 'rgb(0,205,205)', 'rgb(250,235,215)', 'rgb(64,64,64)', 'rgb(255,0,0)', 'rgb(0,255,0)', 'rgb(255,255,0)', 'rgb(0,0,255)', 'rgb(255,0,255)', 'rgb(0,255,255)', 'rgb(255,255,255)']
+use-system-font=false
+use-theme-colors=true
+use-theme-transparency=false
+use-transparent-background=false
+
+[org/gtk/gtk4/settings/file-chooser]
+date-format='regular'
+location-mode='path-bar'
+show-hidden=true
+sidebar-width=271
+sort-column='modified'
+sort-directories-first=true
+sort-order='descending'
+type-format='category'
+view-type='list'
+window-size=(1285, 916)
+
+[org/gtk/settings/file-chooser]
+date-format='regular'
+location-mode='path-bar'
+show-hidden=false
+show-size-column=true
+show-type-column=true
+sidebar-width=183
+sort-column='modified'
+sort-directories-first=true
+sort-order='descending'
+type-format='category'
+window-position=(26, 23)
+window-size=(1203, 902)
+
+[org/guake/general]
+compat-delete='delete-sequence'
+display-n=0
+display-tab-names=0
+gtk-use-system-default-theme=true
+hide-tabs-if-one-tab=false
+history-size=1000
+infinite-history=true
+load-guake-yml=true
+max-tab-name-length=100
+mouse-display=true
+open-tab-cwd=true
+prompt-on-quit=true
+quick-open-command-line='gedit %(file_path)s'
+restore-tabs-notify=true
+restore-tabs-startup=false
+save-tabs-when-changed=false
+scroll-keystroke=true
+set-window-title=true
+start-at-login=true
+use-default-font=false
+use-popup=false
+use-scrollbar=false
+use-trayicon=false
+window-halignment=0
+window-height=50
+window-losefocus=false
+window-refocus=false
+window-tabbar=false
+window-width=100
+
+[org/guake/keybindings/global]
+show-hide='disabled'
+
+[org/guake/keybindings/local]
+focus-terminal-down='<Primary><Alt>Down'
+focus-terminal-left='<Primary><Alt>Left'
+focus-terminal-right='<Primary><Alt>Right'
+focus-terminal-up='<Primary><Alt>Up'
+resize-terminal-down='<Primary><Alt><Shift>Down'
+resize-terminal-left='<Primary><Alt><Shift>Left'
+resize-terminal-right='<Primary><Alt><Shift>Right'
+resize-terminal-up='<Primary><Alt><Shift>Up'
+split-tab-horizontal='<Primary><Alt>s'
+split-tab-vertical='<Primary><Alt>v'
+toggle-fullscreen='F2'
+
+[org/guake/style/background]
+transparency=100
+
+[org/guake/style/font]
+allow-bold=true
+bold-is-bright=true
+palette='#3C3C38383636:#EAEA69696262:#A9A9B6B66565:#D8D8A6A65757:#7D7DAEAEA3A3:#D3D386869B9B:#8989B4B48282:#D4D4BEBE9898:#3C3C38383636:#EAEA69696262:#A9A9B6B66565:#D8D8A6A65757:#7D7DAEAEA3A3:#D3D386869B9B:#8989B4B48282:#D4D4BEBE9898:#D4D4BEBE9898:#282828282828'
+palette-name='Gruvbox Material Dark'
+style='JetBrainsMonoNL Nerd Font Bold 10'

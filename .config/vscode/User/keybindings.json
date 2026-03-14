@@ -34,42 +34,88 @@
     },
 
     /******************************************************************************************************************/
-    // Terminal split and navigation
-    // Split the terminal vertically
+    // Split panes
     {
-        "key": "ctrl+alt+h",
+        "key": "ctrl+alt+v",
+        "command": "workbench.action.splitEditorRight",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+alt+s",
+        "command": "workbench.action.splitEditorDown",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+alt+v",
         "command": "workbench.action.terminal.split",
-        "when": "terminalFocus" // Shortcut to split the terminal vertically
+        "when": "terminalFocus"
     },
-    // Split the terminal horizontally
     {
-        "key": "ctrl+alt+j",
+        "key": "ctrl+alt+s",
         "command": "workbench.action.terminal.splitInActiveWorkspace",
-        "when": "terminalFocus" // Shortcut to split the terminal horizontally
+        "when": "terminalFocus"
     },
-    // Navigate left in terminal split
+
+    /******************************************************************************************************************/
+    // Navigate between panes (Ctrl+Alt+Arrow)
     {
-        "key": "ctrl+h",
+        "key": "ctrl+alt+left",
+        "command": "workbench.action.focusLeftGroup",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+alt+down",
+        "command": "workbench.action.focusBelowGroup",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+alt+up",
+        "command": "workbench.action.focusAboveGroup",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+alt+right",
+        "command": "workbench.action.focusRightGroup",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "ctrl+alt+left",
         "command": "workbench.action.terminal.focusPreviousPane",
-        "when": "terminalFocus" // Shortcut to navigate to the left terminal pane
+        "when": "terminalFocus"
     },
-    // Navigate down in terminal split
     {
-        "key": "ctrl+j",
+        "key": "ctrl+alt+down",
         "command": "workbench.action.terminal.focusNextPane",
-        "when": "terminalFocus" // Shortcut to navigate to the next terminal pane
+        "when": "terminalFocus"
     },
-    // Navigate up in terminal split
     {
-        "key": "ctrl+k",
+        "key": "ctrl+alt+up",
         "command": "workbench.action.terminal.focusPreviousPane",
-        "when": "terminalFocus" // Shortcut to navigate to the previous terminal pane
+        "when": "terminalFocus"
     },
-    // Navigate right in terminal split
     {
-        "key": "ctrl+l",
+        "key": "ctrl+alt+right",
         "command": "workbench.action.terminal.focusNextPane",
-        "when": "terminalFocus" // Shortcut to navigate to the right terminal pane
+        "when": "terminalFocus"
+    },
+
+    /******************************************************************************************************************/
+    // Resize panes and sidebar (Ctrl+Alt+Shift+Arrow)
+    {
+        "key": "ctrl+alt+shift+right",
+        "command": "workbench.action.increaseViewWidth"
+    },
+    {
+        "key": "ctrl+alt+shift+left",
+        "command": "workbench.action.decreaseViewWidth"
+    },
+    {
+        "key": "ctrl+alt+shift+down",
+        "command": "workbench.action.increaseViewSize"
+    },
+    {
+        "key": "ctrl+alt+shift+up",
+        "command": "workbench.action.decreaseViewSize"
     },
 
     /******************************************************************************************************************/

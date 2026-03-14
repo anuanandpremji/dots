@@ -16,8 +16,12 @@ warn-vte-config-issue=false
 window-style='disable-csd-hide-toolbar'
 
 [keybindings]
-session-add-down='<Alt>minus'
-session-add-right='<Alt>equal'
+session-add-right='<Alt>v'
+session-add-down='<Alt>s'
+session-navigate-left='<Alt>h'
+session-navigate-down='<Alt>j'
+session-navigate-up='<Alt>k'
+session-navigate-right='<Alt>l'
 session-close='<Primary><Shift>q'
 terminal-close='<Primary>w'
 win-fullscreen='F2'
