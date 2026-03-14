@@ -1,6 +1,6 @@
 # Dotfiles
 
-Personal dotfiles for a consistent development environment across Ubuntu, Fedora, and macOS. Cloned from GitHub and applied via symlinks.
+Personal dotfiles for a consistent development environment across Ubuntu, Debian, Fedora, and macOS. Cloned from GitHub and applied via symlinks.
 
 ## Quick Start
 
@@ -21,11 +21,15 @@ The script will:
 # If dotfiles are already present, run directly
 ./setup.sh
 
+# CLI-only mode for headless servers (dotfiles, SSH, CLI tools — no GUI apps)
+./setup.sh --cli
+
 # Just symlink configs and load settings (no app installs)
 .config/shell/scripts/setup-symlinks
 
-# Preview what either script would do without making changes
+# Preview what any script would do without making changes
 ./setup.sh --dry-run
+./setup.sh --cli --dry-run
 .config/shell/scripts/setup-symlinks --dry-run
 ```
 

@@ -1,2 +1,0 @@
-if [[ "$(hostname)" == "syn" ]]; then source "$DOTFILE_DIR/../../../../Syn/Notes/syn.shell"; fi
-source "$DOTFILE_DIR/../wip/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh";

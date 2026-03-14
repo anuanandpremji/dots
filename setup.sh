@@ -5,7 +5,10 @@
 #
 # Usage:
 #   ./setup.sh              Run full setup interactively
+#   ./setup.sh --cli        CLI-only mode (dotfiles, SSH, CLI tools — no GUI apps)
 #   ./setup.sh --dry-run    Preview all actions without making changes
+#
+# Flags can be combined: ./setup.sh --cli --dry-run
 #
 # Bootstrap (fresh machine, nothing installed):
 #   curl -fsSL https://raw.githubusercontent.com/anuanandpremji/dots/main/setup.sh \
@@ -97,10 +100,14 @@ set -euo pipefail
 # Configuration
 # ============================================================
 DRY_RUN=false
+CLI_ONLY=false
 
-if [[ "${1:-}" == "--dry-run" ]]; then
-    DRY_RUN=true
-fi
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) DRY_RUN=true ;;
+        --cli)     CLI_ONLY=true ;;
+    esac
+done
 
 # DOTFILES is resolved from the script location, or via clone/download.
 DOTFILES=""
@@ -169,7 +176,7 @@ detect_os() {
                 # shellcheck disable=SC1091
                 source /etc/os-release
                 case "$ID" in
-                    ubuntu|pop) DISTRO="ubuntu" ;;
+                    ubuntu|pop|debian) DISTRO="ubuntu" ;;
                     fedora)     DISTRO="fedora" ;;
                     *)
                         log_error "Unsupported Linux distribution: $ID"
@@ -451,6 +458,21 @@ install_homebrew() {
 # ============================================================
 install_system_packages() {
     log_section "System packages"
+
+    if [[ "$CLI_ONLY" == true ]]; then
+        case "$DISTRO" in
+            ubuntu)
+                pkg_install git curl wget zsh build-essential software-properties-common tree unzip
+                ;;
+            fedora)
+                pkg_install git curl wget zsh @development-tools tree unzip
+                ;;
+            macos)
+                pkg_install git curl wget zsh tree
+                ;;
+        esac
+        return
+    fi
 
     case "$DISTRO" in
         ubuntu)
@@ -1179,6 +1201,9 @@ main() {
     printf "${BOLD}========================================${NC}\n"
     printf " OS:       %s (%s)\n" "$OS" "$DISTRO"
     printf " Arch:     %s\n" "$ARCH"
+    if [[ "$CLI_ONLY" == true ]]; then
+        printf " Mode:     CLI only\n"
+    fi
     printf "${BOLD}========================================${NC}\n\n"
 
     # ── macOS: Homebrew first (needed for everything) ──
@@ -1199,9 +1224,6 @@ main() {
     # ── System packages ──
     install_system_packages
 
-    # ── Flatpak (Linux) ──
-    setup_flatpak
-
     # ── CLI tools (latest versions) ──
     install_fzf
     install_fd
@@ -1212,27 +1234,32 @@ main() {
     install_micro
     install_neovim
 
-    # ── Terminal emulators ──
-    install_wezterm
+    if [[ "$CLI_ONLY" != true ]]; then
+        # ── Flatpak (Linux) ──
+        setup_flatpak
 
-    # ── Editors ──
-    install_vscode
-    install_zed
+        # ── Terminal emulators ──
+        install_wezterm
 
-    # ── Browsers ──
-    install_firefox
-    install_chrome
-    install_brave
+        # ── Editors ──
+        install_vscode
+        install_zed
 
-    # ── Desktop apps ──
-    install_dropbox
-    install_obsidian
-    install_typora
-    install_pdf_arranger
+        # ── Browsers ──
+        install_firefox
+        install_chrome
+        install_brave
 
-    # ── GNOME tools & extensions (Linux) ──
-    install_extension_manager
-    install_gnome_extensions
+        # ── Desktop apps ──
+        install_dropbox
+        install_obsidian
+        install_typora
+        install_pdf_arranger
+
+        # ── GNOME tools & extensions (Linux) ──
+        install_extension_manager
+        install_gnome_extensions
+    fi
 
     # ── Fonts ──
     install_fonts
@@ -1241,7 +1268,9 @@ main() {
     set_default_shell
 
     # ── Brewfile (macOS) ──
-    generate_brewfile
+    if [[ "$CLI_ONLY" != true ]]; then
+        generate_brewfile
+    fi
 
     # ── Symlinks & settings (always last) ──
     apply_dotfiles

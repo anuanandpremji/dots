@@ -199,7 +199,7 @@ source "$ZDOTDIR/.zshutils"
 source "$ZDOTDIR/.zshfzf"
 source "$ZDOTDIR/.zshfunctions"
 source "$ZDOTDIR/.zshaliases"
-source "$ZDOTDIR/.zshextra"
+[[ -f "$HOME/.config/shell/.zshextra" ]] && source "$HOME/.config/shell/.zshextra"
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ Notes                                                                                                               ║

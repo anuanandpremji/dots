@@ -57,6 +57,3 @@ export skip_global_compinit;
 source "$ZDOTDIR/.zshexports";
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-# EOL Software
-[ -f "$HOME/.config/eol/env.sh" ] && . "$HOME/.config/eol/env.sh"
-case "$-" in *i*) [ -f "$HOME/.config/eol/env.sh" ] && . "$HOME/.config/eol/env.sh" ;; esac
