@@ -48,8 +48,9 @@ setopt noclobber           # must use >| to truncate existing files
 #║ History                                                                                                             ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-# Store ZSH history at a custom location
-HISTFILE="$DOTFILE_DIR/../history/.history"
+# Store ZSH history at a local (non-synced) location
+mkdir -p "$HOME/.config/shell"
+HISTFILE="$HOME/.config/shell/history"
 
 # Ignore certain commands from being stored in history
 HISTORY_IGNORE="(ls|cd|cd -|df|ff|cls|reboot|restart|poweroff|pwd|exit|date|* --help|#*)"

@@ -88,7 +88,7 @@ show-battery-percentage=true
 text-scaling-factor=1.25
 
 [org/gnome/desktop/notifications]
-application-children=['snapd-desktop-integration-snapd-desktop-integration', 'org-gnome-software', 'slack', 'google-chrome', 'gnome-power-panel', 'org-gnome-settings', 'org-gnome-tweaks', 'guake', 'dev-zed-zed', 'obsidian', 'gnome-printers-panel', 'com-mattjakeman-extensionmanager', 'firefox-firefox', 'code', 'app-gui-variant-station', 'app-gui-commissioning', 'org-gnome-texteditor', 'org-gnome-nautilus', 'app-gui-node-test']
+application-children=['snapd-desktop-integration-snapd-desktop-integration', 'org-gnome-software', 'slack', 'google-chrome', 'gnome-power-panel', 'org-gnome-settings', 'org-gnome-tweaks', 'guake', 'dev-zed-zed', 'obsidian', 'gnome-printers-panel', 'com-mattjakeman-extensionmanager', 'firefox-firefox', 'code', 'app-gui-variant-station', 'app-gui-commissioning', 'org-gnome-texteditor', 'org-gnome-nautilus', 'app-gui-node-test', 'org-wezfurlong-wezterm']
 
 [org/gnome/desktop/notifications/application/app-gui-commissioning]
 application-id='app_gui_commissioning.desktop'
@@ -140,6 +140,9 @@ application-id='org.gnome.TextEditor.desktop'
 
 [org/gnome/desktop/notifications/application/org-gnome-tweaks]
 application-id='org.gnome.tweaks.desktop'
+
+[org/gnome/desktop/notifications/application/org-wezfurlong-wezterm]
+application-id='org.wezfurlong.wezterm.desktop'
 
 [org/gnome/desktop/notifications/application/slack]
 application-id='slack.desktop'
@@ -268,7 +271,7 @@ sleep-inactive-battery-type='nothing'
 [org/gnome/shell]
 app-picker-layout=[{'software-properties-drivers.desktop': <{'position': <0>}>, 'firmware-updater_firmware-updater.desktop': <{'position': <1>}>, 'org.gnome.eog.desktop': <{'position': <2>}>, 'org.gnome.clocks.desktop': <{'position': <3>}>, 'gnome-language-selector.desktop': <{'position': <4>}>, 'org.gnome.PowerStats.desktop': <{'position': <5>}>, 'software-properties-gtk.desktop': <{'position': <6>}>, 'update-manager.desktop': <{'position': <7>}>, 'org.gnome.Calculator.desktop': <{'position': <8>}>, 'gnome-session-properties.desktop': <{'position': <9>}>, 'org.gnome.TextEditor.desktop': <{'position': <10>}>, 'org.gnome.Settings.desktop': <{'position': <11>}>, 'org.gnome.SystemMonitor.desktop': <{'position': <12>}>, 'snap-store_snap-store.desktop': <{'position': <13>}>, 'org.gnome.Terminal.desktop': <{'position': <14>}>, 'Utilities': <{'position': <15>}>, 'dropbox.desktop': <{'position': <16>}>, 'com.mattjakeman.ExtensionManager.desktop': <{'position': <17>}>, 'guake-prefs.desktop': <{'position': <18>}>, 'guake.desktop': <{'position': <19>}>, 'yelp.desktop': <{'position': <20>}>, 'micro.desktop': <{'position': <21>}>, 'obsidian.desktop': <{'position': <22>}>, 'org.gnome.Software.desktop': <{'position': <23>}>}, {'info.desktop': <{'position': <0>}>, 'dev.zed.Zed.desktop': <{'position': <1>}>, 'org.gnome.tweaks.desktop': <{'position': <2>}>}]
 disabled-extensions=@as []
-enabled-extensions=['ubuntu-appindicators@ubuntu.com', 'tiling-assistant@ubuntu.com', 'nightthemeswitcher@romainvigier.fr', 'ding@rastersoft.com', 'quake-terminal@diegodario88.github.io', 'grand-theft-focus@zalckos.github.com', 'multi-monitors-bar@frederykabryan', 'user-theme@gnome-shell-extensions.gcampax.github.com', 'date-menu-formatter@marcinjakubowski.github.com', 'unblank@sun.wxg@gmail.com', 'ubuntu-dock@ubuntu.com']
+enabled-extensions=['tiling-assistant@ubuntu.com', 'nightthemeswitcher@romainvigier.fr', 'ding@rastersoft.com', 'quake-terminal@diegodario88.github.io', 'grand-theft-focus@zalckos.github.com', 'multi-monitors-bar@frederykabryan', 'user-theme@gnome-shell-extensions.gcampax.github.com', 'date-menu-formatter@marcinjakubowski.github.com', 'unblank@sun.wxg@gmail.com', 'ubuntu-dock@ubuntu.com', 'ubuntu-appindicators@ubuntu.com']
 favorite-apps=['org.gnome.Nautilus.desktop', 'google-chrome.desktop', 'slack.desktop', 'dev.zed.Zed.desktop', 'firefox_firefox.desktop', 'obsidian.desktop', 'code.desktop', 'org.wezfurlong.wezterm.desktop']
 last-selected-power-profile='performance'
 welcome-dialog-last-shown-version='46.0'
@@ -327,7 +330,7 @@ activate-layout0=@as []
 activate-layout1=@as []
 activate-layout2=@as []
 activate-layout3=@as []
-active-window-hint=2
+active-window-hint=0
 active-window-hint-color='rgb(211,70,21)'
 auto-tile=@as []
 center-window=@as []

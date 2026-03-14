@@ -58,7 +58,6 @@ dotfiles/
 │   │   ├── bash/                     # Bash config files
 │   │   ├── zsh/                      # Zsh config files
 │   │   ├── starship/                 # Starship prompt themes (optional)
-│   │   ├── history/                  # Shared command history
 │   │   └── scripts/                  # setup-symlinks, setup-identities, utilities
 │   │
 │   ├── git/                          # Git config (aliases, delta pager, multi-identity)

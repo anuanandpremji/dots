@@ -47,14 +47,51 @@ fi
 
 # ── Helpers ──
 
+# Prompt for name and email with confirmation loop
+# Sets variables: <prefix>_name, <prefix>_email
+# Usage: collect_identity <prefix> <label>
+collect_identity() {
+    local prefix="$1" label="$2"
+    local name email
+
+    while true; do
+        printf "  %s name: " "$label"
+        read -r name
+        printf "  %s email: " "$label"
+        read -r email
+        printf "\n"
+        printf "    Name:  %s\n" "$name"
+        printf "    Email: %s\n" "$email"
+        printf "\n"
+        printf "  Is this correct? [Y/n]: "
+        read -r confirm
+        if [[ "${confirm:-Y}" =~ ^[Yy] ]]; then
+            break
+        fi
+        printf "\n"
+    done
+
+    # Export to caller via eval (prefix_name, prefix_email)
+    eval "${prefix}_name=\$name"
+    eval "${prefix}_email=\$email"
+}
+
 # Generate an SSH key and add it to ssh-agent
 # Usage: create_ssh_key <key_path> <email> <label>
 create_ssh_key() {
     local key_path="$1" email="$2" label="$3"
 
     if [[ -f "$key_path" ]]; then
-        log_skip "$label SSH key already exists at $key_path"
-        return
+        log_warn "$label SSH key already exists at $key_path"
+        printf "  Delete and regenerate? [y/N]: "
+        read -r regen
+        if [[ "${regen:-N}" =~ ^[Yy] ]]; then
+            run rm -f "$key_path" "${key_path}.pub"
+            log_info "Deleted old $label key"
+        else
+            log_skip "Keeping existing $label SSH key"
+            return
+        fi
     fi
 
     printf "\n"
@@ -139,10 +176,7 @@ read -r setup_private
 setup_private="${setup_private:-Y}"
 
 if [[ "$setup_private" =~ ^[Yy] ]]; then
-    printf "  Private name: "
-    read -r private_name
-    printf "  Private email: "
-    read -r private_email
+    collect_identity "private" "Private"
 
     create_ssh_key "$HOME/.ssh/id_private" "$private_email" "Private"
     add_ssh_host "github-private" "$HOME/.ssh/id_private"
@@ -164,10 +198,7 @@ read -r setup_work
 setup_work="${setup_work:-N}"
 
 if [[ "$setup_work" =~ ^[Yy] ]]; then
-    printf "  Work name: "
-    read -r work_name
-    printf "  Work email: "
-    read -r work_email
+    collect_identity "work" "Work"
 
     create_ssh_key "$HOME/.ssh/id_work" "$work_email" "Work"
     add_ssh_host "github-work" "$HOME/.ssh/id_work"

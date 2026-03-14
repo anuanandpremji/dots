@@ -59,8 +59,9 @@ case $- in *i*) ;; *) return;; esac # don't do anything more if not an interacti
 # Ignore certain commands from being stored in history
 export HIST_IGNORE="ls:cd:cd -:df:ff:cls:reboot:restart:poweroff:pwd:exit:date:* --help:#*"
 
-# Store BASH history at a custom location
-export HISTFILE="$DOTFILE_DIR/../history/.history";
+# Store BASH history at a local (non-synced) location
+mkdir -p "$HOME/.config/shell"
+export HISTFILE="$HOME/.config/shell/history";
 
 HISTSIZE=1000000000      # number of entries from the history file to be kept in memory for the current session
 HISTFILESIZE=1000000000  # number of entries that are stored in the history file

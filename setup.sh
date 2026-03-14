@@ -1073,8 +1073,16 @@ install_fonts() {
             fi
             ;;
         *)
-            # On Linux, fonts are handled by setup-symlinks (symlinks .local/share/fonts)
-            log_info "Fonts will be symlinked by setup-symlinks"
+            if [[ -d "$DOTFILES/.local/share/fonts" ]]; then
+                log_info "Syncing fonts to ~/.local/share/fonts/ (skipping existing)..."
+                run mkdir -p "$HOME/.local/share/fonts"
+                run find "$DOTFILES/.local/share/fonts" -type f \( -name "*.ttf" -o -name "*.otf" \) -exec sh -c '
+                    for f; do
+                        dest="$HOME/.local/share/fonts/$(basename "$f")"
+                        [ -f "$dest" ] || cp "$f" "$dest"
+                    done
+                ' _ {} +
+            fi
             ;;
     esac
 }

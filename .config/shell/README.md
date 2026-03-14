@@ -61,8 +61,10 @@ No frameworks, no bloat, just clean shell scripting with powerful fuzzy-finding 
 │   ├── .zshprompt_theme_cascade ········· Default prompt — agnoster-style segments
 │   └── .zshprompt_theme_pure ············ Alternative prompt — minimal style
 │
-├── history/
-│   └── .history ························· Shared command history (both shells)
+├── scripts/
+│   ├── setup-symlinks ·················· Symlinks dotfiles to ~/.config/
+│   ├── setup-identities ················ Git & SSH identity setup
+│   └── ...
 │
 └── starship/
     ├── gaps.toml ························ Starship prompt — agnoster with gaps
@@ -290,7 +292,8 @@ Browse, inspect, and diff commits with delta-powered preview.
 
 ## History
 
-Both shells share a single history file at `history/.history`. Two behaviors are enforced in both Zsh and Bash to keep it clean:
+Both shells share a single history file at `~/.config/shell/history` (local to each machine, not synced or tracked in git). 
+Two behaviors are enforced in both Zsh and Bash to keep it clean:
 
 **No timestamps** — Zsh is configured with `setopt no_extended_history`, and Bash explicitly unsets `HISTTIMEFORMAT`, so `#<timestamp>` lines never appear in the shared file.
 
