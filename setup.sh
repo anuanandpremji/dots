@@ -1341,8 +1341,10 @@ main() {
         try_step install_gnome_extensions
     fi
 
-    # ── Fonts ──
-    try_step install_fonts
+    # ── Fonts (skip in CLI mode — fonts render on the local terminal, not the server) ──
+    if [[ "$CLI_ONLY" != true ]]; then
+        try_step install_fonts
+    fi
 
     # ── Zsh (optional) ──
     try_step install_zsh
