@@ -94,7 +94,7 @@
 # ║                                                                                                             ║
 # ╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-set -euo pipefail
+set -u  # exit-on-error intentionally omitted — try_step handles failures gracefully
 
 # ============================================================
 # Configuration
@@ -140,6 +140,23 @@ run() {
         printf "${YELLOW}[DRY-RUN]${NC} %s\n" "$*"
     else
         "$@"
+    fi
+}
+
+# Run a setup step, catching failures and letting the user decide whether to continue.
+# Usage: try_step <function_name>
+try_step() {
+    local step="$1"
+    if "$step"; then
+        return 0
+    fi
+    printf "\n"
+    log_error "$step failed."
+    printf "  Continue with remaining steps? [Y/n]: "
+    read -r answer
+    if [[ "${answer:-Y}" =~ ^[Nn] ]]; then
+        log_error "Aborted by user."
+        exit 1
     fi
 }
 
@@ -258,13 +275,13 @@ download_zip() {
         log_info "Downloading dotfiles zip from GitHub..."
         local tmp_zip
         tmp_zip=$(mktemp -d)
+        trap "rm -rf '$tmp_zip'" RETURN
         run curl -fsSL -o "$tmp_zip/dotfiles.zip" \
             "https://github.com/$GITHUB_REPO/archive/refs/heads/main.zip"
         run unzip -q "$tmp_zip/dotfiles.zip" -d "$tmp_zip"
         run mkdir -p "$dest"
         # The zip extracts to a subdirectory named <repo>-main
         run cp -a "$tmp_zip"/dots-main/. "$dest"/
-        rm -rf "$tmp_zip"
         log_info "Extracted to $dest"
     fi
     DOTFILES="$dest"
@@ -357,18 +374,25 @@ setup_git_identities() {
     fi
 
     # Fetch from GitHub as last resort
+    local fetched_script=false
     if [[ -z "$setup_git_script" ]]; then
         log_info "Downloading setup-identities from GitHub..."
         setup_git_script="/tmp/setup-identities"
         curl -fsSL -o "$setup_git_script" \
             "https://raw.githubusercontent.com/$GITHUB_REPO/main/.config/shell/scripts/setup-identities"
         chmod +x "$setup_git_script"
+        fetched_script=true
     fi
 
     if [[ "$DRY_RUN" == true ]]; then
         run bash "$setup_git_script" --dry-run
     else
         bash "$setup_git_script"
+    fi
+
+    # Clean up the downloaded script
+    if [[ "$fetched_script" == true ]]; then
+        rm -f "$setup_git_script"
     fi
 }
 
@@ -530,13 +554,13 @@ install_fzf() {
             log_info "Installing fzf from GitHub release..."
             local tmp url
             tmp=$(mktemp -d)
+            trap "rm -rf '$tmp'" RETURN
             url=$(gh_latest_url "junegunn/fzf" "linux_${DEB_ARCH}\\.tar\\.gz")
             run curl -fsSL -o "$tmp/fzf.tar.gz" "$url"
             run tar -xzf "$tmp/fzf.tar.gz" -C "$tmp"
             run mkdir -p "$HOME/.local/bin"
             run mv "$tmp/fzf" "$HOME/.local/bin/fzf"
             run chmod +x "$HOME/.local/bin/fzf"
-            rm -rf "$tmp"
             ;;
     esac
 }
@@ -669,11 +693,11 @@ install_micro() {
             log_info "Installing micro from official installer..."
             local micro_tmp
             micro_tmp=$(mktemp -d)
+            trap "rm -rf '$micro_tmp'" RETURN
             run bash -c "cd '$micro_tmp' && curl https://getmic.ro | bash"
             run mkdir -p "$HOME/.local/bin"
             run mv "$micro_tmp/micro" "$HOME/.local/bin/micro"
             run chmod +x "$HOME/.local/bin/micro"
-            rm -rf "$micro_tmp"
             ;;
     esac
 }
@@ -705,7 +729,7 @@ install_neovim() {
 # ============================================================
 install_wezterm() {
     log_section "WezTerm"
-    if is_installed wezterm; then
+    if is_installed wezterm || [[ -d "/Applications/WezTerm.app" ]]; then
         log_skip "WezTerm"
         return
     fi
@@ -738,7 +762,7 @@ install_wezterm() {
 # ============================================================
 install_vscode() {
     log_section "VS Code"
-    if is_installed code; then
+    if is_installed code || [[ -d "/Applications/Visual Studio Code.app" ]]; then
         log_skip "VS Code"
         return
     fi
@@ -750,11 +774,13 @@ install_vscode() {
         ubuntu)
             if [[ ! -f /etc/apt/keyrings/packages.microsoft.gpg ]]; then
                 log_info "Adding Microsoft VS Code repository..."
-                run bash -c 'wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --yes --dearmor -o /tmp/packages.microsoft.gpg'
-                run sudo install -D -o root -g root -m 644 /tmp/packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
+                local tmp_gpg
+                tmp_gpg=$(mktemp -d)
+                trap "rm -rf '$tmp_gpg'" RETURN
+                run bash -c "wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --yes --dearmor -o '$tmp_gpg/packages.microsoft.gpg'"
+                run sudo install -D -o root -g root -m 644 "$tmp_gpg/packages.microsoft.gpg" /etc/apt/keyrings/packages.microsoft.gpg
                 run bash -c 'echo "deb [arch=amd64,arm64 signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" | sudo tee /etc/apt/sources.list.d/vscode.list'
                 run sudo apt-get update
-                rm -f /tmp/packages.microsoft.gpg
             fi
             pkg_install code
             ;;
@@ -779,7 +805,7 @@ REPO'
 
 install_zed() {
     log_section "Zed"
-    if is_installed zed; then
+    if is_installed zed || [[ -d "/Applications/Zed.app" ]]; then
         log_skip "Zed"
         return
     fi
@@ -800,7 +826,7 @@ install_zed() {
 # ============================================================
 install_firefox() {
     log_section "Firefox"
-    if is_installed firefox; then
+    if is_installed firefox || [[ -d "/Applications/Firefox.app" ]]; then
         log_skip "Firefox"
         return
     fi
@@ -814,7 +840,7 @@ install_firefox() {
 
 install_chrome() {
     log_section "Google Chrome"
-    if is_installed google-chrome-stable || is_installed google-chrome; then
+    if is_installed google-chrome-stable || is_installed google-chrome || [[ -d "/Applications/Google Chrome.app" ]]; then
         log_skip "Google Chrome"
         return
     fi
@@ -827,24 +853,24 @@ install_chrome() {
             log_info "Downloading Google Chrome..."
             local tmp_chrome
             tmp_chrome=$(mktemp -d)
+            trap "rm -rf '$tmp_chrome'" RETURN
             run curl -fsSL -o "$tmp_chrome/chrome.deb" "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
             run sudo dpkg -i "$tmp_chrome/chrome.deb" || run sudo apt-get install -f -y
-            rm -rf "$tmp_chrome"
             ;;
         fedora)
             log_info "Downloading Google Chrome..."
             local tmp_chrome
             tmp_chrome=$(mktemp -d)
+            trap "rm -rf '$tmp_chrome'" RETURN
             run curl -fsSL -o "$tmp_chrome/chrome.rpm" "https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm"
             run sudo dnf install -y "$tmp_chrome/chrome.rpm"
-            rm -rf "$tmp_chrome"
             ;;
     esac
 }
 
 install_brave() {
     log_section "Brave"
-    if is_installed brave-browser; then
+    if is_installed brave-browser || [[ -d "/Applications/Brave Browser.app" ]]; then
         log_skip "Brave"
         return
     fi
@@ -897,10 +923,10 @@ install_dropbox() {
             log_info "Installing Dropbox (nautilus-dropbox)..."
             local tmp_db
             tmp_db=$(mktemp -d)
+            trap "rm -rf '$tmp_db'" RETURN
             run curl -fsSL -o "$tmp_db/nautilus-dropbox.deb" \
                 "https://linux.dropbox.com/packages/ubuntu/nautilus-dropbox_2026.01.15_all.deb"
             run sudo dpkg -i "$tmp_db/nautilus-dropbox.deb" || run sudo apt-get install -f -y
-            rm -rf "$tmp_db"
             ;;
         fedora)
             if is_installed dropbox || rpm -q nautilus-dropbox &>/dev/null; then
@@ -910,10 +936,10 @@ install_dropbox() {
             log_info "Installing Dropbox (nautilus-dropbox)..."
             local tmp_db
             tmp_db=$(mktemp -d)
+            trap "rm -rf '$tmp_db'" RETURN
             run curl -fsSL -o "$tmp_db/nautilus-dropbox.rpm" \
                 "https://linux.dropbox.com/packages/fedora/nautilus-dropbox-2026.01.15-1.fc43.x86_64.rpm"
             run sudo dnf install -y "$tmp_db/nautilus-dropbox.rpm"
-            rm -rf "$tmp_db"
             ;;
     esac
 }
@@ -960,7 +986,7 @@ install_pdf_arranger() {
 
 install_typora() {
     log_section "Typora"
-    if is_installed typora; then
+    if is_installed typora || [[ -d "/Applications/Typora.app" ]]; then
         log_skip "Typora"
         return
     fi
@@ -1217,73 +1243,73 @@ main() {
     printf "${BOLD}========================================${NC}\n\n"
 
     # ── macOS: Homebrew first (needed for everything) ──
-    install_homebrew
+    try_step install_homebrew
 
     # ── Git & SSH identities (needed before cloning) ──
-    setup_git_identities
+    try_step setup_git_identities
 
     # ── Dotfiles source (git clone or zip) ──
-    acquire_dotfiles
+    try_step acquire_dotfiles
 
     log_info "Dotfiles: $DOTFILES"
     printf "\n"
 
     # ── Package manager update ──
-    pkg_update
+    try_step pkg_update
 
     # ── System packages ──
-    install_system_packages
+    try_step install_system_packages
 
     # ── CLI tools (latest versions) ──
-    install_fzf
-    install_fd
-    install_bat
-    install_ripgrep
-    install_eza
-    install_delta
-    install_micro
-    install_neovim
+    try_step install_fzf
+    try_step install_fd
+    try_step install_bat
+    try_step install_ripgrep
+    try_step install_eza
+    try_step install_delta
+    try_step install_micro
+    try_step install_neovim
 
     if [[ "$CLI_ONLY" != true ]]; then
         # ── Flatpak (Linux) ──
-        setup_flatpak
+        try_step setup_flatpak
 
         # ── Terminal emulators ──
-        install_wezterm
+        try_step install_wezterm
 
         # ── Editors ──
-        install_vscode
-        install_zed
+        try_step install_vscode
+        try_step install_zed
 
         # ── Browsers ──
-        install_firefox
-        install_chrome
-        install_brave
+        try_step install_firefox
+        try_step install_chrome
+        try_step install_brave
 
         # ── Desktop apps ──
-        install_dropbox
-        install_obsidian
-        install_typora
-        install_pdf_arranger
+        try_step install_dropbox
+        try_step install_obsidian
+        try_step install_typora
+        try_step install_pdf_arranger
 
         # ── GNOME tools & extensions (Linux) ──
-        install_extension_manager
-        install_gnome_extensions
+        try_step install_extension_manager
+        try_step install_gnome_extensions
     fi
 
     # ── Fonts ──
-    install_fonts
+    try_step install_fonts
 
     # ── Default shell ──
-    set_default_shell
+    try_step set_default_shell
 
     # ── Brewfile (macOS) ──
     if [[ "$CLI_ONLY" != true ]]; then
-        generate_brewfile
+        try_step generate_brewfile
     fi
 
     # ── Symlinks & settings (always last) ──
-    apply_dotfiles
+    try_step apply_dotfiles
 
     # ── Done ──
     printf "\n"
