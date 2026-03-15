@@ -71,8 +71,7 @@ alias which_shell='printf "$(ps -p $$ -ocomm=)\n"'
 
 # Reload the current shell
 
-# https://github.com/ohmyzsh/ohmyzsh/wiki/FAQ#how-do-i-reload-the-zshrc-file
-alias rerc='exec "$(ps -p $$ -ocomm=)"'
+alias rerc='exec zsh'
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
