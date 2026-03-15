@@ -230,7 +230,7 @@ source "$DOTFILE_DIR/.bashutils";
 source "$DOTFILE_DIR/.bashfzf";
 source "$DOTFILE_DIR/.bashfunctions";
 source "$DOTFILE_DIR/.bashaliases";
-[[ -f "$HOME/.config/shell/.bashextra" ]] && source "$HOME/.config/shell/.bashextra";
+if [[ -f "$HOME/.config/shell/.bashextra" ]]; then source "$HOME/.config/shell/.bashextra"; fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
