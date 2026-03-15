@@ -1168,7 +1168,7 @@ install_fonts() {
 }
 
 # ============================================================
-# Zsh
+# Zsh (optional)
 # ============================================================
 INSTALL_ZSH=false
 
@@ -1176,12 +1176,12 @@ install_zsh() {
     log_section "Zsh"
 
     if is_installed zsh; then
-        log_skip "zsh (already installed)"
+        log_skip "zsh"
         INSTALL_ZSH=true
         return
     fi
 
-    printf "  Install zsh and set it as default shell? [Y/n]: "
+    printf "  Install zsh? [Y/n]: "
     read -r answer
     if [[ "${answer:-Y}" =~ ^[Nn] ]]; then
         log_skip "zsh (declined)"
@@ -1201,7 +1201,7 @@ set_default_shell() {
     zsh_path="$(command -v zsh)"
 
     if [[ "$(basename "$SHELL")" == "zsh" ]]; then
-        log_skip "zsh already default"
+        log_skip "zsh (already default)"
         return
     fi
 
@@ -1344,7 +1344,7 @@ main() {
     # ── Fonts ──
     try_step install_fonts
 
-    # ── Zsh ──
+    # ── Zsh (optional) ──
     try_step install_zsh
     try_step set_default_shell
 

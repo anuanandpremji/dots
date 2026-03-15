@@ -96,7 +96,9 @@ echo
 # ── Shell ─────────────────────────────────────────────────────────────────────
 echo "── Shell ──"
 link_path "$DOTFILES/.config/shell/bash/.bashrc" "$HOME/.bashrc"
-link_path "$DOTFILES/.config/shell/zsh/.zshenv"  "$HOME/.zshenv"
+if command -v zsh &>/dev/null; then
+    link_path "$DOTFILES/.config/shell/zsh/.zshenv"  "$HOME/.zshenv"
+fi
 
 # ── Git ───────────────────────────────────────────────────────────────────────
 echo "── Git ──"
