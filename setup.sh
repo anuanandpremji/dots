@@ -249,13 +249,20 @@ clone_from_github() {
         log_info "Dotfiles already exist at $dest"
     else
         run mkdir -p "$parent"
+        local clone_ok=false
         # Prefer SSH via private key if configured, fall back to HTTPS
         if grep -q "^Host github-private$" "$HOME/.ssh/config" 2>/dev/null; then
             log_info "Cloning via SSH (github-private) into $parent/ ..."
-            run git clone "git@github-private:$GITHUB_REPO.git" "$dest"
-        else
+            if run git clone "git@github-private:$GITHUB_REPO.git" "$dest"; then
+                clone_ok=true
+            else
+                log_warn "SSH clone failed — falling back to HTTPS"
+                run rm -rf "$dest"
+            fi
+        fi
+        if [[ "$clone_ok" == false ]]; then
             log_info "Cloning via HTTPS into $parent/ ..."
-            run git clone "https://github.com/$GITHUB_REPO.git" "$dest"
+            run git clone "https://github.com/$GITHUB_REPO.git" "$dest" || return 1
         fi
     fi
     DOTFILES="$dest"
@@ -502,13 +509,13 @@ install_system_packages() {
     if [[ "$CLI_ONLY" == true ]]; then
         case "$DISTRO" in
             ubuntu)
-                pkg_install git curl wget zsh build-essential software-properties-common tree unzip
+                pkg_install git curl wget build-essential software-properties-common tree unzip
                 ;;
             fedora)
-                pkg_install git curl wget zsh @development-tools tree unzip
+                pkg_install git curl wget @development-tools tree unzip
                 ;;
             macos)
-                pkg_install git curl wget zsh tree
+                pkg_install git curl wget tree
                 ;;
         esac
         return
@@ -517,7 +524,7 @@ install_system_packages() {
     case "$DISTRO" in
         ubuntu)
             pkg_install \
-                git curl wget zsh \
+                git curl wget \
                 build-essential software-properties-common \
                 xclip wl-clipboard \
                 meld tree unzip \
@@ -527,7 +534,7 @@ install_system_packages() {
             ;;
         fedora)
             pkg_install \
-                git curl wget zsh \
+                git curl wget \
                 @development-tools \
                 xclip wl-clipboard \
                 meld tree unzip \
@@ -536,7 +543,7 @@ install_system_packages() {
             ;;
         macos)
             pkg_install \
-                git curl wget zsh \
+                git curl wget \
                 meld tree
             ;;
     esac
@@ -562,6 +569,11 @@ install_fzf() {
             tmp=$(mktemp -d)
             trap "rm -rf '$tmp'" RETURN
             url=$(gh_latest_url "junegunn/fzf" "linux_${DEB_ARCH}\\.tar\\.gz")
+            if [[ -z "$url" ]]; then
+                log_error "Could not find fzf download URL (GitHub API rate limit?)"
+                return 1
+            fi
+            log_info "Downloading fzf from $url"
             run curl -fsSL -o "$tmp/fzf.tar.gz" "$url"
             run tar -xzf "$tmp/fzf.tar.gz" -C "$tmp"
             run mkdir -p "$HOME/.local/bin"
@@ -619,7 +631,7 @@ install_bat() {
     case "$DISTRO" in
         macos)  pkg_install bat ;;
         ubuntu)
-            gh_install_pkg "sharkdp/bat" "${DEB_ARCH}\\.deb" "" "bat"
+            gh_install_pkg "sharkdp/bat" "bat_[^/]*_${DEB_ARCH}\\.deb" "" "bat"
             if is_installed batcat && ! is_installed bat; then
                 run mkdir -p "$HOME/.local/bin"
                 run ln -sf "$(command -v batcat)" "$HOME/.local/bin/bat"
@@ -723,6 +735,10 @@ install_neovim() {
             log_info "Installing Neovim AppImage..."
             local url
             url=$(gh_latest_url "neovim/neovim" "nvim-linux-${ARCH}\\.appimage$")
+            if [[ -z "$url" ]]; then
+                log_error "Could not find Neovim AppImage URL (GitHub API rate limit?)"
+                return 1
+            fi
             run mkdir -p "$HOME/.local/bin"
             run curl -fsSL -o "$HOME/.local/bin/nvim" "$url"
             run chmod +x "$HOME/.local/bin/nvim"
@@ -1152,24 +1168,46 @@ install_fonts() {
 }
 
 # ============================================================
-# Zsh as Default Shell
+# Zsh
 # ============================================================
+INSTALL_ZSH=false
+
+install_zsh() {
+    log_section "Zsh"
+
+    if is_installed zsh; then
+        log_skip "zsh (already installed)"
+        INSTALL_ZSH=true
+        return
+    fi
+
+    printf "  Install zsh and set it as default shell? [Y/n]: "
+    read -r answer
+    if [[ "${answer:-Y}" =~ ^[Nn] ]]; then
+        log_skip "zsh (declined)"
+        return
+    fi
+
+    INSTALL_ZSH=true
+    pkg_install zsh
+}
+
 set_default_shell() {
-    log_section "Default shell"
+    if [[ "$INSTALL_ZSH" != true ]]; then
+        return
+    fi
 
     local zsh_path
     zsh_path="$(command -v zsh)"
 
     if [[ "$(basename "$SHELL")" == "zsh" ]]; then
-        log_skip "zsh (already default)"
+        log_skip "zsh already default"
         return
     fi
 
-    if [[ -n "$zsh_path" ]]; then
-        log_info "Setting zsh as default shell..."
-        run chsh -s "$zsh_path"
-    else
-        log_warn "zsh not found, skipping default shell change"
+    log_info "Setting zsh as default shell..."
+    if ! run chsh -s "$zsh_path" 2>/dev/null; then
+        log_warn "chsh failed — add 'exec zsh' to your .bashrc to use zsh manually"
     fi
 }
 
@@ -1306,7 +1344,8 @@ main() {
     # ── Fonts ──
     try_step install_fonts
 
-    # ── Default shell ──
+    # ── Zsh ──
+    try_step install_zsh
     try_step set_default_shell
 
     # ── Brewfile (macOS) ──
