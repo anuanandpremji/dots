@@ -25,6 +25,7 @@
 # ║     • Detect OS (Ubuntu / Fedora / macOS)                                                                   ║
 # ║     • Detect Architecture (x86_64 / ARM64)                                                                  ║
 # ║     • macOS only: Install Homebrew                                                                          ║
+# ║     • Install system packages (git, curl, zsh, etc.)                                                        ║
 # ║                                                                                                             ║
 # ╟─────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
 # ║                                                                                                             ║
@@ -63,10 +64,6 @@
 # ║                                                                                                             ║
 # ║     Category     │ Linux (apt/dnf/flatpak)           │ macOS (brew/cask)                                    ║
 # ║     ─────────────┼───────────────────────────────────┼──────────────────────────────────                    ║
-# ║     System       │ git, curl, wget, zsh, tree        │ git, curl, wget, zsh, tree                           ║
-# ║                  │ meld, xclip, wl-clipboard         │ meld                                                 ║
-# ║                  │ flatpak                           │                                                      ║
-# ║                  │                                   │                                                      ║
 # ║     CLI Tools    │ fzf, fd, bat, ripgrep, eza, delta │ fzf, fd, bat, ripgrep, eza, delta                    ║
 # ║                  │                                   │                                                      ║
 # ║     Editors      │ Micro, Neovim, VS Code, Zed       │ Micro, Neovim, VS Code, Zed                          ║
@@ -1254,6 +1251,12 @@ main() {
     # ── macOS: Homebrew first (needed for everything) ──
     try_step install_homebrew
 
+    # ── Package manager update ──
+    try_step pkg_update
+
+    # ── System packages (git, curl, zsh, etc.) ──
+    try_step install_system_packages
+
     # ── Git & SSH identities (needed before cloning) ──
     try_step setup_git_identities
 
@@ -1262,12 +1265,6 @@ main() {
 
     log_info "Dotfiles: $DOTFILES"
     printf "\n"
-
-    # ── Package manager update ──
-    try_step pkg_update
-
-    # ── System packages ──
-    try_step install_system_packages
 
     # ── CLI tools (latest versions) ──
     try_step install_fzf
