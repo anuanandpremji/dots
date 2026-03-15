@@ -106,30 +106,40 @@ link_path "$DOTFILES/.config/git/config" "$HOME/.config/git/config"
 # NOTE: config.default, config.private, and config.work are NOT symlinked.
 # They are machine-specific and created by setup-identities.
 
-# ── Terminals (directory symlinks) ────────────────────────────────────────────
-echo "── WezTerm ──"
-link_path "$DOTFILES/.config/wezterm" "$HOME/.config/wezterm"
+# ── Terminals (only if installed) ─────────────────────────────────────────────
+if command -v wezterm &>/dev/null || [[ -d "/Applications/WezTerm.app" ]]; then
+    echo "── WezTerm ──"
+    link_path "$DOTFILES/.config/wezterm" "$HOME/.config/wezterm"
+fi
 
-# ── Editors (directory symlinks) ──────────────────────────────────────────────
-echo "── Neovim ──"
-link_path "$DOTFILES/.config/nvim" "$HOME/.config/nvim"
+# ── Editors (only if installed) ──────────────────────────────────────────────
+if command -v nvim &>/dev/null; then
+    echo "── Neovim ──"
+    link_path "$DOTFILES/.config/nvim" "$HOME/.config/nvim"
+fi
 
-echo "── Zed ──"
-link_path "$DOTFILES/.config/zed" "$HOME/.config/zed"
+if command -v zed &>/dev/null || [[ -d "/Applications/Zed.app" ]]; then
+    echo "── Zed ──"
+    link_path "$DOTFILES/.config/zed" "$HOME/.config/zed"
+fi
 
-echo "── Micro ──"
-link_path "$DOTFILES/.config/micro/init.lua"      "$HOME/.config/micro/init.lua"
-link_path "$DOTFILES/.config/micro/bindings.json"  "$HOME/.config/micro/bindings.json"
-link_path "$DOTFILES/.config/micro/settings.json"  "$HOME/.config/micro/settings.json"
+if command -v micro &>/dev/null || [[ -x "$HOME/.local/bin/micro" ]]; then
+    echo "── Micro ──"
+    link_path "$DOTFILES/.config/micro/init.lua"      "$HOME/.config/micro/init.lua"
+    link_path "$DOTFILES/.config/micro/bindings.json"  "$HOME/.config/micro/bindings.json"
+    link_path "$DOTFILES/.config/micro/settings.json"  "$HOME/.config/micro/settings.json"
+fi
 
-# ── VS Code (individual file symlinks — VS Code manages the rest of the User dir) ──
-echo "── VS Code ──"
-if [[ "$IS_MACOS" == true ]]; then
-    link_path "$DOTFILES/.config/vscode/User/settings.json"    "$HOME/Library/Application Support/Code/User/settings.json"
-    link_path "$DOTFILES/.config/vscode/User/keybindings.json" "$HOME/Library/Application Support/Code/User/keybindings.json"
-else
-    link_path "$DOTFILES/.config/vscode/User/settings.json"    "$HOME/.config/Code/User/settings.json"
-    link_path "$DOTFILES/.config/vscode/User/keybindings.json" "$HOME/.config/Code/User/keybindings.json"
+# ── VS Code (only if installed) ──────────────────────────────────────────────
+if command -v code &>/dev/null; then
+    echo "── VS Code ──"
+    if [[ "$IS_MACOS" == true ]]; then
+        link_path "$DOTFILES/.config/vscode/User/settings.json"    "$HOME/Library/Application Support/Code/User/settings.json"
+        link_path "$DOTFILES/.config/vscode/User/keybindings.json" "$HOME/Library/Application Support/Code/User/keybindings.json"
+    else
+        link_path "$DOTFILES/.config/vscode/User/settings.json"    "$HOME/.config/Code/User/settings.json"
+        link_path "$DOTFILES/.config/vscode/User/keybindings.json" "$HOME/.config/Code/User/keybindings.json"
+    fi
 fi
 
 # ── Fonts (copy, not symlink — rarely changed) ───────────────────────────────
@@ -152,9 +162,11 @@ fi
 # ── Linux-only: WezTerm dropdown, dconf settings, GNOME extensions ───────────
 if [[ "$IS_LINUX" == true ]]; then
 
-    echo "── WezTerm Dropdown ──"
-    link_path "$DOTFILES/.local/bin/wezterm-dropdown"                              "$HOME/.local/bin/wezterm-dropdown"
-    link_path "$DOTFILES/.local/share/applications/wezterm-dropdown.desktop"       "$HOME/.local/share/applications/wezterm-dropdown.desktop"
+    if command -v wezterm &>/dev/null; then
+        echo "── WezTerm Dropdown ──"
+        link_path "$DOTFILES/.local/bin/wezterm-dropdown"                              "$HOME/.local/bin/wezterm-dropdown"
+        link_path "$DOTFILES/.local/share/applications/wezterm-dropdown.desktop"       "$HOME/.local/share/applications/wezterm-dropdown.desktop"
+    fi
 
     if command -v dconf &>/dev/null; then
         echo "── Meld (dconf load) ──"
