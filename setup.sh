@@ -130,7 +130,7 @@ log_info()    { printf "${GREEN}[INFO]${NC}    %s\n" "$1"; }
 log_warn()    { printf "${YELLOW}[WARN]${NC}    %s\n" "$1"; }
 log_error()   { printf "${RED}[ERROR]${NC}   %s\n" "$1" >&2; }
 log_section() { printf "\n${BOLD}${BLUE}── %s ──${NC}\n" "$1"; }
-log_skip()    { printf "${YELLOW}[SKIP]${NC}    %s (already installed)\n" "$1"; }
+log_skip()    { printf "${YELLOW}[SKIP]${NC}    %s\n" "$1"; }
 
 run() {
     if [[ "$DRY_RUN" == true ]]; then
@@ -169,6 +169,9 @@ if ! command -v curl &>/dev/null; then
     log_error "Required command not found: curl"
     exit 1
 fi
+
+# Ensure ~/.local/bin is in PATH for tools installed there
+export PATH="$HOME/.local/bin:$PATH"
 
 if [[ "$DRY_RUN" == true ]]; then
     printf "\n${YELLOW}=== DRY RUN — no changes will be made ===${NC}\n\n"
@@ -430,7 +433,7 @@ pkg_update() {
 }
 
 is_installed() {
-    command -v "$1" &>/dev/null
+    command -v "$1" &>/dev/null || [[ -x "$HOME/.local/bin/$1" ]]
 }
 
 # Fetch the latest release download URL from a GitHub repo
@@ -579,6 +582,7 @@ install_fzf() {
             run mkdir -p "$HOME/.local/bin"
             run mv "$tmp/fzf" "$HOME/.local/bin/fzf"
             run chmod +x "$HOME/.local/bin/fzf"
+            log_info "fzf installed to ~/.local/bin/fzf"
             ;;
     esac
 }
@@ -733,12 +737,8 @@ install_neovim() {
             ;;
         *)
             log_info "Installing Neovim AppImage..."
-            local url
-            url=$(gh_latest_url "neovim/neovim" "nvim-linux-${ARCH}\\.appimage$")
-            if [[ -z "$url" ]]; then
-                log_error "Could not find Neovim AppImage URL (GitHub API rate limit?)"
-                return 1
-            fi
+            local url="https://github.com/neovim/neovim/releases/latest/download/nvim-linux-${ARCH}.appimage"
+            log_info "Downloading Neovim from $url"
             run mkdir -p "$HOME/.local/bin"
             run curl -fsSL -o "$HOME/.local/bin/nvim" "$url"
             run chmod +x "$HOME/.local/bin/nvim"
@@ -1363,7 +1363,9 @@ main() {
     log_info "========================================"
     log_info ""
     log_info "Next steps:"
-    if [[ "$OS" == "linux" ]]; then
+    if [[ "$CLI_ONLY" == true ]]; then
+        log_info "  1. Restart your shell for changes to take effect"
+    elif [[ "$OS" == "linux" ]]; then
         log_info "  1. Log out and back in for shell and GNOME changes to take effect"
         log_info "  2. Set your terminal font to 'JetBrainsMono NL Nerd Font'"
         log_info "  3. Press Alt+F2, type 'r', Enter to reload GNOME Shell (X11)"
