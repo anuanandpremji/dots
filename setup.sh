@@ -168,12 +168,10 @@ if [[ "$(id -u)" -eq 0 ]]; then
     exit 1
 fi
 
-for cmd in curl git; do
-    if ! command -v "$cmd" &>/dev/null; then
-        log_error "Required command not found: $cmd"
-        exit 1
-    fi
-done
+if ! command -v curl &>/dev/null; then
+    log_error "Required command not found: curl"
+    exit 1
+fi
 
 if [[ "$DRY_RUN" == true ]]; then
     printf "\n${YELLOW}=== DRY RUN — no changes will be made ===${NC}\n\n"
@@ -315,6 +313,12 @@ acquire_dotfiles() {
     done
 
     # Not found — ask how to get them
+    if ! command -v git &>/dev/null; then
+        log_info "git not found — downloading dotfiles as zip"
+        download_zip
+        return
+    fi
+
     printf "\n"
     printf "  How would you like to get the dotfiles?\n\n"
     printf "    1) Clone from GitHub (uses SSH if configured, otherwise HTTPS)\n"
