@@ -52,7 +52,9 @@ fzf_history_widget()
     );
 
     while true; do
-        output=$(tac "$HISTFILE" | awk '!seen[$0]++' |
+        # Reverse the history file so newest entries appear first.
+        # tac is Linux-only; tail -r is the macOS equivalent.
+        output=$({ tac "$HISTFILE" 2>/dev/null || tail -r "$HISTFILE"; } | awk '!seen[$0]++' |
                   fzf "${fzf_opts[@]}" -q "$fzf_query") || break
 
         lines=("${(@f)output}")

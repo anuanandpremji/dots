@@ -52,6 +52,8 @@ config.keys = {
   { key = 'DownArrow',  mods = 'CTRL|ALT|SHIFT', action = act.AdjustPaneSize { 'Down', 5 } },
   { key = 'UpArrow',    mods = 'CTRL|ALT|SHIFT', action = act.AdjustPaneSize { 'Up', 5 } },
   { key = 'RightArrow', mods = 'CTRL|ALT|SHIFT', action = act.AdjustPaneSize { 'Right', 5 } },
+  -- Zoom
+  { key = 'Escape', mods = 'SHIFT', action = act.TogglePaneZoomState },
 }
 
 -- Set color scheme based on system theme

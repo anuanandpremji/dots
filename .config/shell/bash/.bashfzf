@@ -57,7 +57,9 @@ fzf_history_widget()
         # so the file is always up to date. Calling `history -a` would flush
         # the entire in-memory list — including failed commands — to the file,
         # bypassing the "only save successful commands" filter.
-        output=$(tac "$HISTFILE" | awk '!seen[$0]++' |
+        # Reverse the history file so newest entries appear first.
+        # tac is Linux-only; tail -r is the macOS equivalent.
+        output=$({ tac "$HISTFILE" 2>/dev/null || tail -r "$HISTFILE"; } | awk '!seen[$0]++' |
                   fzf "${fzf_opts[@]}" -q "$fzf_query") || break
 
         mapfile -t lines <<< "$output"  # bash equivalent of zsh's ("${(@f)output}")

@@ -191,16 +191,16 @@
         "when": "terminal.active" // Disabling the default terminal toggle shortcut when the terminal is active
     },
 
-    // Maximize and restore the terminal panel size
+    // Maximize and restore the active pane
     {
         "command": "workbench.action.toggleMaximizedPanel",
-        "key": "ctrl+shift+J",
-        "when": "terminalFocus && terminalProcessSupported" // Shortcut to toggle maximized terminal panel
+        "key": "shift+escape",
+        "when": "terminalFocus && terminalProcessSupported"
     },
     {
-        "command": "workbench.action.toggleMaximizedPanel",
-        "key": "ctrl+k t",
-        "when": "terminalFocus && terminalProcessSupported" // Alternate shortcut for the same functionality
+        "command": "workbench.action.toggleEditorWidths",
+        "key": "shift+escape",
+        "when": "editorTextFocus"
     },
     {
         "key": "shift+enter",
