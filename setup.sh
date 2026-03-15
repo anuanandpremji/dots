@@ -243,20 +243,23 @@ detect_arch
 GITHUB_REPO="anuanandpremji/dots"
 
 clone_from_github() {
-    local dest="$HOME/dotfiles"
-    printf "  Where should the dotfiles repo be cloned to? [%s]: " "$dest"
-    read -r user_dest
-    [[ -n "$user_dest" ]] && dest="$user_dest"
+    local parent="$HOME/private"
+    printf "  Clone dotfiles repo into which directory? [%s]: " "$parent"
+    read -r user_parent
+    [[ -n "$user_parent" ]] && parent="$user_parent"
+
+    local dest="$parent/dots"
 
     if [[ -d "$dest" && -f "$dest/.config/shell/scripts/setup-symlinks" ]]; then
         log_info "Dotfiles already exist at $dest"
     else
+        run mkdir -p "$parent"
         # Prefer SSH via private key if configured, fall back to HTTPS
         if grep -q "^Host github-private$" "$HOME/.ssh/config" 2>/dev/null; then
-            log_info "Cloning via SSH (github-private)..."
+            log_info "Cloning via SSH (github-private) into $parent/ ..."
             run git clone "git@github-private:$GITHUB_REPO.git" "$dest"
         else
-            log_info "Cloning via HTTPS..."
+            log_info "Cloning via HTTPS into $parent/ ..."
             run git clone "https://github.com/$GITHUB_REPO.git" "$dest"
         fi
     fi
@@ -264,10 +267,12 @@ clone_from_github() {
 }
 
 download_zip() {
-    local dest="$HOME/dotfiles"
-    printf "  Where should the dotfiles be extracted to? [%s]: " "$dest"
-    read -r user_dest
-    [[ -n "$user_dest" ]] && dest="$user_dest"
+    local parent="$HOME/private"
+    printf "  Extract dotfiles repo into which directory? [%s]: " "$parent"
+    read -r user_parent
+    [[ -n "$user_parent" ]] && parent="$user_parent"
+
+    local dest="$parent/dots"
 
     if [[ -d "$dest" && -f "$dest/.config/shell/scripts/setup-symlinks" ]]; then
         log_info "Dotfiles already exist at $dest"
@@ -1318,11 +1323,14 @@ main() {
     log_info "========================================"
     log_info ""
     log_info "Next steps:"
-    log_info "  1. Log out and back in for shell and GNOME changes to take effect"
-    log_info "  2. Set your terminal font to 'JetBrainsMono NL Nerd Font'"
     if [[ "$OS" == "linux" ]]; then
+        log_info "  1. Log out and back in for shell and GNOME changes to take effect"
+        log_info "  2. Set your terminal font to 'JetBrainsMono NL Nerd Font'"
         log_info "  3. Press Alt+F2, type 'r', Enter to reload GNOME Shell (X11)"
         log_info "     or log out/in to activate GNOME extensions (Wayland)"
+    elif [[ "$OS" == "macos" ]]; then
+        log_info "  1. Restart your terminal for shell changes to take effect"
+        log_info "  2. Set your terminal font to 'JetBrainsMono NL Nerd Font'"
     fi
     printf "\n"
 }

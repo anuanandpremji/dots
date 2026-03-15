@@ -38,27 +38,25 @@ cdgr()
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
-# gh() - Open GitHub page of a repository from the terminal
+# gho() - Open GitHub/GitLab page of a repository from the terminal
+# (named gho to avoid colliding with the official GitHub CLI `gh`)
 
 # Usage:
-# gh from a non git repo gives you an error message and exits
-# gh from a repo opens the current branch on origin (or the default branch if
+# gho from a non git repo gives you an error message and exits
+# gho from a repo opens the current branch on origin (or the default branch if
 #   the current branch doesn't exist on origin)
-# gh <remote> opens the remote. For eg, gh upstream.
+# gho <remote> opens the remote. For eg, gho upstream.
 
-# Dependencies: git, sed, open_command()
+# Dependencies: git, ssh, _git_web_url(), open_command()
 
-gh()
+gho()
 {(
     set -e;
     git remote -v | grep push;
     remote=${1:-origin};
     printf "Using remote %s\n" "$remote";
 
-    URL=$(git config remote."$remote".url \
-        | sed -e "s|^ssh://git@|https://|" \
-              -e "s|^git@\([^:]*\):|https://\1/|" \
-              -e "s|\.git$||");
+    URL=$(_git_web_url "$remote");
 
     if [ -z "$1" ]; then
         branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true);

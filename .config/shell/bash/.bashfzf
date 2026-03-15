@@ -247,7 +247,7 @@ gl()
     git --no-pager show --color=never --format='' {1} 2>/dev/null | $delta_cmd"
 
     local github_url
-    github_url=$(git remote get-url origin 2>/dev/null | sed 's/\.git$//' | sed 's|git@github\.com:|https://github.com/|')
+    github_url=$(_git_web_url origin)
 
     local open_cmd="xdg-open"
     [[ "$OSTYPE" == darwin* ]] && open_cmd="open"
@@ -322,7 +322,7 @@ gc()
         --hunk-header-style=syntax"
 
     local github_url
-    github_url=$(git remote get-url origin 2>/dev/null | sed 's/\.git$//' | sed 's|git@github\.com:|https://github.com/|')
+    github_url=$(_git_web_url origin)
 
     local open_cmd="xdg-open"
     [[ "$OSTYPE" == darwin* ]] && open_cmd="open"
@@ -347,6 +347,8 @@ gc()
             echo 'change-prompt(Branches ▶ )+reload[$branch_cmd]+change-ghost(Filter branches across all remotes...)+refresh-preview';
         fi"
 
+    # _git_web_url is a shell function not available in fzf subshells,
+    # so we inline the SSH alias resolution for the branch-open binding.
     local bind_open="ctrl-o:transform:
         if [[ \$FZF_PROMPT =~ Branches ]]; then
             echo 'execute-silent(
@@ -358,9 +360,16 @@ gc()
                     remote=\${tmp%%/*};
                     branch=\${tmp#*/};
                 fi;
-                url=\$(git remote get-url \$remote 2>/dev/null
+                raw=\$(git config remote.\$remote.url 2>/dev/null);
+                ssh_host=\$(printf \"%s\" \"\$raw\" | sed -n \"s|^git@\\([^:]*\\):.*|\\1|p\");
+                if [ -n \"\$ssh_host\" ]; then
+                    real=\$(ssh -G \"\$ssh_host\" 2>/dev/null | awk \"/^hostname / {print \\\$2}\");
+                    [ -n \"\$real\" ] && raw=\$(printf \"%s\" \"\$raw\" | sed \"s|^git@\${ssh_host}:|git@\${real}:|\");
+                fi;
+                url=\$(printf \"%s\" \"\$raw\"
                     | sed \"s/\\.git\$//\"
-                    | sed \"s|git@github\\.com:|https://github.com/|\");
+                    | sed \"s|^ssh://git@|https://|\"
+                    | sed \"s|^git@\\([^:]*\\):|https://\\1/|\");
                 $open_cmd \"\$url/tree/\$branch\" >/dev/null 2>&1 &
             )';
         elif [[ \$FZF_PROMPT =~ Tags ]]; then
