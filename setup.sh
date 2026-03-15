@@ -210,7 +210,7 @@ detect_arch() {
     ARCH="$(uname -m)"
     case "$ARCH" in
         x86_64)  DEB_ARCH="amd64"; RPM_ARCH="x86_64" ;;
-        aarch64) DEB_ARCH="arm64"; RPM_ARCH="aarch64" ;;
+        aarch64|arm64) DEB_ARCH="arm64"; RPM_ARCH="aarch64" ;;
         *)
             log_error "Unsupported architecture: $ARCH"
             exit 1
