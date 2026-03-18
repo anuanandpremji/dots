@@ -240,7 +240,7 @@ gl()
 
     local preview_cmd="
     [ -n {1} ] || exit 0;
-    printf '\e[33;1m%s\e[0m\n' \"\$(command git log -1 --format='%h  %ad  %an' --date=format:'%Y-%m-%d %a' {1})\";
+    printf '\e[33;1m%s\e[0m\n' \"\$(command git log -1 --format='%h  %ad  %aN' --date=format:'%Y-%m-%d %H:%M' {1})\";
     printf '%s\n\n' \"\$(command git log -1 --format='%s%n%n%b' {1})\";
     command git --no-pager show --stat --color=always --format='' {1} 2>/dev/null;
     echo;
@@ -259,8 +259,8 @@ gl()
 
     local -a git_log_opts=(
         --color=always
-        --date=format:'%Y-%m-%d %a'
-        --format=format:'%C(yellow)%h%C(reset)  %ad  %<(16,trunc)%an  %>|(1)%s%C(auto)%d%C(reset)'
+        --date=format:'%d.%b.%y'
+        --format=format:$'%C(yellow)%h%C(reset)\t%C(auto)%d%C(reset)\t%s\t%ad\t%aN'
     )
 
     local -a fzf_opts=(
@@ -268,23 +268,65 @@ gl()
         --ghost 'Filter commits on the current branch...'
         --highlight-line
         --style=full
+        --header-lines=1
         --preview "$preview_cmd"
         --preview-window 'down:60%:hidden'
         --preview-label=' Commit Details '
         --preview-label-pos=2
         --header-border=line
-        --footer " ↵ Show │ ^D Diff │ ^Y Copy Hash │ ^O GitHub │ ? Preview"
+        --footer " ↵ Show │ ^D Diff │ ^Y Copy Hash │ ^O GitHub │ ^F Author │ ^T Msg │ ? Preview"
         --footer-border=line
         --color 'label:yellow:bold,header:dim'
+        --delimiter '│'
         --bind '?:toggle-preview'
-        --bind "start:bg-transform-header:printf '  On: %s' \"\$(command git branch --show-current 2>/dev/null || echo 'detached')\""
+        --info-command "printf 'On  \xee\x82\xa0 %s  %s' '$(command git branch --show-current 2>/dev/null || echo detached)' \"\$FZF_INFO\""
         --bind 'enter:execute(command git show --color=always {1})'
         --bind 'ctrl-d:execute(command git diff --color=always {1})'
         --bind "ctrl-y:execute-silent(printf '%s' {1} | $clip_cmd)+change-ghost(Copied commit hash to clipboard)"
         --bind "ctrl-o:execute-silent[sha={1}; $open_cmd \"$github_url/commit/\$sha\" >/dev/null 2>&1 &]"
+        --bind 'ctrl-f:change-nth(3)+change-ghost(Author filter — press ctrl-a to reset)'
+        --bind 'ctrl-t:change-nth(2)+change-ghost(Message filter — press ctrl-a to reset)'
+        --bind 'ctrl-a:change-nth(..)+change-ghost(Filter commits on the current branch...)'
     )
 
-    command git log "${git_log_opts[@]}" "$@" | fzf "${fzf_opts[@]}"
+    command git log "${git_log_opts[@]}" "$@" \
+    | awk -v cols="$(tput cols)" -F'\t' '
+        function strip(s,  r) { r=s; gsub(/\033\[[0-9;]*m/,"",r); return r }
+        function vlen(s,   r) { r=s; gsub(/\033\[[0-9;]*m/,"",r); gsub(/[\200-\277]/,"",r); return length(r) }
+        NR == 1 {
+            eff = (cols > 120 ? 120 : cols)
+            hash_len = length(strip($1))
+            subj_col = eff - hash_len - 27
+            if (subj_col < 7) subj_col = 7
+            printf "%-*s│ %-*s │ %-10s │ Date\n", hash_len, "Hash", subj_col, "Subject", "Author"
+        }
+        {
+            eff = (cols > 120 ? 120 : cols)
+            split($5, n, " "); first = n[1]
+            if (length(first) > 10) first = substr(first, 1, 9) "."
+            age        = $4
+            right      = sprintf("%-10s │ %s", first, age)
+            rlen       = 22
+            hash_len   = length(strip($1))
+            decor_clean = strip($2)
+            decor_len  = length(decor_clean)
+            base_len   = hash_len + 2 + (decor_len > 0 ? decor_len + 1 : 0)
+            available  = eff - base_len - 3 - rlen
+            if (available < 10) available = 10
+            subj = $3
+            truncated = 0
+            if (vlen(subj) > available) { subj = substr(subj, 1, available - 2); truncated = 1 }
+            left = $1 "\033[2m│\033[0m "
+            if (decor_len > 0) left = left $2 " "
+            left = left subj
+            if (truncated) left = left "\033[2m··\033[0m"
+            llen = base_len + vlen(subj) + (truncated ? 2 : 0)
+            sep  = " \033[2m│\033[0m "
+            pad  = eff - llen - 3 - rlen
+            if (pad < 0) pad = 0
+            printf "%s%*s%s\033[2m%s\033[0m\n", left, pad, "", sep, right
+        }' \
+    | fzf "${fzf_opts[@]}"
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #

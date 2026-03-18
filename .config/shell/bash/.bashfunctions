@@ -17,6 +17,7 @@
 #║ update_snaps()    - Update Snap packages                                                                            ║
 #║ do_update()       - Run system updates across all detected package managers                                         ║
 #║ sysinfo()         - Show system information (OS, CPU, memory, disk, network)                                        ║
+#║ gr()              - List git remotes; one line per remote, two lines only if fetch and push URLs differ             ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 # cdgr() - cd to the outermost Git superproject root directory
@@ -257,6 +258,38 @@ sysinfo() {
 
     echo -e "\n── Network ──"
     ip -br addr 2>/dev/null | grep -v "^lo"
+}
+
+# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
+
+# gr() - List git remotes, aligned in columns.
+# Shows one line per remote. If a remote's push URL differs from its fetch URL, shows both.
+gr() {
+    git remote -v | awk -F'\t' '
+        {
+            name = $1
+            rest = $2
+            if (sub(/ \(fetch\)$/, "", rest)) type = "fetch"
+            else { sub(/ \(push\)$/, "", rest); type = "push" }
+            if (!(name in seen)) { order[++n] = name; seen[name] = 1 }
+            if (type == "fetch") fetch[name] = rest
+            else                 push[name]  = rest
+            if (length(name) > w) w = length(name)
+        }
+        END {
+            for (i = 1; i <= n; i++) {
+                name = order[i]
+                f = fetch[name]
+                p = (name in push) ? push[name] : f
+                if (f == p) {
+                    printf "%-*s  %s\n", w, name, f
+                } else {
+                    printf "%-*s  %s  (fetch)\n", w, name, f
+                    printf "%-*s  %s  (push)\n",  w, name, p
+                }
+            }
+        }
+    '
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
