@@ -175,7 +175,7 @@ export LESS_TERMCAP_us="$(printf "\e[1;32m")"
 # _has() is defined in .bashfunctions but needed here before it's sourced
 _has() { command -v "$1" >/dev/null 2>&1; }
 
-if _has micro; then export EDITOR="micro"
+if _has fresh; then export EDITOR="fresh"
 elif _has nvim; then export EDITOR="nvim"
 elif _has vim; then export EDITOR="vim"
 else export EDITOR="vi"; fi

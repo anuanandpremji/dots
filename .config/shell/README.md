@@ -316,7 +316,7 @@ Both shells redirect config and cache paths for 25+ applications to proper XDG d
 
 The `EDITOR` and `VISUAL` variables are set automatically based on what's installed, in order of preference:
 
-`micro` > `nvim` > `vim` > `vi`
+`fresh` > `nvim` > `vim` > `vi`
 
 ---
 

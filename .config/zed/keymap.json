@@ -4,6 +4,7 @@
         "bindings": {
             //"shift shift": "file_finder::Toggle",
             "ctrl-t": null,
+            "ctrl-o": null,
             // Split
             "ctrl-alt-v": "pane::SplitRight",
             "ctrl-alt-s": "pane::SplitDown",
@@ -36,9 +37,20 @@
     {
         "context": "Terminal",
         "bindings": {
+            // Flow control — ZSH disables these at the stty level; pass them through so
+            // fzf and readline can use them freely.
             "ctrl-s": ["terminal::SendKeystroke", "ctrl-s"],
             "ctrl-q": ["terminal::SendKeystroke", "ctrl-q"],
-            "ctrl-t": ["terminal::SendKeystroke", "ctrl-t"],
+
+            // fzf widget triggers — bound to ZLE widgets in .zshrc / .bashrc.
+            "ctrl-t": ["terminal::SendKeystroke", "ctrl-t"],  // fzf_file_widget
+
+            // fzf in-widget bindings — keys used inside running fzf sessions that Zed
+            // would otherwise swallow before they reach the fzf process.
+            "ctrl-n": ["terminal::SendKeystroke", "ctrl-n"],  // fzf_file_widget: open in $VISUAL; gc: new branch
+            "ctrl-v": ["terminal::SendKeystroke", "ctrl-v"],  // fzf_file_widget: open in Zed  (use ctrl-shift-v to paste instead)
+            "ctrl-o": ["terminal::SendKeystroke", "ctrl-o"],  // fzf_history_widget / fzf_file_widget / gl / gc: open in system app or GitHub
+
             // Selecting to the beginning/end of the line
             "shift-home": ["terminal::SendKeystroke", "shift-home"],
             "shift-end": ["terminal::SendKeystroke", "shift-end"],

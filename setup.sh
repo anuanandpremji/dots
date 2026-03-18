@@ -66,7 +66,7 @@
 # ║     ─────────────┼───────────────────────────────────┼──────────────────────────────────                    ║
 # ║     CLI Tools    │ fzf, fd, bat, ripgrep, eza, delta │ fzf, fd, bat, ripgrep, eza, delta                    ║
 # ║                  │                                   │                                                      ║
-# ║     Editors      │ Micro, Neovim, VS Code, Zed       │ Micro, Neovim, VS Code, Zed                          ║
+# ║     Editors      │ Fresh, Neovim, VS Code, Zed       │ Fresh, Neovim, VS Code, Zed                          ║
 # ║                  │                                   │                                                      ║
 # ║     Terminal     │ WezTerm                           │ WezTerm                                              ║
 # ║                  │                                   │                                                      ║
@@ -700,26 +700,21 @@ install_delta() {
     esac
 }
 
-install_micro() {
-    log_section "micro"
-    if is_installed micro; then
-        log_skip "micro"
+install_fresh() {
+    log_section "fresh"
+    if is_installed fresh; then
+        log_skip "fresh"
         return
     fi
 
     case "$DISTRO" in
         macos)
-            pkg_install micro
+            run brew tap sinelaw/fresh
+            pkg_install fresh-editor
             ;;
         *)
-            log_info "Installing micro from official installer..."
-            local micro_tmp
-            micro_tmp=$(mktemp -d)
-            trap "rm -rf '$micro_tmp'" RETURN
-            run bash -c "cd '$micro_tmp' && curl https://getmic.ro | bash"
-            run mkdir -p "$HOME/.local/bin"
-            run mv "$micro_tmp/micro" "$HOME/.local/bin/micro"
-            run chmod +x "$HOME/.local/bin/micro"
+            log_info "Installing fresh from official installer..."
+            run bash -c "curl -fsSL https://raw.githubusercontent.com/sinelaw/fresh/refs/heads/master/scripts/install.sh | sh"
             ;;
     esac
 }
@@ -1252,7 +1247,7 @@ brew "ripgrep"
 brew "eza"
 brew "git-delta"
 brew "tree"
-brew "micro"
+brew "fresh-editor"
 brew "neovim"
 
 # GUI Apps
@@ -1311,7 +1306,7 @@ main() {
     try_step install_ripgrep
     try_step install_eza
     try_step install_delta
-    try_step install_micro
+    try_step install_fresh
     try_step install_neovim
 
     if [[ "$CLI_ONLY" != true ]]; then

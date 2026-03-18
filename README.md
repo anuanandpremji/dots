@@ -39,7 +39,7 @@ The script will:
 |----------|------|------|
 | Shell | Zsh, Bash (cross-shell config with shared aliases, functions, history) | [README](.config/shell/README.md) |
 | Terminal | WezTerm (with quake-mode dropdown) | [README](.config/wezterm/README.md) |
-| Editors | Neovim, Micro, VS Code, Zed | [Neovim](.config/nvim/README.md), [Micro](.config/micro/README.md), [VS Code](.config/vscode/README.md), [Zed](.config/zed/README.md) |
+| Editors | Neovim, Fresh, VS Code, Zed | [Neovim](.config/nvim/README.md), [Fresh](.config/fresh/README.md), [VS Code](.config/vscode/README.md), [Zed](.config/zed/README.md) |
 | CLI Tools | fzf, fd, bat, ripgrep, eza, delta, tree | |
 | Git | Custom config with delta pager, aliases, multi-identity | [README](.config/git/README.md) |
 | Browsers | Firefox, Chrome, Brave | |
@@ -67,7 +67,7 @@ dotfiles/
 │   ├── git/                          # Git config (aliases, delta pager, multi-identity)
 │   ├── wezterm/                      # WezTerm terminal config (Lua)
 │   ├── nvim/                         # Neovim config (Vimscript)
-│   ├── micro/                        # Micro editor config
+│   ├── fresh/                        # Fresh editor config
 │   ├── vscode/                       # VS Code settings and keybindings
 │   ├── zed/                          # Zed editor settings, keymap, themes
 │   ├── gnome/                        # GNOME desktop and extension settings
@@ -84,7 +84,7 @@ dotfiles/
 ## How Configs Are Applied
 
 - **Self-resolving paths** — `.zshenv` and `.bashrc` detect `$DOTFILE_DIR` automatically by resolving their own symlink target. No hardcoded paths to edit per machine.
-- **Symlinked apps** — Shell, Git, WezTerm, Neovim, Zed, Micro, VS Code, Claude Code, fonts, scripts. The dotfiles directory is the source of truth; `~/.config/` contains symlinks pointing here.
+- **Symlinked apps** — Shell, Git, WezTerm, Neovim, Zed, Fresh, VS Code, Claude Code, fonts, scripts. The dotfiles directory is the source of truth; `~/.config/` contains symlinks pointing here.
 - **dconf-loaded apps** — GNOME settings, GNOME extensions, Meld. These use `dconf load` to import settings from `.dconf` backup files, since they don't read plain config files.
 - **macOS** — dconf sections are skipped. VS Code symlinks point to `~/Library/Application Support/Code/User/`. Fonts are copied to `~/Library/Fonts/`.
 - **setup-symlinks** — Also self-resolving. It derives `$DOTFILES` from its own location in the directory tree, so it works regardless of where the dotfiles live.

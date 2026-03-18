@@ -123,11 +123,9 @@ if command -v zed &>/dev/null || [[ -d "/Applications/Zed.app" ]]; then
     link_path "$DOTFILES/.config/zed" "$HOME/.config/zed"
 fi
 
-if command -v micro &>/dev/null || [[ -x "$HOME/.local/bin/micro" ]]; then
-    echo "── Micro ──"
-    link_path "$DOTFILES/.config/micro/init.lua"      "$HOME/.config/micro/init.lua"
-    link_path "$DOTFILES/.config/micro/bindings.json"  "$HOME/.config/micro/bindings.json"
-    link_path "$DOTFILES/.config/micro/settings.json"  "$HOME/.config/micro/settings.json"
+if command -v fresh &>/dev/null; then
+    echo "── Fresh ──"
+    link_path "$DOTFILES/.config/fresh/config.json" "$HOME/.config/fresh/config.json"
 fi
 
 # ── VS Code (only if installed) ──────────────────────────────────────────────
