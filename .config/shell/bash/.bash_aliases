@@ -87,9 +87,9 @@ fi
 # Better cat with bat (syntax highlighting, line numbers)
 
 if _has bat; then
-    alias cat='bat --paging=never'
+    alias cat='bat --paging=never --theme=ansi'
 elif _has batcat; then
-    alias cat='batcat --paging=never'
+    alias cat='batcat --paging=never --theme=ansi'
 fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #

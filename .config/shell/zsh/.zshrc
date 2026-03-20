@@ -194,11 +194,13 @@ source "$ZDOTDIR/.zshprompt_theme_pure"
 #║ Extras                                                                                                              ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-# Load utils, fzf features, functions, and aliases
-source "$ZDOTDIR/.zshutils"
-source "$ZDOTDIR/.zshfzf"
-source "$ZDOTDIR/.zshfunctions"
-source "$ZDOTDIR/.zshaliases"
+# Load utils, git, history, find, functions, and aliases
+source "$ZDOTDIR/.zsh_utils"
+source "$ZDOTDIR/.zsh_git"
+source "$ZDOTDIR/.zsh_history"
+source "$ZDOTDIR/.zsh_find"
+source "$ZDOTDIR/.zsh_functions"
+source "$ZDOTDIR/.zsh_aliases"
 if [[ -f "$HOME/.config/shell/.zshextra" ]]; then source "$HOME/.config/shell/.zshextra"; fi
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗

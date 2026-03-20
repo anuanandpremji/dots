@@ -54,6 +54,6 @@ export skip_global_compinit;
 
 # The global exports should be available to all programs, not just the interactive and login shells
 
-source "$ZDOTDIR/.zshexports";
+source "$ZDOTDIR/.zsh_exports";
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #

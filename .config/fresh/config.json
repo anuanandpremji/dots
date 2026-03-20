@@ -1,101 +1,16 @@
 {
-  // ── Appearance ────────────────────────────────────────────────────────────
-  // Built-in themes: "default", "dracula", "gruvbox", "one-dark", "solarized-dark",
-  // "solarized-light", "tokyo-night", "high-contrast"
-  "theme": "one-dark",
-
-  // ── Editor behaviour ──────────────────────────────────────────────────────
+  "theme": "light",
   "editor": {
-    // Spaces per tab stop — also used when auto_indent inserts indentation
-    "tab_size": 4,
-
-    // Expand Tab key to spaces instead of inserting a literal tab character
-    "expand_tabs": true,
-
-    // Show line numbers in the gutter
-    "line_numbers": true,
-
-    // Soft-wrap long lines at the terminal width (no horizontal scrolling)
-    "line_wrap": false,
-
-    // Syntax highlighting (uses Tree-sitter grammars where available)
-    "syntax_highlighting": true,
-
-    // Replicate current line's leading whitespace on Enter
-    "auto_indent": true,
-
-    // Auto-close paired characters: brackets, quotes, etc.
-    "auto_close_brackets": true,
-
-    // Minimum lines to keep visible above/below the cursor when scrolling
-    "scroll_offset": 5,
-
-    // Auto-save: write the file automatically after this many milliseconds of
-    // inactivity (set to 0 to disable)
-    "auto_save": 0
+    "trim_trailing_whitespace_on_save": true,
+    "cursor_style": "steady_block",
+    "whitespace_spaces_trailing": true,
+    "use_terminal_bg": true
   },
-
-  // ── LSP (Language Server Protocol) ───────────────────────────────────────
-  // Each key is a language ID; set "enabled": false to disable a specific server.
-  "lsp": {
-    "rust": {
-      "enabled": true,
-      "initialization_options": {
-        // Run `cargo clippy` on save instead of the default `cargo check`
-        "checkOnSave": { "command": "clippy" }
-      }
-    },
-    "python": {
-      "enabled": true
-    },
-    "typescript": {
-      "enabled": true
-    },
-    "lua": {
-      "enabled": true
-    }
+  "file_explorer": {
+    "show_hidden": true,
+    "show_gitignored": true
   },
-
-  // ── Keybindings ───────────────────────────────────────────────────────────
-  // Each entry overrides or adds a keybinding.
-  //   key       – the character pressed (case-sensitive)
-  //   modifiers – zero or more of: "ctrl", "alt", "shift"
-  //   action    – editor action name
-  //   when      – optional context: "normal" | "insert" | "select"
-  "keybindings": [
-    // Toggle line comment with Alt+/ (mirrors Micro's muscle memory)
-    {
-      "key": "/",
-      "modifiers": ["alt"],
-      "action": "toggle_comment"
-    },
-    // Alternative comment toggle with Ctrl+_  (works in most terminals)
-    {
-      "key": "_",
-      "modifiers": ["ctrl"],
-      "action": "toggle_comment"
-    },
-    // Delete the word to the left of the cursor
-    {
-      "key": "Backspace",
-      "modifiers": ["ctrl"],
-      "action": "delete_word_left"
-    },
-    // Delete the word to the right of the cursor
-    {
-      "key": "Delete",
-      "modifiers": ["ctrl"],
-      "action": "delete_word_right"
-    },
-    // Toggle soft line-wrap on/off without touching the config file
-    {
-      "key": "z",
-      "modifiers": ["alt"],
-      "action": "toggle_line_wrap"
-    }
-  ],
-
-  // ── Miscellaneous ─────────────────────────────────────────────────────────
-  // Suppress the "a new version of fresh is available" banner
-  "check_for_updates": false
+  "file_browser": {
+    "show_hidden": true
+  }
 }

@@ -7,8 +7,6 @@
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ Overview                                                                                                            ║
 #║ --------                                                                                                            ║
-#║ cdgr()            - cd to the git repository root (outermost superproject)                                          ║
-#║ gh()              - Open the remote repository page (GitHub, GitLab, etc.) in a browser                             ║
 #║ od()              - Run a command in the background and disown it                                                   ║
 #║ tre()             - tree with color, hidden files, .git exclusion, piped through less                               ║
 #║ update_dnf()      - Update, upgrade, and clean DNF packages                                                         ║
@@ -17,64 +15,9 @@
 #║ update_snaps()    - Update Snap packages                                                                            ║
 #║ do_update()       - Run system updates across all detected package managers                                         ║
 #║ sysinfo()         - Show system information (OS, CPU, memory, disk, network)                                        ║
-#║ gr()              - List git remotes; one line per remote, two lines only if fetch and push URLs differ             ║
+#║ fkill()           - Find and kill a running process with fzf                                                        ║
+#║ sshf()            - SSH into a host from ~/.ssh/config with fzf                                                     ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
-
-# cdgr() - cd to the outermost Git superproject root directory
-
-cdgr()
-{
-    local gitroot;
-    gitroot="$(git rev-parse --show-toplevel)";
-
-    [ -z "$gitroot" ] && return 1;
-
-    while [ -n "$gitroot" ]; do
-        cd "$gitroot" || return 1;
-        gitroot="$(git rev-parse --show-superproject-working-tree 2>/dev/null)";
-    done
-
-    return 0;
-}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# gho() - Open GitHub/GitLab page of a repository from the terminal
-# (named gho to avoid colliding with the official GitHub CLI `gh`)
-
-# Usage:
-# gho from a non git repo gives you an error message and exits
-# gho from a repo opens the current branch on origin (or the default branch if
-#   the current branch doesn't exist on origin)
-# gho <remote> opens the remote. For eg, gho upstream.
-
-# Dependencies: git, ssh, _git_web_url(), open_command()
-
-gho()
-{(
-    set -e;
-    git remote -v | grep push;
-    remote=${1:-origin};
-    printf "Using remote %s\n" "$remote";
-
-    URL=$(_git_web_url "$remote");
-
-    if [ -z "$1" ]; then
-        branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true);
-        if [ -n "$branch" ] && [ "$branch" != "HEAD" ] \
-            && git rev-parse --verify "origin/$branch" >/dev/null 2>&1; then
-            case "$URL" in
-                *gitlab*) URL="$URL/-/tree/$branch" ;;
-                *)        URL="$URL/tree/$branch" ;;
-            esac
-        fi
-    fi
-
-    printf "Opening %s\n" "$URL";
-    open_command "$URL" >/dev/null;
-)}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
 # od() - Run a command, disown the process and then return to prompt without terminating the command
 
@@ -230,12 +173,6 @@ do_update()
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
-# Dependency check
-
-# External programs
-if ! _has git;              then printf "git: program not found. Install git.\n";   fi
-if ! _has tree;             then printf "tree: program not found. Install tree.\n"; fi
-
 # sysinfo() - Show system information using built-in tools (no external dependencies)
 sysinfo() {
     if [[ "$(uname)" == "Darwin" ]]; then
@@ -262,40 +199,45 @@ sysinfo() {
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
-# gr() - List git remotes, aligned in columns.
-# Shows one line per remote. If a remote's push URL differs from its fetch URL, shows both.
-gr() {
-    git remote -v | awk -F'\t' '
-        {
-            name = $1
-            rest = $2
-            if (sub(/ \(fetch\)$/, "", rest)) type = "fetch"
-            else { sub(/ \(push\)$/, "", rest); type = "push" }
-            if (!(name in seen)) { order[++n] = name; seen[name] = 1 }
-            if (type == "fetch") fetch[name] = rest
-            else                 push[name]  = rest
-            if (length(name) > w) w = length(name)
-        }
-        END {
-            for (i = 1; i <= n; i++) {
-                name = order[i]
-                f = fetch[name]
-                p = (name in push) ? push[name] : f
-                if (f == p) {
-                    printf "%-*s  %s\n", w, name, f
-                } else {
-                    printf "%-*s  %s  (fetch)\n", w, name, f
-                    printf "%-*s  %s  (push)\n",  w, name, p
-                }
-            }
-        }
-    '
+# fkill() - Fuzzy find a process and kill it
+
+fkill() {
+    local pid
+
+    local -a fzf_opts=(
+        -m
+        --border-label=" Find and Kill a Process "
+        --border-label-pos=2
+        --color 'label:yellow:bold'
+    )
+
+    if [ "$UID" != "0" ]; then
+        pid=$(ps -f -u "$UID" | sed 1d | fzf "${fzf_opts[@]}" | awk '{print $2}')
+    else
+        pid=$(ps -ef | sed 1d | fzf "${fzf_opts[@]}" | awk '{print $2}')
+    fi
+
+    if [ -n "$pid" ]; then
+        printf "%s" "$pid" | xargs kill -"${1:-9}"
+    fi
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
-# Local functions (from .bashutils, sourced before this file)
-if ! _has confirm;          then printf "confirm(): function not loaded.\n";        fi
-if ! _has open_command;     then printf "open_command(): function not loaded.\n";   fi
+# sshf() - Fuzzy SSH into the saved SSH configs
+
+sshf()
+{
+    local host
+    host=$(grep '^[[:space:]]*Host[[:space:]]' ~/.ssh/config | grep -v '[*?]' | cut -d ' ' -f 2 | fzf)
+    [ $? -eq 0 ] && ssh "$host"
+}
+
+# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
+
+# Dependency check
+
+if ! _has tree;    then printf "tree: program not found. Install tree.\n"; fi
+if ! _has confirm; then printf "confirm(): function not loaded.\n";        fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #

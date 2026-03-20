@@ -7,14 +7,14 @@
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ Overview                                                                                                            ║
 #║ --------                                                                                                            ║
-#║ _has()             - Check if a command exists                                                                      ║
-#║ __has()            - Check if a command exists, print error if not                                                  ║
-#║ confirm()          - Prompt for yes/no confirmation before proceeding                                               ║
-#║ open_command()     - Open a file, directory, or URL in the default system app (Linux, macOS, WSL)                   ║
-#║ open_path()        - Open a path in the system file explorer (Linux, macOS, WSL)                                    ║
-#║ detect_clipboard() - Define clipcopy() and clippaste() for the detected platform                                    ║
-#║ copyabsolutepath() - Copy the absolute path of a file or directory to the clipboard                                 ║
-#║ _git_web_url()     - Convert a git remote URL to an HTTPS web URL (resolves SSH host aliases)                         ║
+#║ _has()                  - Check if a command exists                                                                 ║
+#║ __has()                 - Check if a command exists, print error if not                                             ║
+#║ _detect_color_scheme()  - Return "dark" or "light" based on the system theme (gsettings / darkman)                 ║
+#║ confirm()               - Prompt for yes/no confirmation before proceeding                                          ║
+#║ open_command()          - Open a file, directory, or URL in the default system app (Linux, macOS, WSL)              ║
+#║ open_path()             - Open a path in the system file explorer (Linux, macOS, WSL)                               ║
+#║ detect_clipboard()      - Define clipcopy() and clippaste() for the detected platform                               ║
+#║ copyabsolutepath()      - Copy the absolute path of a file or directory to the clipboard                            ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
@@ -33,6 +33,22 @@ _has()
 __has()
 {
     if ! _has "$1"; then printf "%s not found.\n" "$1"; return 1; fi
+}
+
+# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
+
+# _detect_color_scheme() - Returns "dark" or "light" based on the system theme.
+# Tries gsettings (GNOME/GTK) first, then darkman, then falls back to "dark".
+
+_detect_color_scheme() {
+    local scheme
+    scheme=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null | tr -d "'")
+    case "$scheme" in
+        prefer-dark)          printf dark;  return ;;
+        prefer-light|default) printf light; return ;;
+    esac
+    if command -v darkman &>/dev/null; then darkman get 2>/dev/null && return; fi
+    printf dark
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
@@ -173,34 +189,6 @@ copyabsolutepath() {
 
     # Message with the path in bold letters
     printf ${(%):-"%B\"${file:a}\"%b copied to clipboard.\n"};
-}
-
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# _git_web_url() - Convert a git remote URL to an HTTPS web URL
-# Resolves SSH host aliases (e.g. github-private → github.com) via ssh -G.
-
-# Usage: _git_web_url [remote]   (defaults to "origin")
-
-_git_web_url()
-{
-    local remote="${1:-origin}"
-    local raw_url
-    raw_url=$(command git config remote."$remote".url 2>/dev/null) || return 1
-
-    # Resolve SSH host aliases (e.g. github-private → github.com)
-    local ssh_host
-    ssh_host=$(printf '%s' "$raw_url" | command sed -n 's|^git@\([^:]*\):.*|\1|p')
-    if [ -n "$ssh_host" ]; then
-        local real_host
-        real_host=$(command ssh -G "$ssh_host" 2>/dev/null | command awk '/^hostname / {print $2}')
-        [ -n "$real_host" ] && raw_url=$(printf '%s' "$raw_url" | command sed "s|^git@${ssh_host}:|git@${real_host}:|")
-    fi
-
-    printf '%s' "$raw_url" \
-        | command sed -e "s|^ssh://git@|https://|" \
-              -e "s|^git@\([^:]*\):|https://\1/|" \
-              -e "s|\.git$||"
 }
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #

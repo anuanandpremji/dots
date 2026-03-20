@@ -89,7 +89,7 @@ unset HISTTIMEFORMAT
 #    by unsetting HISTFILE before the flush. No data is lost because successful
 #    commands have already been written one-by-one by the function above.
 #
-# 3. The fzf history widget (Ctrl-R in .bashfzf) must NOT call `history -a`,
+# 3. The fzf history widget (Ctrl-R in .bash_history) must NOT call `history -a`,
 #    since that would also flush failed commands. The widget reads $HISTFILE
 #    directly via `tac`, so it already sees every successful command written
 #    by our handler — no flush needed.
@@ -224,12 +224,14 @@ source "$DOTFILE_DIR/.bashprompt_theme_cascade"
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
-# Load utils, fzf features, functions, and aliases
+# Load utils, git, history, find, functions, and aliases
 
-source "$DOTFILE_DIR/.bashutils";
-source "$DOTFILE_DIR/.bashfzf";
-source "$DOTFILE_DIR/.bashfunctions";
-source "$DOTFILE_DIR/.bashaliases";
+source "$DOTFILE_DIR/.bash_utils";
+source "$DOTFILE_DIR/.bash_git";
+source "$DOTFILE_DIR/.bash_history";
+source "$DOTFILE_DIR/.bash_find";
+source "$DOTFILE_DIR/.bash_functions";
+source "$DOTFILE_DIR/.bash_aliases";
 if [[ -f "$HOME/.config/shell/.bashextra" ]]; then source "$HOME/.config/shell/.bashextra"; fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #

@@ -1,0 +1,165 @@
+#!/bin/bash
+
+#╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+#║ File & text search                                                                                                  ║
+#║ --------                                                                                                            ║
+#║ fzf_file_widget() - Fuzzy search files & directories system-wide (CTRL-T)                                          ║
+#║ rf()              - Live ripgrep text search with bat preview, opens in $VISUAL                                     ║
+#╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+if ! command -v fzf >/dev/null 2>&1; then printf "fzf not found.\n"; return; fi
+
+export FZF_DEFAULT_COMMAND='fd --type f'
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border=rounded --info=inline-right --pointer="󰜴" --color="gutter:-1,pointer:yellow"'
+
+# Fuzzy search files & directories and then press
+#    - CTRL-S   - cycle between Directories/Files
+#    - ENTER    - paste the selected entry
+#    - ALT  + C - cd to directory (or parent directory of file)
+#    - CTRL + V - open the selected entry in zed editor
+#    - CTRL + N - open the selected entry in $VISUAL
+#    - CTRL + O - open the selected entry in the default system app
+#    - CTRL + E - open the selected entry in the default file explorer
+#    - CTRL + Y - yank the absolute path to the clipboard
+#   For truncated entries, use ? key to toggle a preview window
+
+fzf_file_widget()
+{
+    local output key sel
+    local -a lines
+    local find_cmd="fd -I --full-path --hidden --exclude .git"
+    local search_path="/"
+
+    local -a fzf_opts=(
+        --exit-0
+        --expect=ctrl-o,ctrl-v,ctrl-n,ctrl-y,ctrl-e,alt-c
+        --highlight-line
+        --style=full
+        --preview 'echo {}'
+        --preview-window down:3:hidden:wrap-word
+        --preview-label=' Full Path '
+        --preview-label-pos=2
+        --ghost 'Search directories system-wide...'
+        --header-border=line
+        --footer " ↵ Paste │ ^S Switch View │ Alt-C cd │ ^V Zed │ ^N \$VISUAL │ ^E Explorer │ ^O Open │ ^Y Copy │ ? Preview"
+        --footer-border=line
+        --color 'label:yellow:bold,header:dim'
+        --prompt 'Directories ▶ '
+        --scheme=path
+        --bind '?:toggle-preview'
+        --bind "ctrl-s:transform:
+            if [[ \$FZF_PROMPT =~ Directories ]]; then
+                echo 'change-prompt(Files ▶ )+reload($find_cmd --type f . $search_path)+change-ghost(Search files system-wide...)';
+            else
+                echo 'change-prompt(Directories ▶ )+reload($find_cmd --type d . $search_path)+change-ghost(Search directories system-wide...)';
+            fi"
+    )
+
+    output=$($find_cmd --type d . "$search_path" | fzf "${fzf_opts[@]}") || return 0
+
+    mapfile -t lines <<< "$output"
+    key="${lines[0]}"
+    sel="${lines[1]}"
+
+    [[ -z "$sel" ]] && return 0
+
+    if   [[ "$key" == ctrl-o ]]; then open_command "$sel"
+    elif [[ "$key" == ctrl-v ]]; then zed "$sel"
+    elif [[ "$key" == ctrl-n ]]; then "$VISUAL" "$sel"
+    elif [[ "$key" == ctrl-e ]]; then open_path "$sel"
+    elif [[ "$key" == ctrl-y ]]; then copyabsolutepath "$sel"
+    elif [[ "$key" == alt-c  ]]; then
+        if [[ -d "$sel" ]]; then cd "$sel"; else cd "$(dirname "$sel")"; fi
+    else
+        # Insert selection at cursor position
+        READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}${sel}${READLINE_LINE:$READLINE_POINT}"
+        READLINE_POINT=$(( READLINE_POINT + ${#sel} ))
+    fi
+}
+
+# Bind CTRL-T to fzf_file_widget()
+bind -m emacs-standard -x '"\C-t": fzf_file_widget'
+
+# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
+
+# rf() - Live ripgrep text search with fzf, previewed with bat, opened in $VISUAL
+
+# Usage:
+# rf           - search in the current directory
+# rf path/     - search in a specific directory
+# rf file.rs   - search within a single file
+
+# Keybinds:
+#   ENTER    - open match in $VISUAL at the matched line (vim/nvim: jumps to line; others: opens file)
+#   TAB      - toggle selection of a match
+#   ALT-A    - select all matches
+#   ALT-D    - deselect all
+#   ?        - toggle preview window
+#
+# When multiple matches are selected, $VISUAL is opened with a quickfix list (vim/nvim only).
+
+rf()
+{
+    local search_path="${1:-.}"
+
+    if ! __has rg;  then return 1; fi
+    if ! __has bat; then return 1; fi
+
+    local reload="reload:rg --column --line-number --no-heading --with-filename --color=always --smart-case --hidden --glob '!.git' --glob '!.claude' --glob '!.vscode' -- {q} $(printf '%q' "$search_path") || :"
+
+    # Single-quoted so that $VISUAL, $FZF_SELECT_COUNT, and {placeholders} expand at runtime inside fzf.
+    # vim/nvim support `+N` to jump to a line; other editors don't, so we detect and skip it.
+    local opener='
+        if [[ $FZF_SELECT_COUNT -eq 0 ]]; then
+            case "${VISUAL:-vim}" in
+                *vim*|vi) "${VISUAL:-vim}" {1} +{2} ;;
+                *fresh*)  "${VISUAL:-vim}" {1}:{2}  ;;
+                *)        "${VISUAL:-vim}" {1}       ;;
+            esac
+        else
+            case "${VISUAL:-vim}" in
+                *vim*|vi) "${VISUAL:-vim}" +cw -q {+f} ;;
+                *fresh*)  "${VISUAL:-vim}" {1}:{2}      ;;
+                *)        "${VISUAL:-vim}" {1}           ;;
+            esac
+        fi'
+
+    local -a fzf_opts=(
+        --height 100%
+        --disabled
+        --ansi
+        --multi
+        --bind "start:$reload"
+        --bind "change:$reload"
+        --bind "enter:become:$opener"
+        --bind 'alt-a:select-all'
+        --bind 'alt-d:deselect-all'
+        --bind '?:toggle-preview'
+        --border-label=" Search: ${search_path} "
+        --border-label-pos=2
+        --color 'label:yellow:bold'
+        --delimiter ':'
+        --preview 'bat --style=full --color=always --theme=ansi --highlight-line {2} {1}'
+        --preview-window 'down:~4,+{2}+4/3:wrap-word'
+        --header-border=line
+        --footer " ↵ Open │ Tab Select │ Alt-A All │ Alt-D None │ ? Preview"
+        --footer-border=line
+        --prompt 'Search ▶ '
+    )
+
+    fzf "${fzf_opts[@]}"
+}
+
+# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
+
+# Dependency check
+
+if ! _has fd;               then printf "fd: program not found. Install fd-find.\n";  fi
+if ! _has rg;               then printf "rg: program not found. Install ripgrep.\n";  fi
+if ! _has bat;              then printf "bat: program not found. Install bat.\n";     fi
+if ! _has clipcopy;         then printf "clipcopy(): function not loaded.\n";         fi
+if ! _has copyabsolutepath; then printf "copyabsolutepath(): function not loaded.\n"; fi
+if ! _has open_command;     then printf "open_command(): function not loaded.\n";     fi
+if ! _has open_path;        then printf "open_path(): function not loaded.\n";        fi
+
+# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
