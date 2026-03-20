@@ -28,6 +28,8 @@ No frameworks, no bloat, just clean shell scripting with powerful fuzzy-finding 
 | Tool                                                 | Purpose                                              |
 |------------------------------------------------------|------------------------------------------------------|
 | [eza](https://github.com/eza-community/eza)          | Modern `ls` replacement with color and icons         |
+| [bat](https://github.com/sharkdp/bat)                | Syntax-highlighted file preview used by `rf()`       |
+| [ripgrep](https://github.com/BurntSushi/ripgrep)     | Fast text search used by `rf()`                      |
 | [delta](https://github.com/dandavison/delta)         | Pretty git diffs in the interactive staging function |
 | [tree](https://github.com/Old-Man-Programmer/tree)   | Directory tree viewer used by `tre()`                |
 
@@ -40,26 +42,28 @@ No frameworks, no bloat, just clean shell scripting with powerful fuzzy-finding 
 │
 ├── bash/
 │   ├── .bashrc ·························· Entry point — main Bash config — sources everything below
-│   ├── .bashexports ····················· Environment variables, XDG paths, PATH
-│   ├── .bashutils ······················· Low-level helpers (clipboard, open, confirm)
-│   ├── .bashfzf ························· FZF keybindings (Ctrl-R, Ctrl-T) and interactive functions
-│   ├── .bashfunctions ··················· Git helpers, system update functions
-│   ├── .bashaliases ····················· Shell aliases
-│   ├── .bashextra ······················· Optional extras
+│   ├── .bash_exports ···················· Environment variables, XDG paths, PATH
+│   ├── .bash_utils ······················ Low-level helpers (clipboard, open, confirm)
+│   ├── .bash_history ···················· Ctrl-R fuzzy history search with edit and delete
+│   ├── .bash_find ······················· Ctrl-T fuzzy file/dir search and rf() text search
+│   ├── .bash_git ························ Interactive git functions (gl, gc, ga, gr, gho, cdgr)
+│   ├── .bash_functions ·················· Miscellaneous shell functions
+│   ├── .bash_aliases ···················· Shell aliases
 │   ├── .bashprompt_theme_cascade ········ Default prompt — agnoster-style segments
 │   └── .bashprompt_theme_pure ··········· Alternative prompt — minimal style
 │
 ├── zsh/
 │   ├── .zshenv ·························· Entry point — sets ZDOTDIR where zshrc lives, sources exports
-│   ├── .zshexports ······················ Environment variables, XDG paths, PATH
+│   ├── .zsh_exports ····················· Environment variables, XDG paths, PATH
 │   ├── .zshrc ··························· Main Zsh config — sources everything below
-│   ├── .zshutils ························ Low-level helpers (clipboard, open, confirm)
-│   ├── .zshfzf ·························· FZF keybindings (Ctrl-R, Ctrl-T) and interactive functions
-│   ├── .zshfunctions ···················· Git helpers, system update functions
-│   ├── .zshaliases ······················ Shell aliases
-│   ├── .zshextra ························ Optional extras (syntax highlighting)
-│   ├── .zshprompt_theme_cascade ········· Default prompt — agnoster-style segments
-│   └── .zshprompt_theme_pure ············ Alternative prompt — minimal style
+│   ├── .zsh_utils ······················· Low-level helpers (clipboard, open, confirm)
+│   ├── .zsh_history ····················· Ctrl-R fuzzy history search with edit and delete
+│   ├── .zsh_find ························ Ctrl-T fuzzy file/dir search and rf() text search
+│   ├── .zsh_git ························· Interactive git functions (gl, gc, ga, gr, gho, cdgr)
+│   ├── .zsh_functions ··················· Miscellaneous shell functions
+│   ├── .zsh_aliases ····················· Shell aliases
+│   ├── .zshprompt_theme_cascade ········· Prompt — agnoster-style segments
+│   └── .zshprompt_theme_pure ············ Default prompt — minimal style
 │
 ├── scripts/
 │   ├── setup-symlinks ·················· Symlinks dotfiles to ~/.config/
@@ -78,14 +82,15 @@ No frameworks, no bloat, just clean shell scripting with powerful fuzzy-finding 
 Zsh                                          │   Bash
 ───                                          │   ────
 ~/.zshenv                                    │   ~/.bashrc
- ├─ .zshexports                              │        ├─ .bashexports
+ ├─ .zsh_exports                             │        ├─ .bash_exports
  └─ $ZDOTDIR/.zshrc                          │        ├─ .bashprompt_theme_cascade
-               ├─ .zshprompt_theme_cascade   │        ├─ .bashutils
-               ├─ .zshutils                  │        ├─ .bashfzf
-               ├─ .zshfzf                    │        ├─ .bashfunctions
-               ├─ .zshfunctions              │        └─ .bashaliases
-               ├─ .zshaliases                │
-               └─ .zshextra                  │
+               ├─ .zshprompt_theme_pure      │        ├─ .bash_utils
+               ├─ .zsh_utils                 │        ├─ .bash_git
+               ├─ .zsh_git                   │        ├─ .bash_history
+               ├─ .zsh_history               │        ├─ .bash_find
+               ├─ .zsh_find                  │        ├─ .bash_functions
+               ├─ .zsh_functions             │        └─ .bash_aliases
+               └─ .zsh_aliases               │
 ```
 
 ---
@@ -143,7 +148,7 @@ exec "$(ps -p $$ -ocomm=)"
 
 ## Prompt
 
-Two custom, plugin-free prompt themes are included for both **Zsh** and **Bash** with full feature parity. The **Cascade** theme is active by default. To switch themes, comment/uncomment the corresponding `source` line in `.zshrc` or `.bashrc`.
+Two custom, plugin-free prompt themes are included for both **Zsh** and **Bash** with full feature parity. The **Pure** theme is the default for Zsh; **Cascade** is the default for Bash. To switch themes, comment/uncomment the corresponding `source` line in `.zshrc` or `.bashrc`.
 
 ### Prompt features
 
@@ -213,6 +218,26 @@ System-wide fuzzy search for files and directories (searches from `/` using `fd`
 | `Ctrl-O`       | Open with system default app                      |
 | `Ctrl-Y`       | Copy path to clipboard                            |
 
+### `rf` — Live ripgrep text search
+
+Live text search powered by ripgrep with a bat-previewed, fzf-driven interface. Opens matches directly in `$VISUAL` at the matched line. Requires `rg` and `bat`.
+
+```shell
+rf           # search in current directory
+rf path/     # search in a specific directory
+rf file.rs   # search within a single file
+```
+
+| Key inside fzf | Action                                                              |
+|----------------|---------------------------------------------------------------------|
+| `Enter`        | Open match in `$VISUAL` at the matched line                         |
+| `TAB`          | Toggle selection of a match                                         |
+| `Alt-A`        | Select all matches                                                  |
+| `Alt-D`        | Deselect all                                                        |
+| `?`            | Toggle preview                                                      |
+
+When multiple matches are selected, `$VISUAL` is opened with a quickfix list (vim/nvim only).
+
 ### Other keybindings
 
 | Key                        | Action                                                                            | Shell |
@@ -268,6 +293,17 @@ Browse, inspect, and diff commits with delta-powered preview.
 | `Ctrl-Y`       | Copy the commit hash to clipboard             |
 | `Ctrl-O`       | Open the commit on GitHub                     |
 | `?`            | Toggle preview                                |
+
+#### `gr` — List git remotes
+
+Prints each remote on one line, aligned in columns. Shows two lines for a remote only when its push URL differs from its fetch URL.
+
+#### Git utility functions
+
+| Function       | Description                                                            |
+|----------------|------------------------------------------------------------------------|
+| `cdgr`         | `cd` to the outermost git superproject root                            |
+| `gho [remote]` | Open the remote repo page (GitHub, GitLab, etc.) in a browser         |
 
 #### Other functions
 
