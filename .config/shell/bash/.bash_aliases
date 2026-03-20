@@ -58,14 +58,14 @@ alias nnn='open_command "$PWD"'
 if [[ "$(uname)" == "Darwin" ]]; then
     alias shwifi='security find-generic-password -ga "$(networksetup -getairportnetwork en0 | awk -F: "{print \$2}" | xargs)" 2>&1 | grep password'
 else
-    alias shwifi='sudo grep -r "^psk=" /etc/NetworkManager/system-connections/'
+    shwifi() {
+        nmcli -t -f NAME,TYPE connection show | awk -F: '$2=="802-11-wireless"{print $1}' | while IFS= read -r ssid; do
+            pass=$(sudo nmcli -s -g 802-11-wireless-security.psk connection show "$ssid" 2>/dev/null)
+            [ -n "$pass" ] && printf "%-30s %s\n" "$ssid" "$pass"
+        done
+    }
 fi
 
-# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
-
-# Show the name of the current shell
-
-alias which_shell='printf "$(ps -p $$ -ocomm=)\n"'
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
@@ -87,9 +87,9 @@ fi
 # Better cat with bat (syntax highlighting, line numbers)
 
 if _has bat; then
-    alias cat='bat --paging=never --theme=ansi'
+    alias cat='bat --paging=never --theme=auto'
 elif _has batcat; then
-    alias cat='batcat --paging=never --theme=ansi'
+    alias cat='batcat --paging=never --theme=auto'
 fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
@@ -98,7 +98,6 @@ fi
 
 alias g='git'
 alias gfatp='git fetch --all --tags --prune'
-
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
@@ -110,14 +109,11 @@ alias dpsl='docker ps --format "{{.Names}}" --filter status=running'
 
 # Files
 
-# Open ToDo list in the default $EDITOR
-alias todo='"$EDITOR" "$DOTFILE_DIR/../../../../Notes/todo.md"'
-
 # Edit the shell config folder in the default $VISUAL editor
-alias edrc='"$VISUAL" "$DOTFILE_DIR/../"'
+alias edrc='"$VISUAL" "$DOTFILE_DIR/../../../"'
 
 # cd into the shell config folder
-alias cdrc='cd "$DOTFILE_DIR/../"'
+alias cdrc='cd "$DOTFILE_DIR/../../../"'
 
 # Diff on-disk dotfiles vs dotfiles repo in Meld
 alias diffrc='od meld "$DOTFILE_DIR/../../../../dotfiles" "$HOME/repo/dots"'
