@@ -150,7 +150,7 @@ gl()
 
     local delta_theme=$(_detect_color_scheme)
     local delta_cmd="delta --paging=never --width=\$FZF_PREVIEW_COLUMNS --$delta_theme"
-    local delta_pager="delta --$delta_theme"
+    local delta_pager="delta --$delta_theme --paging=never | less -R"
 
     local preview_cmd="
     [ -n {1} ] || exit 0;
