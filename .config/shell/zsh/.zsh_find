@@ -126,6 +126,8 @@ rf()
             esac
         fi'
 
+    local bat_theme=$(_detect_color_scheme)
+
     local -a fzf_opts=(
         --height 100%
         --disabled
@@ -141,7 +143,7 @@ rf()
         --border-label-pos=2
         --color 'label:yellow:bold'
         --delimiter ':'
-        --preview 'bat --style=full --color=always --theme=ansi --highlight-line {2} {1}'
+        --preview "bat --style=full --color=always --theme=$bat_theme --highlight-line {2} {1}"
         --preview-window 'down:~4,+{2}+4/3:wrap-word'
         --header-border=line
         --footer " ↵ Open │ Tab Select │ Alt-A All │ Alt-D None │ ? Preview"
