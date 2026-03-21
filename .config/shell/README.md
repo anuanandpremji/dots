@@ -109,6 +109,13 @@ Then set your terminal emulator to use one of the installed Nerd Fonts.
 
 ### 3. Link your shell config
 
+> [!WARNING]
+> This will replace your existing `~/.zshenv` and `~/.bashrc`. Back them up first if you want to keep anything from them:
+> ```shell
+> cp ~/.zshenv ~/.zshenv.bak 2>/dev/null
+> cp ~/.bashrc ~/.bashrc.bak 2>/dev/null
+> ```
+
 **Symlink (recommended)** — `$DOTFILE_DIR` resolves automatically from the symlink target, so no manual editing is needed:
 
 ```shell
