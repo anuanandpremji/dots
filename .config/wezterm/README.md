@@ -2,8 +2,8 @@
 
 ## Files
 
-| File | Purpose |
-|------|---------|
+| File          | Purpose                                                                                          |
+|---------------|--------------------------------------------------------------------------------------------------|
 | `wezterm.lua` | Main config — font, keybindings, splits, theme, window frame. Symlinked as `~/.config/wezterm/`. |
 
 ## Features
@@ -16,12 +16,12 @@
 
 ## Keybindings
 
-| Action | Shortcut |
-|--------|----------|
-| Split vertical (side-by-side) | `Ctrl+Alt+V` |
-| Split horizontal (top-bottom) | `Ctrl+Alt+S` |
-| Navigate panes | `Ctrl+Alt+Arrow` |
-| Resize panes (5 cells/press) | `Ctrl+Alt+Shift+Arrow` |
+| Action                        | Shortcut               |
+|-------------------------------|------------------------|
+| Split vertical (side-by-side) | `Ctrl+Alt+V`           |
+| Split horizontal (top-bottom) | `Ctrl+Alt+S`           |
+| Navigate panes                | `Ctrl+Alt+Arrow`       |
+| Resize panes (5 cells/press)  | `Ctrl+Alt+Shift+Arrow` |
 
 ## Quake-Mode Dropdown
 

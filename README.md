@@ -35,20 +35,20 @@ The script will:
 
 ## What's Included
 
-| Category | Apps | Docs |
-|----------|------|------|
-| Shell | Zsh, Bash (cross-shell config with shared aliases, functions, history) | [README](.config/shell/README.md) |
-| Terminal | WezTerm (with quake-mode dropdown) | [README](.config/wezterm/README.md) |
-| Editors | Neovim, Fresh, VS Code, Zed | [Neovim](.config/nvim/README.md), [Fresh](.config/fresh/README.md), [VS Code](.config/vscode/README.md), [Zed](.config/zed/README.md) |
-| CLI Tools | fzf, fd, bat, ripgrep, eza, delta, tree | |
-| Git | Custom config with delta pager, aliases, multi-identity | [README](.config/git/README.md) |
-| Browsers | Firefox, Chrome, Brave | |
-| Markdown | Obsidian, Typora | |
-| Diff | Meld, delta (CLI) | |
-| PDF | PDF Arranger | |
-| Cloud | Dropbox | |
-| GNOME | Desktop settings, extensions, Calendar, Tweaks, Extension Manager | [README](.config/gnome/README.md) |
-| Fonts | Nerd Font collection | [README](.local/share/fonts/README.md) |
+| Category  | Apps                                                                   | Docs                                                                                                                                  |
+|-----------|------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| Shell     | Zsh, Bash (cross-shell config with shared aliases, functions, history) | [README](.config/shell/README.md)                                                                                                     |
+| Terminal  | WezTerm (with quake-mode dropdown)                                     | [README](.config/wezterm/README.md)                                                                                                   |
+| Editors   | Neovim, Fresh, VS Code, Zed                                            | [Neovim](.config/nvim/README.md), [Fresh](.config/fresh/README.md), [VS Code](.config/vscode/README.md), [Zed](.config/zed/README.md) |
+| CLI Tools | fzf, fd, bat, ripgrep, eza, delta, tree                                |                                                                                                                                       |
+| Git       | Custom config with delta pager, aliases, multi-identity                | [README](.config/git/README.md)                                                                                                       |
+| Browsers  | Firefox, Chrome, Brave                                                 |                                                                                                                                       |
+| Markdown  | Obsidian, Typora                                                       |                                                                                                                                       |
+| Diff      | Meld, delta (CLI)                                                      |                                                                                                                                       |
+| PDF       | PDF Arranger                                                           |                                                                                                                                       |
+| Cloud     | Dropbox                                                                |                                                                                                                                       |
+| GNOME     | Desktop settings, extensions, Calendar, Tweaks, Extension Manager      | [README](.config/gnome/README.md)                                                                                                     |
+| Fonts     | Nerd Font collection                                                   | [README](.local/share/fonts/README.md)                                                                                                |
 
 ## Directory Structure
 

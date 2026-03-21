@@ -4,23 +4,23 @@ Nerd Font patched monospace fonts and a few display fonts, symlinked to `~/.loca
 
 ## Installed Families
 
-| Font | Type | Notes |
-|------|------|-------|
+| Font                        | Type      | Notes                                                         |
+|-----------------------------|-----------|---------------------------------------------------------------|
 | JetBrains Mono NL Nerd Font | Monospace | **Primary font** — used in WezTerm, VS Code, Zed, Guake, Meld |
-| SF Mono | Monospace | Zed UI font |
-| Operator Mono Lig Nerd Font | Monospace | Ligature variant |
-| DankMono Nerd Font | Monospace | |
-| Fantasque Sans Mono | Monospace | Nerd Font patched |
-| Iosevka Term | Monospace | Nerd Font patched |
-| Input | Monospace | Nerd Font Complete variants |
-| Recursive | Variable | Variable-weight monospace/sans |
-| iA Writer Quattro V | Monospace | Proportional writing font |
-| Atkinson Hyperlegible | Sans | High-legibility font |
-| Bitter Pro | Serif | |
-| Helvetica Neue | Sans | |
-| Noto Emoji | Emoji | Variable weight |
-| Symbols 2048-em Nerd Font | Symbol | Standalone Nerd Font symbols |
-| Trang Pencil | Display | |
+| SF Mono                     | Monospace | Zed UI font                                                   |
+| Operator Mono Lig Nerd Font | Monospace | Ligature variant                                              |
+| DankMono Nerd Font          | Monospace |                                                               |
+| Fantasque Sans Mono         | Monospace | Nerd Font patched                                             |
+| Iosevka Term                | Monospace | Nerd Font patched                                             |
+| Input                       | Monospace | Nerd Font Complete variants                                   |
+| Recursive                   | Variable  | Variable-weight monospace/sans                                |
+| iA Writer Quattro V         | Monospace | Proportional writing font                                     |
+| Atkinson Hyperlegible       | Sans      | High-legibility font                                          |
+| Bitter Pro                  | Serif     |                                                               |
+| Helvetica Neue              | Sans      |                                                               |
+| Noto Emoji                  | Emoji     | Variable weight                                               |
+| Symbols 2048-em Nerd Font   | Symbol    | Standalone Nerd Font symbols                                  |
+| Trang Pencil                | Display   |                                                               |
 
 ## Setup
 

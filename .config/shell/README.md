@@ -17,15 +17,15 @@ No frameworks, no bloat, just clean shell scripting with powerful fuzzy-finding 
 
 ## Prerequisites
 
-| Tool                                                  | Purpose                                              |
-|-------------------------------------------------------|------------------------------------------------------|
-| [Nerd Font](https://github.com/ryanoasis/nerd-fonts)  | Renders glyphs and icons in the prompt               |
-| [fzf](https://github.com/junegunn/fzf)                | Fuzzy search for history, files, git                 |
-| [fd](https://github.com/sharkdp/fd)                   | Fast file finder used by `Ctrl-T`                    |
-| [eza](https://github.com/eza-community/eza)           | Modern `ls` replacement with color and icons         |
-| [bat](https://github.com/sharkdp/bat)                 | Syntax-highlighted file preview used by `rf()`       |
-| [ripgrep](https://github.com/BurntSushi/ripgrep)      | Fast text search used by `rf()`                      |
-| [delta](https://github.com/dandavison/delta)          | Pretty git diffs in the interactive staging function |
+| Tool                                                 | Purpose                                              |
+|------------------------------------------------------|------------------------------------------------------|
+| [Nerd Font](https://github.com/ryanoasis/nerd-fonts) | Renders glyphs and icons in the prompt               |
+| [fzf](https://github.com/junegunn/fzf)               | Fuzzy search for history, files, git                 |
+| [fd](https://github.com/sharkdp/fd)                  | Fast file finder used by `Ctrl-T`                    |
+| [eza](https://github.com/eza-community/eza)          | Modern `ls` replacement with color and icons         |
+| [bat](https://github.com/sharkdp/bat)                | Syntax-highlighted file preview used by `rf()`       |
+| [ripgrep](https://github.com/BurntSushi/ripgrep)     | Fast text search used by `rf()`                      |
+| [delta](https://github.com/dandavison/delta)         | Pretty git diffs in the interactive staging function |
 
 ---
 
@@ -204,17 +204,17 @@ System-wide fuzzy search for files and directories (searches from `/` using `fd`
 
 ![Ctrl-T file search](screenshots/Ctrl-T.png)
 
-| Key inside fzf | Action                                            |
-|----------------|---------------------------------------------------|
-| `Enter`        | Paste selected path onto command line             |
-| `Alt-C`        | `cd` to directory (or parent directory of file)   |
-| `Ctrl-S`       | Cycle filter: Directories / Files                 |
-| `?`            | Toggle preview                                    |
-| `Ctrl-E`       | Open in file explorer                             |
-| `Ctrl-V`       | Open in Zed editor                                |
-| `Ctrl-N`       | Open in `$VISUAL`                                 |
-| `Ctrl-O`       | Open with system default app                      |
-| `Ctrl-Y`       | Copy path to clipboard                            |
+| Key inside fzf | Action                                          |
+|----------------|-------------------------------------------------|
+| `Enter`        | Paste selected path onto command line           |
+| `Alt-C`        | `cd` to directory (or parent directory of file) |
+| `Ctrl-S`       | Cycle filter: Directories / Files               |
+| `?`            | Toggle preview                                  |
+| `Ctrl-E`       | Open in file explorer                           |
+| `Ctrl-V`       | Open in Zed editor                              |
+| `Ctrl-N`       | Open in `$VISUAL`                               |
+| `Ctrl-O`       | Open with system default app                    |
+| `Ctrl-Y`       | Copy path to clipboard                          |
 
 ### `rf` — Live ripgrep text search
 

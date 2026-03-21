@@ -2,11 +2,11 @@
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `settings.json` | Editor settings — font, theme, UI, terminal, telemetry. |
-| `keymap.json` | Custom keybindings — pane management, comment toggle, terminal passthrough. |
-| `themes/` | 13 custom color themes. |
+| File            | Purpose                                                                     |
+|-----------------|-----------------------------------------------------------------------------|
+| `settings.json` | Editor settings — font, theme, UI, terminal, telemetry.                     |
+| `keymap.json`   | Custom keybindings — pane management, comment toggle, terminal passthrough. |
+| `themes/`       | 13 custom color themes.                                                     |
 
 The entire `~/.config/zed/` directory is symlinked.
 
@@ -21,13 +21,13 @@ The entire `~/.config/zed/` directory is symlinked.
 
 ## Keybindings
 
-| Action | Shortcut | Context |
-|--------|----------|---------|
-| Split vertical | `Ctrl+Alt+V` | Workspace |
-| Split horizontal | `Ctrl+Alt+S` | Workspace |
-| Navigate panes | `Ctrl+Alt+Arrow` | Workspace |
+| Action              | Shortcut               | Context   |
+|---------------------|------------------------|-----------|
+| Split vertical      | `Ctrl+Alt+V`           | Workspace |
+| Split horizontal    | `Ctrl+Alt+S`           | Workspace |
+| Navigate panes      | `Ctrl+Alt+Arrow`       | Workspace |
 | Resize dock/sidebar | `Ctrl+Alt+Shift+Arrow` | Workspace |
-| Delete line | `Alt+Delete` | Editor |
+| Delete line         | `Alt+Delete`           | Editor    |
 
 Note: Resize shortcuts use `workspace::IncreaseActiveDockSize` / `workspace::DecreaseActiveDockSize`, which resize the sidebar and panel docks. Zed does not currently support keyboard-driven editor pane resizing.
 

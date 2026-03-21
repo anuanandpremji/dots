@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""
+format-md-tables — Reformat markdown tables with aligned, padded columns.
+
+Usage:
+    format-md-tables [file ...]       # Format specific files
+    format-md-tables                  # Format all .md files under current directory
+
+Skips CLAUDE.md files. Prints which files were updated.
+"""
+
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+
+def format_table_block(lines):
+    """Format a single markdown table block (list of raw lines) with aligned columns."""
+    rows = []
+    for line in lines:
+        parts = line.strip().strip('|').split('|')
+        rows.append([p.strip() for p in parts])
+
+    # Find the separator row (contains only dashes and optional colons)
+    sep_idx = None
+    for i, row in enumerate(rows):
+        if all(re.match(r'^:?-+:?$', cell) for cell in row if cell):
+            sep_idx = i
+            break
+
+    if sep_idx is None:
+        return lines  # Not a valid table — leave untouched
+
+    # Detect column alignments from the separator row
+    alignments = []
+    for cell in rows[sep_idx]:
+        if cell.startswith(':') and cell.endswith(':'):
+            alignments.append('center')
+        elif cell.endswith(':'):
+            alignments.append('right')
+        elif cell.startswith(':'):
+            alignments.append('left')
+        else:
+            alignments.append('left')
+
+    ncols = max(len(r) for r in rows)
+    while len(alignments) < ncols:
+        alignments.append('left')
+
+    # Compute max content width for each column (ignoring separator row)
+    col_widths = [0] * ncols
+    for i, row in enumerate(rows):
+        if i == sep_idx:
+            continue
+        for j, cell in enumerate(row):
+            if j < ncols:
+                col_widths[j] = max(col_widths[j], len(cell))
+    col_widths = [max(w, 3) for w in col_widths]  # Minimum 3 dashes in separator
+
+    def fmt_cell(cell, width, align):
+        if align == 'center':
+            return cell.center(width)
+        elif align == 'right':
+            return cell.rjust(width)
+        else:
+            return cell.ljust(width)
+
+    def fmt_data_row(cells):
+        parts = [fmt_cell(cells[j] if j < len(cells) else '', col_widths[j], alignments[j])
+                 for j in range(ncols)]
+        return '| ' + ' | '.join(parts) + ' |'
+
+    def fmt_sep_row():
+        parts = []
+        for j in range(ncols):
+            w, align = col_widths[j], alignments[j]
+            if align == 'center':
+                parts.append(':' + '-' * w + ':')
+            elif align == 'right':
+                parts.append('-' * w + ':')
+            else:
+                parts.append('-' * (w + 2))
+        return '|' + '|'.join(parts) + '|'
+
+    return [fmt_sep_row() if i == sep_idx else fmt_data_row(row)
+            for i, row in enumerate(rows)]
+
+
+def process_file(path):
+    if Path(path).name == 'CLAUDE.md':
+        return
+
+    with open(path, 'r') as f:
+        content = f.read()
+
+    lines = content.split('\n')
+    result = []
+    i = 0
+
+    while i < len(lines):
+        stripped = lines[i].strip()
+        if stripped.startswith('|') and stripped.endswith('|'):
+            table_lines = []
+            while i < len(lines):
+                s = lines[i].strip()
+                if s.startswith('|') and s.endswith('|'):
+                    table_lines.append(lines[i])
+                    i += 1
+                else:
+                    break
+            result.extend(format_table_block(table_lines))
+        else:
+            result.append(lines[i])
+            i += 1
+
+    new_content = '\n'.join(result)
+    if new_content != content:
+        with open(path, 'w') as f:
+            f.write(new_content)
+        print(f"Updated: {path}")
+    else:
+        print(f"No change: {path}")
+
+
+def main():
+    if len(sys.argv) > 1:
+        files = sys.argv[1:]
+    else:
+        # Find all .md files under the current directory
+        out = subprocess.run(['find', '.', '-name', '*.md'],
+                             capture_output=True, text=True)
+        files = sorted(f.lstrip('./') for f in out.stdout.strip().split('\n') if f)
+
+    for f in files:
+        process_file(f)
+
+
+if __name__ == '__main__':
+    main()

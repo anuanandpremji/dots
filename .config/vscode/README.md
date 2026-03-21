@@ -2,9 +2,9 @@
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `User/settings.json` | Editor settings — font, theme, terminal, language-specific overrides. |
+| File                    | Purpose                                                               |
+|-------------------------|-----------------------------------------------------------------------|
+| `User/settings.json`    | Editor settings — font, theme, terminal, language-specific overrides. |
 | `User/keybindings.json` | Custom keybindings — pane management, navigation, terminal shortcuts. |
 
 Only these two files are symlinked. VS Code manages extensions and other state in `~/.config/Code/` independently.
@@ -20,20 +20,20 @@ Only these two files are symlinked. VS Code manages extensions and other state i
 
 ## Keybindings
 
-| Action | Shortcut | Context |
-|--------|----------|---------|
-| Split vertical | `Ctrl+Alt+V` | Editor / Terminal |
-| Split horizontal | `Ctrl+Alt+S` | Editor / Terminal |
-| Navigate panes | `Ctrl+Alt+Arrow` | Editor / Terminal |
-| Resize pane/sidebar | `Ctrl+Alt+Shift+Left/Right` | Any (width) |
-| Resize pane/sidebar | `Ctrl+Alt+Shift+Up/Down` | Any (overall size) |
-| Navigate back/forward | `Alt+Left/Right` | Editor |
-| Open explorer | `Ctrl+E` | Any |
-| Delete line | `Alt+Delete` | Editor |
-| Toggle panel | `` Ctrl+` `` | Non-terminal |
-| Toggle terminal | `Ctrl+J` | Terminal active |
-| Maximize terminal | `Ctrl+Shift+J` | Terminal |
-| Move editor to group | `Ctrl+K Arrow` | Any |
+| Action                | Shortcut                    | Context            |
+|-----------------------|-----------------------------|--------------------|
+| Split vertical        | `Ctrl+Alt+V`                | Editor / Terminal  |
+| Split horizontal      | `Ctrl+Alt+S`                | Editor / Terminal  |
+| Navigate panes        | `Ctrl+Alt+Arrow`            | Editor / Terminal  |
+| Resize pane/sidebar   | `Ctrl+Alt+Shift+Left/Right` | Any (width)        |
+| Resize pane/sidebar   | `Ctrl+Alt+Shift+Up/Down`    | Any (overall size) |
+| Navigate back/forward | `Alt+Left/Right`            | Editor             |
+| Open explorer         | `Ctrl+E`                    | Any                |
+| Delete line           | `Alt+Delete`                | Editor             |
+| Toggle panel          | `` Ctrl+` ``                | Non-terminal       |
+| Toggle terminal       | `Ctrl+J`                    | Terminal active    |
+| Maximize terminal     | `Ctrl+Shift+J`              | Terminal           |
+| Move editor to group  | `Ctrl+K Arrow`              | Any                |
 
 ## Setup
 

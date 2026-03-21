@@ -2,8 +2,8 @@
 
 ## Files
 
-| File | Purpose |
-|------|---------|
+| File          | Purpose                                                             |
+|---------------|---------------------------------------------------------------------|
 | `config.json` | All editor settings — theme, indentation, LSP servers, keybindings. |
 
 ## Features
@@ -12,13 +12,13 @@ Fresh is the preferred `$EDITOR` (highest priority in the shell config's editor 
 
 ## Keybindings
 
-| Action | Shortcut |
-|--------|----------|
-| Toggle comment | `Alt+/` |
-| Toggle comment (alt) | `Ctrl+_` |
+| Action               | Shortcut         |
+|----------------------|------------------|
+| Toggle comment       | `Alt+/`          |
+| Toggle comment (alt) | `Ctrl+_`         |
 | Delete previous word | `Ctrl+Backspace` |
-| Delete next word | `Ctrl+Delete` |
-| Toggle soft wrap | `Alt+Z` |
+| Delete next word     | `Ctrl+Delete`    |
+| Toggle soft wrap     | `Alt+Z`          |
 
 Standard keybindings (`Ctrl+S` save, `Ctrl+Z` undo, `Ctrl+F` find, `Ctrl+P` command palette) work without any config.
 

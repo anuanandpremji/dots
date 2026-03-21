@@ -2,12 +2,12 @@
 
 ## Files
 
-| File | Tracked | Purpose |
-|------|---------|---------|
-| `config` | Yes | Main git config — aliases, colors, delta pager, merge settings, `includeIf` rules. Symlinked to `~/.config/git/config`. |
-| `config.default` | No | Default identity for repos outside `~/private/` and `~/work/`. Copy of whichever identity was chosen as default during setup. |
-| `config.private` | No | Private identity. Created by `setup-identities`, applied automatically in `~/private/`. |
-| `config.work` | No | Work identity. Created by `setup-identities`, applied automatically in `~/work/`. |
+| File             | Tracked | Purpose                                                                                                                       |
+|------------------|---------|-------------------------------------------------------------------------------------------------------------------------------|
+| `config`         | Yes     | Main git config — aliases, colors, delta pager, merge settings, `includeIf` rules. Symlinked to `~/.config/git/config`.       |
+| `config.default` | No      | Default identity for repos outside `~/private/` and `~/work/`. Copy of whichever identity was chosen as default during setup. |
+| `config.private` | No      | Private identity. Created by `setup-identities`, applied automatically in `~/private/`.                                       |
+| `config.work`    | No      | Work identity. Created by `setup-identities`, applied automatically in `~/work/`.                                             |
 
 ## Features
 
@@ -20,10 +20,10 @@
 
 The `setup-identities` script (run automatically by `setup.sh`) creates separate SSH keys, git identities, and project directories:
 
-| Directory | SSH key | Host alias | Git identity |
-|-----------|---------|------------|--------------|
-| `~/private/` | `~/.ssh/id_private` | `github-private` | `config.private` (default) |
-| `~/work/` | `~/.ssh/id_work` | `github-work` | `config.work` (via `includeIf`) |
+| Directory    | SSH key             | Host alias       | Git identity                    |
+|--------------|---------------------|------------------|---------------------------------|
+| `~/private/` | `~/.ssh/id_private` | `github-private` | `config.private` (default)      |
+| `~/work/`    | `~/.ssh/id_work`    | `github-work`    | `config.work` (via `includeIf`) |
 
 The correct name, email, and SSH key are applied automatically based on where you clone:
 
