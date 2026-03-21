@@ -66,7 +66,6 @@ No frameworks, no bloat, just clean shell scripting with powerful fuzzy-finding 
 │
 └── starship/
     ├── gaps.toml ························ Starship prompt — agnoster with gaps
-    ├── gaps_inverted_arrow.toml ········· Starship prompt — inverted arrow variant
     └── pills.toml ······················· Starship prompt — pill-shaped segments
 ```
 
