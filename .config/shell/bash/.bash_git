@@ -215,7 +215,7 @@ gl()
 
     local -a fzf_opts=(
         --ansi --no-sort --height=100% --freeze-left=10
-        --ghost "Filter commits on $viewed_ref..."
+        --ghost "Filter commits on  $viewed_ref..."
         --highlight-line
         --style=full
         --header-lines=1
@@ -237,7 +237,7 @@ gl()
         --bind "ctrl-o:execute-silent[sha={1}; $open_cmd \"$github_url/commit/\$sha\" >/dev/null 2>&1 &]"
         --bind 'ctrl-f:change-nth(3)+change-ghost(Author filter — press ctrl-a to reset)'
         --bind 'ctrl-t:change-nth(2)+change-ghost(Message filter — press ctrl-a to reset)'
-        --bind "ctrl-a:change-nth(..)+change-ghost(Filter commits on $viewed_ref...)"
+        --bind "ctrl-a:change-nth(..)+change-ghost(Filter commits on  $viewed_ref...)"
     )
 
     git log "${git_log_opts[@]}" "$@" \
