@@ -10,6 +10,11 @@ if wezterm.target_triple == 'x86_64-pc-windows-msvc' then
     config.default_prog = { 'pwsh.exe', '-NoLogo' }
 end
 
+-- Performance
+config.max_fps = 120
+config.animation_fps = 120
+config.automatically_reload_config = true
+
 -- Scrollback & Scrollbar
 config.enable_scroll_bar = true
 config.scrollback_lines  = 100000
