@@ -43,6 +43,13 @@
 [includeIf "gitdir:~/work/"]
     path          = config.work
 
+# Remote-URL overrides — catch repos cloned or built outside the watched
+# directories (e.g. /tmp/). Requires Git ≥ 2.36.
+[includeIf "hasconfig:remote.*.url:*github-private*"]
+    path          = config.private
+
+[includeIf "hasconfig:remote.*.url:*github-work*"]
+    path          = config.work
+
 [merge]
     conflictstyle = diff3
-
