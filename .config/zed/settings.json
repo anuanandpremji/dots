@@ -93,4 +93,9 @@
         "dark": "Gruvbox Dark Hard",
     },
     "tab_size": 4,
+
+    "file_types": {
+        "Bash": ["**/.bash_*", "**/.bashprompt_*"],
+        "Shell Script": ["**/.zsh_*", "**/.zshprompt_*"],
+    },
 }
