@@ -128,6 +128,13 @@ if command -v fresh &>/dev/null; then
     link_path "$DOTFILES/.config/fresh/config.json" "$HOME/.config/fresh/config.json"
 fi
 
+if command -v micro &>/dev/null; then
+    echo "── Micro ──"
+    link_path "$DOTFILES/.config/micro/settings.json" "$HOME/.config/micro/settings.json"
+    link_path "$DOTFILES/.config/micro/bindings.json" "$HOME/.config/micro/bindings.json"
+    link_path "$DOTFILES/.config/micro/init.lua"      "$HOME/.config/micro/init.lua"
+fi
+
 # ── VS Code (only if installed) ──────────────────────────────────────────────
 if command -v code &>/dev/null; then
     echo "── VS Code ──"
