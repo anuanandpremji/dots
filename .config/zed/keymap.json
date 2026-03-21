@@ -19,7 +19,7 @@
             "ctrl-alt-shift-left": "workspace::DecreaseActiveDockSize",
             "ctrl-alt-shift-up": "workspace::DecreaseActiveDockSize",
             // Zoom
-            "shift-escape": "pane::ToggleZoom",
+            "shift-escape": "workspace::ToggleZoom",
         },
     },
     {

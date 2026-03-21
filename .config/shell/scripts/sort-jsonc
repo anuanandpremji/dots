@@ -1,0 +1,311 @@
+#!/usr/bin/env python3
+"""
+sort-jsonc — Sort JSON or JSONC file keys alphabetically (recursively).
+
+Handles both .json and .jsonc files. Preserves // line comments,
+/* block comments */, and trailing commas. Output remains valid JSONC.
+Comments are kept associated with the key that follows them.
+
+Usage:
+    sort-jsonc <file>           Sort in-place
+    sort-jsonc <file> -o <out>  Write to a different file
+    sort-jsonc -                Read from stdin, write to stdout
+"""
+
+import re
+import sys
+import json
+import argparse
+from dataclasses import dataclass, field
+from typing import Optional
+
+# ---------------------------------------------------------------------------
+# Tokenizer
+# ---------------------------------------------------------------------------
+
+_TOKEN_PATTERNS = [
+    ('BLOCK_COMMENT', r'/\*.*?\*/'),
+    ('LINE_COMMENT',  r'//[^\n]*'),
+    ('NEWLINE',       r'\r?\n'),
+    ('SPACE',         r'[ \t]+'),
+    ('STRING',        r'"(?:[^"\\]|\\.)*"'),
+    ('NUMBER',        r'-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?'),
+    ('TRUE',          r'\btrue\b'),
+    ('FALSE',         r'\bfalse\b'),
+    ('NULL',          r'\bnull\b'),
+    ('LBRACE',        r'\{'),
+    ('RBRACE',        r'\}'),
+    ('LBRACKET',      r'\['),
+    ('RBRACKET',      r'\]'),
+    ('COLON',         r':'),
+    ('COMMA',         r','),
+]
+
+_MASTER_RE = re.compile(
+    '|'.join(f'(?P<{name}>{pat})' for name, pat in _TOKEN_PATTERNS),
+    re.DOTALL
+)
+
+
+def tokenize(text: str) -> list[tuple[str, str]]:
+    tokens = []
+    pos = 0
+    for m in _MASTER_RE.finditer(text):
+        if m.start() != pos:
+            raise SyntaxError(f"Unexpected character at position {pos}: {text[pos]!r}")
+        tokens.append((m.lastgroup, m.group()))
+        pos = m.end()
+    if pos != len(text):
+        raise SyntaxError(f"Unexpected character at position {pos}: {text[pos]!r}")
+    tokens.append(('EOF', ''))
+    return tokens
+
+
+# ---------------------------------------------------------------------------
+# AST nodes
+# ---------------------------------------------------------------------------
+
+@dataclass
+class JValue:
+    kind: str  # 'object', 'array', 'string', 'number', 'bool', 'null'
+    raw: str = ''
+    entries: 'list[JEntry]' = field(default_factory=list)
+    items: 'list[JItem]' = field(default_factory=list)
+    tail_comments: list[str] = field(default_factory=list)  # comments before closing bracket
+
+
+@dataclass
+class JEntry:
+    key_raw: str        # original quoted key token, e.g. "agent"
+    key: str            # decoded key for sorting
+    value: JValue
+    pre_comments: list[str]      # comment lines before this key
+    post_comment: Optional[str]  # inline comment after value/comma on same line
+    has_trailing_comma: bool
+
+
+@dataclass
+class JItem:
+    value: JValue
+    pre_comments: list[str]
+    post_comment: Optional[str]
+    has_trailing_comma: bool
+
+
+# ---------------------------------------------------------------------------
+# Parser
+# ---------------------------------------------------------------------------
+
+class Parser:
+    def __init__(self, tokens: list[tuple[str, str]]):
+        self.tokens = tokens
+        self.pos = 0
+
+    def _peek(self) -> tuple[str, str]:
+        return self.tokens[self.pos]
+
+    def _consume(self) -> tuple[str, str]:
+        tok = self.tokens[self.pos]
+        self.pos += 1
+        return tok
+
+    def _skip_spaces(self):
+        """Skip horizontal whitespace only (not newlines)."""
+        while self._peek()[0] == 'SPACE':
+            self._consume()
+
+    def _skip_trivia(self) -> list[str]:
+        """Skip all whitespace and newlines; collect and return any comments."""
+        comments = []
+        while self._peek()[0] in ('SPACE', 'NEWLINE', 'LINE_COMMENT', 'BLOCK_COMMENT'):
+            kind, val = self._consume()
+            if kind in ('LINE_COMMENT', 'BLOCK_COMMENT'):
+                comments.append(val)
+        return comments
+
+    def _get_inline_comment(self) -> Optional[str]:
+        """Check for a comment on the current line (skips spaces, not newlines)."""
+        self._skip_spaces()
+        if self._peek()[0] in ('LINE_COMMENT', 'BLOCK_COMMENT'):
+            return self._consume()[1]
+        return None
+
+    def parse(self) -> JValue:
+        self._skip_trivia()
+        val = self._parse_value()
+        self._skip_trivia()
+        if self._peek()[0] != 'EOF':
+            raise SyntaxError(f"Unexpected token after root value: {self._peek()}")
+        return val
+
+    def _parse_value(self) -> JValue:
+        kind, val = self._peek()
+        if kind == 'LBRACE':   return self._parse_object()
+        if kind == 'LBRACKET': return self._parse_array()
+        if kind == 'STRING':   self._consume(); return JValue('string', raw=val)
+        if kind == 'NUMBER':   self._consume(); return JValue('number', raw=val)
+        if kind == 'TRUE':     self._consume(); return JValue('bool', raw='true')
+        if kind == 'FALSE':    self._consume(); return JValue('bool', raw='false')
+        if kind == 'NULL':     self._consume(); return JValue('null', raw='null')
+        raise SyntaxError(f"Unexpected token {kind!r}: {val!r}")
+
+    def _parse_object(self) -> JValue:
+        self._consume()  # {
+        entries = []
+        while True:
+            pre = self._skip_trivia()
+            if self._peek()[0] == 'RBRACE':
+                self._consume()
+                return JValue('object', entries=entries, tail_comments=pre)
+
+            kind, val = self._peek()
+            if kind != 'STRING':
+                raise SyntaxError(f"Expected string key, got {kind!r}: {val!r}")
+            self._consume()
+            key_raw, key = val, json.loads(val)
+
+            self._skip_trivia()
+            if self._peek()[0] != 'COLON':
+                raise SyntaxError(f"Expected ':', got {self._peek()!r}")
+            self._consume()
+            self._skip_trivia()
+
+            value = self._parse_value()
+            post = self._get_inline_comment()
+
+            self._skip_spaces()
+            has_comma = self._peek()[0] == 'COMMA'
+            if has_comma:
+                self._consume()
+                if post is None:
+                    post = self._get_inline_comment()
+
+            entries.append(JEntry(key_raw, key, value, pre, post, has_comma))
+
+    def _parse_array(self) -> JValue:
+        self._consume()  # [
+        items = []
+        while True:
+            pre = self._skip_trivia()
+            if self._peek()[0] == 'RBRACKET':
+                self._consume()
+                return JValue('array', items=items, tail_comments=pre)
+
+            value = self._parse_value()
+            post = self._get_inline_comment()
+
+            self._skip_spaces()
+            has_comma = self._peek()[0] == 'COMMA'
+            if has_comma:
+                self._consume()
+                if post is None:
+                    post = self._get_inline_comment()
+
+            items.append(JItem(value, pre, post, has_comma))
+
+
+# ---------------------------------------------------------------------------
+# Sorter
+# ---------------------------------------------------------------------------
+
+def sort_value(val: JValue) -> JValue:
+    if val.kind == 'object':
+        return JValue('object',
+            entries=sorted(
+                [JEntry(e.key_raw, e.key, sort_value(e.value), e.pre_comments, e.post_comment, e.has_trailing_comma)
+                 for e in val.entries],
+                key=lambda e: e.key,
+            ),
+            tail_comments=val.tail_comments,
+        )
+    if val.kind == 'array':
+        return JValue('array',
+            items=[JItem(sort_value(i.value), i.pre_comments, i.post_comment, i.has_trailing_comma) for i in val.items],
+            tail_comments=val.tail_comments,
+        )
+    return val
+
+
+# ---------------------------------------------------------------------------
+# Serializer
+# ---------------------------------------------------------------------------
+
+def serialize(val: JValue, indent: int = 0) -> str:
+    pad = '    ' * indent
+    inner = pad + '    '
+
+    if val.kind == 'object':
+        if not val.entries and not val.tail_comments:
+            return '{}'
+        lines = ['{']
+        for e in val.entries:
+            for c in e.pre_comments:
+                lines.append(f'{inner}{c}')
+            v = serialize(e.value, indent + 1)
+            comma = ',' if e.has_trailing_comma else ''
+            post = f'  {e.post_comment}' if e.post_comment else ''
+            lines.append(f'{inner}{e.key_raw}: {v}{comma}{post}')
+        for c in val.tail_comments:
+            lines.append(f'{inner}{c}')
+        lines.append(f'{pad}}}')
+        return '\n'.join(lines)
+
+    if val.kind == 'array':
+        if not val.items and not val.tail_comments:
+            return '[]'
+        lines = ['[']
+        for item in val.items:
+            for c in item.pre_comments:
+                lines.append(f'{inner}{c}')
+            v = serialize(item.value, indent + 1)
+            comma = ',' if item.has_trailing_comma else ''
+            post = f'  {item.post_comment}' if item.post_comment else ''
+            lines.append(f'{inner}{v}{comma}{post}')
+        for c in val.tail_comments:
+            lines.append(f'{inner}{c}')
+        lines.append(f'{pad}]')
+        return '\n'.join(lines)
+
+    return val.raw
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+def process(text: str) -> str:
+    tokens = tokenize(text)
+    tree = Parser(tokens).parse()
+    return serialize(sort_value(tree)) + '\n'
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="Sort JSON or JSONC file keys alphabetically, preserving comments.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    ap.add_argument("file", help="Path to JSON or JSONC file, or - for stdin")
+    ap.add_argument("-o", "--output", help="Output file (default: in-place)")
+    args = ap.parse_args()
+
+    if args.file == "-":
+        sys.stdout.write(process(sys.stdin.read()))
+        return
+
+    with open(args.file, encoding="utf-8") as f:
+        text = f.read()
+
+    result = process(text)
+    out_path = args.output or args.file
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(result)
+
+    if args.output:
+        print(f"Written to {args.output}")
+    else:
+        print(f"Sorted in-place: {args.file}")
+
+
+if __name__ == "__main__":
+    main()
