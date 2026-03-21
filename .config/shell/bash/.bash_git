@@ -138,6 +138,7 @@ gr() {
 #
 # ENTER    - git show (view the commit with full diff)
 # CTRL-D   - git diff (between that commit and the working tree)
+# CTRL-B   - switch to log of a different branch or tag
 # CTRL-Y   - copy the commit hash to clipboard
 # CTRL-O   - open the commit on GitHub
 # CTRL-F   - filter by author
@@ -186,9 +187,22 @@ gl()
         --format=format:$'%C(yellow)%h%C(reset)\t%C(auto)%d%C(reset)\t%s\t%ad\t%aN'
     )
 
+    local viewed_ref="${1:-$(git branch --show-current 2>/dev/null || echo 'HEAD')}"
+
+    local branch_pick_cmd="{ git branch --all --format='%(refname:short)' | grep -v HEAD; git tag --sort=-creatordate; } | sort -u | fzf --no-sort --height=40% --prompt='Switch to ▶ ' --ghost='Pick a branch or tag...'"
+
+    local _bash_git_file="${BASH_SOURCE[0]}"
+    local bind_switch_branch="ctrl-b:become(
+        ref=\$($branch_pick_cmd);
+        if [[ -n \"\$ref\" ]]; then
+            source '$_bash_git_file' 2>/dev/null
+            gl \"\$ref\"
+        fi
+    )"
+
     local -a fzf_opts=(
         --ansi --no-sort --height=100% --freeze-left=10
-        --ghost 'Filter commits on the current branch...'
+        --ghost "Filter commits on $viewed_ref..."
         --highlight-line
         --style=full
         --header-lines=1
@@ -197,19 +211,20 @@ gl()
         --preview-label=' Commit Details '
         --preview-label-pos=2
         --header-border=line
-        --footer " ↵ Show │ ^D Diff │ ^Y Copy Hash │ ^O GitHub │ ^F Author │ ^T Msg │ ? Preview"
+        --footer " ↵ Show │ ^D Diff │ ^B Branch │ ^Y Copy Hash │ ^O GitHub │ ^F Author │ ^T Msg │ ? Preview"
         --footer-border=line
         --color 'label:yellow:bold,header:bold'
         --delimiter '│'
         --bind '?:toggle-preview'
-        --info-command "printf 'On  \xee\x82\xa0 %s  %s' '$(git branch --show-current 2>/dev/null || echo detached)' \"\$FZF_INFO\""
+        --info-command "printf 'On  \xee\x82\xa0 %s  %s' '$viewed_ref' \"\$FZF_INFO\""
         --bind 'enter:execute(git show --color=always {1})'
         --bind 'ctrl-d:execute(git diff --color=always {1})'
+        --bind "$bind_switch_branch"
         --bind "ctrl-y:execute-silent(printf '%s' {1} | $clip_cmd)+change-ghost(Copied commit hash to clipboard)"
         --bind "ctrl-o:execute-silent[sha={1}; $open_cmd \"$github_url/commit/\$sha\" >/dev/null 2>&1 &]"
         --bind 'ctrl-f:change-nth(3)+change-ghost(Author filter — press ctrl-a to reset)'
         --bind 'ctrl-t:change-nth(2)+change-ghost(Message filter — press ctrl-a to reset)'
-        --bind 'ctrl-a:change-nth(..)+change-ghost(Filter commits on the current branch...)'
+        --bind "ctrl-a:change-nth(..)+change-ghost(Filter commits on $viewed_ref...)"
     )
 
     git log "${git_log_opts[@]}" "$@" \
@@ -294,20 +309,26 @@ gc()
     [ -n {} ] || exit 0;
     ref={1};
     if git rev-parse --verify \"\$ref\" >/dev/null 2>&1; then
-        printf '\e[33;1m%s\e[0m\n' \"\$(git log -1 --format='%h  %ad  %an' --date=format:'%Y-%m-%d %a' \"\$ref\")\";
-        printf '%s\n\n' \"\$(git log -1 --format='%s%n%n%b' \"\$ref\")\";
-        git --no-pager diff --stat --color=always \"\$ref\"~1 \"\$ref\" 2>/dev/null;
-        echo;
-        git --no-pager diff --color=never \"\$ref\"~1 \"\$ref\" 2>/dev/null | $delta_cmd;
+        if [[ {fzf:prompt} == *Commits* ]]; then
+            printf '\e[33;1m%s\e[0m\n' \"\$(git log -1 --format='%h  %ad  %an' --date=format:'%Y-%m-%d %a' \"\$ref\")\";
+            printf '%s\n\n' \"\$(git log -1 --format='%s%n%n%b' \"\$ref\")\";
+            git --no-pager diff --stat --color=always \"\$ref\"~1 \"\$ref\" 2>/dev/null;
+            echo;
+            git --no-pager diff --color=never \"\$ref\"~1 \"\$ref\" 2>/dev/null | $delta_cmd;
+        else
+            git log --color=always \
+                --format='%C(yellow)%h%C(reset)  %s  %C(dim)%ad  %aN%C(reset)' \
+                --date=format:'%Y-%m-%d' \"\$ref\" 2>/dev/null;
+        fi
     fi"
 
     local bind_cycle="ctrl-s:transform:
         if [[ \$FZF_PROMPT =~ Branches ]]; then
-            echo 'change-prompt(Tags ▶ )+reload[$tag_cmd]+change-ghost(Filter tags sorted by date...)+refresh-preview';
+            echo 'change-prompt(Tags ▶ )+reload[$tag_cmd]+change-ghost(Filter tags sorted by date...)+change-preview-label( Tag Log )+refresh-preview';
         elif [[ \$FZF_PROMPT =~ Tags ]]; then
-            echo 'change-prompt(Commits ▶ )+reload[$recent_cmd]+change-ghost(Filter last 50 commits on the current branch...)+refresh-preview';
+            echo 'change-prompt(Commits ▶ )+reload[$recent_cmd]+change-ghost(Filter last 50 commits on the current branch...)+change-preview-label( Commit Details )+refresh-preview';
         else
-            echo 'change-prompt(Branches ▶ )+reload[$branch_cmd]+change-ghost(Filter branches across all remotes...)+refresh-preview';
+            echo 'change-prompt(Branches ▶ )+reload[$branch_cmd]+change-ghost(Filter branches across all remotes...)+change-preview-label( Branch Log )+refresh-preview';
         fi"
 
     # _git_web_url is a shell function not available in fzf subshells,
@@ -368,14 +389,14 @@ gc()
         --style=full
         --preview "$preview_cmd"
         --preview-window 'down:60%:hidden'
-        --preview-label=' Commit Details '
+        --preview-label=' Branch Log '
         --preview-label-pos=2
         --header-border=line
         --footer " ↵ Checkout │ ^S Cycle View │ ^N New Branch │ ^O GitHub │ Alt-X Delete │ ? Preview"
         --footer-border=line
         --color 'label:yellow:bold,header:dim'
         --bind '?:toggle-preview'
-        --bind "start:bg-transform-header:printf '  On: %s' \"\$(git branch --show-current 2>/dev/null || echo 'detached')\""
+        --bind "start:bg-transform-header:printf ' %s' \"\$(git branch --show-current 2>/dev/null || echo 'detached')\""
         --bind "$bind_cycle"
         --bind "enter:become(git checkout {1})"
         --bind "$bind_open"
