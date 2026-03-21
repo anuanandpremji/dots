@@ -17,21 +17,15 @@ No frameworks, no bloat, just clean shell scripting with powerful fuzzy-finding 
 
 ## Prerequisites
 
-| Tool                                                  | Purpose                                |
-|-------------------------------------------------------|----------------------------------------|
-| [Nerd Font](https://github.com/ryanoasis/nerd-fonts)  | Renders glyphs and icons in the prompt |
-| [fzf](https://github.com/junegunn/fzf)                | Fuzzy search for history, files, git   |
-| [fd](https://github.com/sharkdp/fd)                   | Fast file finder used by `Ctrl-T`      |
-
-**Optional but recommended:**
-
-| Tool                                                 | Purpose                                              |
-|------------------------------------------------------|------------------------------------------------------|
-| [eza](https://github.com/eza-community/eza)          | Modern `ls` replacement with color and icons         |
-| [bat](https://github.com/sharkdp/bat)                | Syntax-highlighted file preview used by `rf()`       |
-| [ripgrep](https://github.com/BurntSushi/ripgrep)     | Fast text search used by `rf()`                      |
-| [delta](https://github.com/dandavison/delta)         | Pretty git diffs in the interactive staging function |
-| [tree](https://github.com/Old-Man-Programmer/tree)   | Directory tree viewer used by `tre()`                |
+| Tool                                                  | Purpose                                              |
+|-------------------------------------------------------|------------------------------------------------------|
+| [Nerd Font](https://github.com/ryanoasis/nerd-fonts)  | Renders glyphs and icons in the prompt               |
+| [fzf](https://github.com/junegunn/fzf)                | Fuzzy search for history, files, git                 |
+| [fd](https://github.com/sharkdp/fd)                   | Fast file finder used by `Ctrl-T`                    |
+| [eza](https://github.com/eza-community/eza)           | Modern `ls` replacement with color and icons         |
+| [bat](https://github.com/sharkdp/bat)                 | Syntax-highlighted file preview used by `rf()`       |
+| [ripgrep](https://github.com/BurntSushi/ripgrep)      | Fast text search used by `rf()`                      |
+| [delta](https://github.com/dandavison/delta)          | Pretty git diffs in the interactive staging function |
 
 ---
 
@@ -66,8 +60,8 @@ No frameworks, no bloat, just clean shell scripting with powerful fuzzy-finding 
 │   └── .zshprompt_theme_pure ············ Default prompt — minimal style
 │
 ├── scripts/
-│   ├── setup-symlinks ·················· Symlinks dotfiles to ~/.config/
-│   ├── setup-identities ················ Git & SSH identity setup
+│   ├── setup-symlinks ··················· Symlinks dotfiles to ~/.config/
+│   ├── setup-identities ················· Git & SSH identity setup
 │   └── ...
 │
 └── starship/
@@ -228,13 +222,13 @@ rf path/     # search in a specific directory
 rf file.rs   # search within a single file
 ```
 
-| Key inside fzf | Action                                                              |
-|----------------|---------------------------------------------------------------------|
-| `Enter`        | Open match in `$VISUAL` at the matched line                         |
-| `TAB`          | Toggle selection of a match                                         |
-| `Alt-A`        | Select all matches                                                  |
-| `Alt-D`        | Deselect all                                                        |
-| `?`            | Toggle preview                                                      |
+| Key inside fzf | Action                                      |
+|----------------|---------------------------------------------|
+| `Enter`        | Open match in `$VISUAL` at the matched line |
+| `TAB`          | Toggle selection of a match                 |
+| `Alt-A`        | Select all matches                          |
+| `Alt-D`        | Deselect all                                |
+| `?`            | Toggle preview                              |
 
 When multiple matches are selected, `$VISUAL` is opened with a quickfix list (vim/nvim only).
 
@@ -286,16 +280,16 @@ Browse and checkout with commit details and diff preview. Supports branch creati
 
 Browse, inspect, and diff commits with delta-powered preview.
 
-| Key inside fzf | Action                                        |
-|----------------|-----------------------------------------------|
-| `Enter`        | Show the commit (full diff via pager)         |
-| `Ctrl-D`       | Diff between that commit and the working tree |
+| Key inside fzf | Action                                                 |
+|----------------|--------------------------------------------------------|
+| `Enter`        | Show the commit (full diff via pager)                  |
+| `Ctrl-D`       | Diff between that commit and the working tree          |
 | `Ctrl-S`       | Toggle branch switcher (pick a branch to view its log) |
-| `Ctrl-F`       | Filter commits by author                      |
-| `Ctrl-T`       | Filter commits by message                     |
-| `Ctrl-Y`       | Copy the commit hash to clipboard             |
-| `Ctrl-O`       | Open the commit on GitHub                     |
-| `?`            | Toggle preview                                |
+| `Ctrl-F`       | Filter commits by author                               |
+| `Ctrl-T`       | Filter commits by message                              |
+| `Ctrl-Y`       | Copy the commit hash to clipboard                      |
+| `Ctrl-O`       | Open the commit on GitHub                              |
+| `?`            | Toggle preview                                         |
 
 #### `gr` — List git remotes
 
@@ -303,10 +297,10 @@ Prints each remote on one line, aligned in columns. Shows two lines for a remote
 
 #### Git utility functions
 
-| Function       | Description                                                            |
-|----------------|------------------------------------------------------------------------|
-| `cdgr`         | `cd` to the outermost git superproject root                            |
-| `gho [remote]` | Open the remote repo page (GitHub, GitLab, etc.) in a browser         |
+| Function       | Description                                                   |
+|----------------|---------------------------------------------------------------|
+| `cdgr`         | `cd` to the outermost git superproject root                   |
+| `gho [remote]` | Open the remote repo page (GitHub, GitLab, etc.) in a browser |
 
 #### Other functions
 
