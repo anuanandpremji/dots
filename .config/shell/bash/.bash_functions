@@ -33,14 +33,14 @@ od()
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
-# tre() - Better `tree` with color, shows hidden files, ignores the `.git` directory and lists directories first.
+# tre() - Better `tree` with color, shows hidden files, ignores the `.git` directory and lists directories first
 
 # Usage:
 # tre dir1 dir2
 
 tre()
 {
-    # The output gets piped into `less` with options to preserve color and line numbers, unless it fits in one screen.
+    # The output gets piped into `less` with options to preserve color and line numbers, unless it fits in one screen
     tree -aC -I ".git" --dirsfirst "$@" | less -FRNX;
 }
 

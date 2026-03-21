@@ -138,7 +138,7 @@ gr() {
 #
 # ENTER    - git show (view the commit with full diff)
 # CTRL-D   - git diff (between that commit and the working tree)
-# CTRL-B   - switch to log of a different branch or tag
+# CTRL-S   - toggle between commit log and branch switcher
 # CTRL-Y   - copy the commit hash to clipboard
 # CTRL-O   - open the commit on GitHub
 # CTRL-F   - filter by author
@@ -164,11 +164,17 @@ gl()
 
     local preview_cmd="
     [ -n {1} ] || exit 0;
-    printf '\e[33;1m%s\e[0m\n' \"\$(git log -1 --format='%h  %ad  %aN' --date=format:'%Y-%m-%d %H:%M' {1})\";
-    printf '%s\n\n' \"\$(git log -1 --format='%s%n%n%b' {1})\";
-    git --no-pager show --stat --color=always --format='' {1} 2>/dev/null;
-    echo;
-    git --no-pager show --color=never --format='' {1} 2>/dev/null | $delta_cmd"
+    if [[ {fzf:prompt} == *Branches* ]]; then
+        git log --color=always \
+            --format='%C(yellow)%h%C(reset)  %s  %C(dim)%ad  %aN%C(reset)' \
+            --date=format:'%Y-%m-%d' {1} 2>/dev/null;
+    else
+        printf '\e[33;1m%s\e[0m\n' \"\$(git log -1 --format='%h  %ad  %aN' --date=format:'%Y-%m-%d %H:%M' {1})\";
+        printf '%s\n\n' \"\$(git log -1 --format='%s%n%n%b' {1})\";
+        git --no-pager show --stat --color=always --format='' {1} 2>/dev/null;
+        echo;
+        git --no-pager show --color=never --format='' {1} 2>/dev/null | $delta_cmd;
+    fi"
 
     local github_url
     github_url=$(_git_web_url origin)
@@ -189,16 +195,23 @@ gl()
 
     local viewed_ref="${1:-$(git branch --show-current 2>/dev/null || echo 'HEAD')}"
 
-    local branch_pick_cmd="{ git branch --all --format='%(refname:short)' | grep -v HEAD; git tag --sort=-creatordate; } | sort -u | fzf --no-sort --height=40% --prompt='Switch to ▶ ' --ghost='Pick a branch or tag...'"
+    local branch_list_cmd="{ printf \"Branch / Tag\n\"; { git branch --all | cut -c3- | grep -v HEAD | grep .; git tag --sort=-creatordate; } | sort -u; }"
 
     local _bash_git_file="${BASH_SOURCE[0]}"
-    local bind_switch_branch="ctrl-b:become(
-        ref=\$($branch_pick_cmd);
-        if [[ -n \"\$ref\" ]]; then
-            source '$_bash_git_file' 2>/dev/null
-            gl \"\$ref\"
-        fi
-    )"
+
+    local bind_switch="ctrl-s:transform:
+        if [[ \$FZF_PROMPT =~ Branches ]]; then
+            echo \"become(source '$_bash_git_file' 2>/dev/null; gl '$viewed_ref')\";
+        else
+            echo 'change-prompt(Branches ▶ )+reload[$branch_list_cmd]+change-ghost(Pick a branch or tag...)+change-preview-label( Branch Log )+change-footer( ↵ Switch to Branch │ ^S Back to Log │ ? Preview)+refresh-preview';
+        fi"
+
+    local bind_enter="enter:transform:
+        if [[ \$FZF_PROMPT =~ Branches ]]; then
+            echo \"become(source '$_bash_git_file' 2>/dev/null; gl '{1}')\";
+        else
+            echo 'execute(git show --color=always {1})';
+        fi"
 
     local -a fzf_opts=(
         --ansi --no-sort --height=100% --freeze-left=10
@@ -211,15 +224,15 @@ gl()
         --preview-label=' Commit Details '
         --preview-label-pos=2
         --header-border=line
-        --footer " ↵ Show │ ^D Diff │ ^B Branch │ ^Y Copy Hash │ ^O GitHub │ ^F Author │ ^T Msg │ ? Preview"
+        --footer " ↵ Show │ ^D Diff │ ^S Switch Branch │ ^Y Copy Hash │ ^O GitHub │ ^F Author │ ^T Msg │ ? Preview"
         --footer-border=line
-        --color 'label:yellow:bold,header:bold'
+        --color 'label:yellow:bold,header:bold,footer:bold'
         --delimiter '│'
         --bind '?:toggle-preview'
         --info-command "printf 'On  \xee\x82\xa0 %s  %s' '$viewed_ref' \"\$FZF_INFO\""
-        --bind 'enter:execute(git show --color=always {1})'
+        --bind "$bind_enter"
         --bind 'ctrl-d:execute(git diff --color=always {1})'
-        --bind "$bind_switch_branch"
+        --bind "$bind_switch"
         --bind "ctrl-y:execute-silent(printf '%s' {1} | $clip_cmd)+change-ghost(Copied commit hash to clipboard)"
         --bind "ctrl-o:execute-silent[sha={1}; $open_cmd \"$github_url/commit/\$sha\" >/dev/null 2>&1 &]"
         --bind 'ctrl-f:change-nth(3)+change-ghost(Author filter — press ctrl-a to reset)'
@@ -394,7 +407,7 @@ gc()
         --header-border=line
         --footer " ↵ Checkout │ ^S Cycle View │ ^N New Branch │ ^O GitHub │ Alt-X Delete │ ? Preview"
         --footer-border=line
-        --color 'label:yellow:bold,header:dim'
+        --color 'label:yellow:bold,header:dim,footer:bold'
         --bind '?:toggle-preview'
         --bind "start:bg-transform-header:printf ' %s' \"\$(git branch --show-current 2>/dev/null || echo 'detached')\""
         --bind "$bind_cycle"
@@ -509,7 +522,7 @@ ga()
         --header-border=line
         --footer " ↵ Stage/Unstage │ ^S Switch View │ ^C Commit │ Alt-A Stage All │ Alt-E Editor │ ? Preview"
         --footer-border=line
-        --color 'label:yellow:bold,header:dim'
+        --color 'label:yellow:bold,header:dim,footer:bold'
         --bind '?:toggle-preview'
         --bind "start,focus:bg-transform-header($status_header_cmd)"
         --bind "$bind_toggle_mode"

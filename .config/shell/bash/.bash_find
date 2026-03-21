@@ -107,8 +107,8 @@ rf()
 
     local reload="reload:rg --column --line-number --no-heading --with-filename --color=always --smart-case --hidden --glob '!.git' --glob '!.claude' --glob '!.vscode' -- {q} $(printf '%q' "$search_path") || :"
 
-    # Single-quoted so that $VISUAL, $FZF_SELECT_COUNT, and {placeholders} expand at runtime inside fzf.
-    # vim/nvim support `+N` to jump to a line; other editors don't, so we detect and skip it.
+    # Single-quoted so that $VISUAL, $FZF_SELECT_COUNT, and {placeholders} expand at runtime inside fzf
+    # vim/nvim support `+N` to jump to a line; other editors don't, so we detect and skip it
     local opener='
         if [[ $FZF_SELECT_COUNT -eq 0 ]]; then
             case "${VISUAL:-vim}" in
