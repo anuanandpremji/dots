@@ -4,7 +4,7 @@
 # Sets up separate SSH keys and git identities for work and private accounts.
 # Configures ~/.ssh/config so each GitHub host alias uses the correct key.
 #
-# Usage: ./setup-identities [--dry-run]
+# Usage: ./setup_identities.sh [--dry-run]
 #
 # Result:
 #   ~/.ssh/id_private              Private SSH key

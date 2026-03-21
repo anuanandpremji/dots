@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-format-md-tables — Reformat markdown tables with aligned, padded columns.
+format_md_tables.py — Reformat markdown tables with aligned, padded columns.
 
 Usage:
-    format-md-tables [file ...]       # Format specific files
-    format-md-tables                  # Format all .md files under current directory
+    format_md_tables.py [file ...]       # Format specific files
+    format_md_tables.py                  # Format all .md files under current directory
 
 Skips CLAUDE.md files. Prints which files were updated.
 """

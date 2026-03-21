@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-sort-jsonc — Sort JSON or JSONC file keys alphabetically (recursively).
+sort_jsonc.py — Sort JSON or JSONC file keys alphabetically (recursively).
 
 Handles both .json and .jsonc files. Preserves // line comments,
 /* block comments */, and trailing commas. Output remains valid JSONC.
 Comments are kept associated with the key that follows them.
 
 Usage:
-    sort-jsonc <file>           Sort in-place
-    sort-jsonc <file> -o <out>  Write to a different file
-    sort-jsonc -                Read from stdin, write to stdout
+    sort_jsonc.py <file>           Sort in-place
+    sort_jsonc.py <file> -o <out>  Write to a different file
+    sort_jsonc.py -                Read from stdin, write to stdout
 """
 
 import re

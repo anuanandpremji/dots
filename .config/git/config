@@ -32,7 +32,7 @@
     side-by-side = false
 
 # Default identity — machine-specific, not tracked. Points to either
-# private or work identity depending on what setup-identities configured.
+# private or work identity depending on what setup_identities.sh configured.
 [include]
     path          = config.default
 

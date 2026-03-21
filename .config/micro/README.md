@@ -26,4 +26,4 @@ Pane management is not bound — handled by the host terminal emulator.
 
 ## Setup
 
-Installed from the official GitHub binary (`~/.local/bin/micro`). Individual config files are symlinked by `setup-symlinks` (not the entire `~/.config/micro/` directory, since micro writes runtime state there).
+Installed from the official GitHub binary (`~/.local/bin/micro`). Individual config files are symlinked by `setup_symlinks.sh` (not the entire `~/.config/micro/` directory, since micro writes runtime state there).

@@ -6,8 +6,8 @@
 |------------------|---------|-------------------------------------------------------------------------------------------------------------------------------|
 | `config`         | Yes     | Main git config — aliases, colors, delta pager, merge settings, `includeIf` rules. Symlinked to `~/.config/git/config`.       |
 | `config.default` | No      | Default identity for repos outside `~/private/` and `~/work/`. Copy of whichever identity was chosen as default during setup. |
-| `config.private` | No      | Private identity. Created by `setup-identities`, applied automatically in `~/private/`.                                       |
-| `config.work`    | No      | Work identity. Created by `setup-identities`, applied automatically in `~/work/`.                                             |
+| `config.private` | No      | Private identity. Created by `setup_identities.sh`, applied automatically in `~/private/`.                                       |
+| `config.work`    | No      | Work identity. Created by `setup_identities.sh`, applied automatically in `~/work/`.                                             |
 
 ## Features
 
@@ -18,7 +18,7 @@
 
 ## Multi-Identity Setup
 
-The `setup-identities` script (run automatically by `setup.sh`) creates separate SSH keys, git identities, and project directories:
+The `setup_identities.sh` script (run automatically by `setup.sh`) creates separate SSH keys, git identities, and project directories:
 
 | Directory    | SSH key             | Host alias       | Git identity                    |
 |--------------|---------------------|------------------|---------------------------------|
@@ -32,11 +32,11 @@ cd ~/private && git clone git@github-private:user/repo.git    # private identity
 cd ~/work    && git clone git@github-work:org/repo.git        # work identity
 ```
 
-No per-repo `git config` needed — `includeIf` in the main config applies the correct identity based on directory. For repos outside both directories, `config.default` is used (set during `setup-identities` — choose work on work PCs, private on private PCs).
+No per-repo `git config` needed — `includeIf` in the main config applies the correct identity based on directory. For repos outside both directories, `config.default` is used (set during `setup_identities.sh` — choose work on work PCs, private on private PCs).
 
 ## SSH Host Aliases
 
-Configured in `~/.ssh/config` by `setup-identities`:
+Configured in `~/.ssh/config` by `setup_identities.sh`:
 
 ```
 Host github-private
@@ -54,10 +54,10 @@ Host github-work
 
 ## Setup
 
-Handled by `setup-symlinks`:
+Handled by `setup_symlinks.sh`:
 
 ```
 ~/.config/git/config → dotfiles/.config/git/config
 ```
 
-`config.default`, `config.private`, and `config.work` are created by `setup-identities` (not symlinked — they're machine-specific and gitignored).
+`config.default`, `config.private`, and `config.work` are created by `setup_identities.sh` (not symlinked — they're machine-specific and gitignored).

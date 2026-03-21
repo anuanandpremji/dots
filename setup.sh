@@ -29,7 +29,7 @@
 # ║                                                                                                             ║
 # ╟─────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
 # ║                                                                                                             ║
-# ║  2. [@] IDENTITIES (via `setup-identities`)                                                                 ║
+# ║  2. [@] IDENTITIES (via `setup_identities.sh`)                                                                 ║
 # ║                                                                                                             ║
 # ║     ┌──────────────────────────────────────────┐          ┌──────────────────────────────────────────┐      ║
 # ║     │          [#] PRIVATE IDENTITY            │          │            [%] WORK IDENTITY             │      ║
@@ -87,7 +87,7 @@
 # ║     • Fonts: Install Nerd Fonts (Symlink on Linux | Copy on macOS)                                          ║
 # ║     • Shell: Set ZSH as default (`chsh`)                                                                    ║
 # ║     • macOS: Generate updated Brewfile                                                                      ║
-# ║     • Symlinks: Run `setup-symlinks` (Maps configs & triggers `dconf load` for settings)                    ║
+# ║     • Symlinks: Run `setup_symlinks.sh` (Maps configs & triggers `dconf load` for settings)                    ║
 # ║                                                                                                             ║
 # ╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -248,7 +248,7 @@ clone_from_github() {
 
     local dest="$parent/dots"
 
-    if [[ -d "$dest" && -f "$dest/.config/shell/scripts/setup-symlinks" ]]; then
+    if [[ -d "$dest" && -f "$dest/.config/shell/scripts/setup_symlinks.sh" ]]; then
         log_info "Dotfiles already exist at $dest"
     else
         run mkdir -p "$parent"
@@ -279,7 +279,7 @@ download_zip() {
 
     local dest="$parent/dots"
 
-    if [[ -d "$dest" && -f "$dest/.config/shell/scripts/setup-symlinks" ]]; then
+    if [[ -d "$dest" && -f "$dest/.config/shell/scripts/setup_symlinks.sh" ]]; then
         log_info "Dotfiles already exist at $dest"
     else
         log_info "Downloading dotfiles zip from GitHub..."
@@ -303,7 +303,7 @@ acquire_dotfiles() {
     # If running from within the dotfiles directory, use that directly
     local script_dir
     script_dir="$(cd "$(dirname "$0")" && pwd)"
-    if [[ -f "$script_dir/.config/shell/scripts/setup-symlinks" ]]; then
+    if [[ -f "$script_dir/.config/shell/scripts/setup_symlinks.sh" ]]; then
         DOTFILES="$script_dir"
         log_info "Running from dotfiles directory: $DOTFILES"
         return
@@ -312,7 +312,7 @@ acquire_dotfiles() {
     # Check common locations
     local CANDIDATES=("$HOME/dotfiles" "$HOME/private/dotfiles" "$HOME/private/dots")
     for candidate in "${CANDIDATES[@]}"; do
-        if [[ -f "$candidate/.config/shell/scripts/setup-symlinks" ]]; then
+        if [[ -f "$candidate/.config/shell/scripts/setup_symlinks.sh" ]]; then
             DOTFILES="$candidate"
             log_info "Found existing dotfiles at $DOTFILES"
             return
@@ -364,14 +364,14 @@ setup_git_identities() {
         fi
     fi
 
-    # Find or fetch the setup-identities script
+    # Find or fetch the setup_identities.sh script
     local setup_git_script=""
 
     # Check if running from within dotfiles
     local script_dir
     script_dir="$(cd "$(dirname "$0")" && pwd)"
-    if [[ -f "$script_dir/.config/shell/scripts/setup-identities" ]]; then
-        setup_git_script="$script_dir/.config/shell/scripts/setup-identities"
+    if [[ -f "$script_dir/.config/shell/scripts/setup_identities.sh" ]]; then
+        setup_git_script="$script_dir/.config/shell/scripts/setup_identities.sh"
     fi
 
     # Check known dotfiles locations
@@ -382,8 +382,8 @@ setup_git_identities() {
             "$HOME/private/dots"
         )
         for candidate in "${CANDIDATES[@]}"; do
-            if [[ -f "$candidate/.config/shell/scripts/setup-identities" ]]; then
-                setup_git_script="$candidate/.config/shell/scripts/setup-identities"
+            if [[ -f "$candidate/.config/shell/scripts/setup_identities.sh" ]]; then
+                setup_git_script="$candidate/.config/shell/scripts/setup_identities.sh"
                 break
             fi
         done
@@ -392,10 +392,10 @@ setup_git_identities() {
     # Fetch from GitHub as last resort
     local fetched_script=false
     if [[ -z "$setup_git_script" ]]; then
-        log_info "Downloading setup-identities from GitHub..."
-        setup_git_script="/tmp/setup-identities"
+        log_info "Downloading setup_identities.sh from GitHub..."
+        setup_git_script="/tmp/setup_identities.sh"
         curl -fsSL -o "$setup_git_script" \
-            "https://raw.githubusercontent.com/$GITHUB_REPO/main/.config/shell/scripts/setup-identities"
+            "https://raw.githubusercontent.com/$GITHUB_REPO/main/.config/shell/scripts/setup_identities.sh"
         chmod +x "$setup_git_script"
         fetched_script=true
     fi
@@ -1212,16 +1212,16 @@ set_default_shell() {
 apply_dotfiles() {
     log_section "Dotfiles (symlinks & settings)"
 
-    local symlink_script="$DOTFILES/.config/shell/scripts/setup-symlinks"
+    local symlink_script="$DOTFILES/.config/shell/scripts/setup_symlinks.sh"
     if [[ -f "$symlink_script" ]]; then
-        log_info "Running setup-symlinks..."
+        log_info "Running setup_symlinks.sh..."
         if [[ "$DRY_RUN" == true ]]; then
             run bash "$symlink_script" --dry-run
         else
             run bash "$symlink_script"
         fi
     else
-        log_error "setup-symlinks not found at $symlink_script"
+        log_error "setup_symlinks.sh not found at $symlink_script"
     fi
 }
 

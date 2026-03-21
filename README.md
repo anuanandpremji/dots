@@ -15,7 +15,7 @@ The script will:
 1. **Set up Git & SSH identities** — creates separate `~/.ssh/id_private` and `~/.ssh/id_work` keys with GitHub host aliases, writes `config.private`/`config.work`, and asks which should be the default
 2. **Clone the dotfiles repo** — uses SSH via private key if configured, falls back to HTTPS. Can also download as zip for machines without git.
 3. **Install all apps** — editors, CLI tools, browsers, fonts, GNOME extensions, etc.
-4. **Apply configs** — symlinks and dconf settings via `setup-symlinks`
+4. **Apply configs** — symlinks and dconf settings via `setup_symlinks.sh`
 
 ```shell
 # If dotfiles are already present, run directly
@@ -25,12 +25,12 @@ The script will:
 ./setup.sh --cli
 
 # Just symlink configs and load settings (no app installs)
-.config/shell/scripts/setup-symlinks
+.config/shell/scripts/setup_symlinks.sh
 
 # Preview what any script would do without making changes
 ./setup.sh --dry-run
 ./setup.sh --cli --dry-run
-.config/shell/scripts/setup-symlinks --dry-run
+.config/shell/scripts/setup_symlinks.sh --dry-run
 ```
 
 ## What's Included
@@ -61,7 +61,7 @@ dotfiles/
 │   │   ├── bash/                     # Bash config files
 │   │   ├── zsh/                      # Zsh config files
 │   │   ├── starship/                 # Starship prompt themes (optional)
-│   │   └── scripts/                  # setup-symlinks, setup-identities, utilities
+│   │   └── scripts/                  # setup_symlinks.sh, setup_identities.sh, utilities
 │   │
 │   ├── git/                          # Git config (aliases, delta pager, multi-identity)
 │   ├── wezterm/                      # WezTerm terminal config (Lua)
@@ -86,4 +86,4 @@ dotfiles/
 - **Symlinked apps** — Shell, Git, WezTerm, Neovim, Zed, Fresh, VS Code, Claude Code, fonts, scripts. The dotfiles directory is the source of truth; `~/.config/` contains symlinks pointing here.
 - **dconf-loaded apps** — GNOME settings, GNOME extensions, Meld. These use `dconf load` to import settings from `.dconf` backup files, since they don't read plain config files.
 - **macOS** — dconf sections are skipped. VS Code symlinks point to `~/Library/Application Support/Code/User/`. Fonts are copied to `~/Library/Fonts/`.
-- **setup-symlinks** — Also self-resolving. It derives `$DOTFILES` from its own location in the directory tree, so it works regardless of where the dotfiles live.
+- **setup_symlinks.sh** — Also self-resolving. It derives `$DOTFILES` from its own location in the directory tree, so it works regardless of where the dotfiles live.

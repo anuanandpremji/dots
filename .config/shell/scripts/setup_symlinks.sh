@@ -3,12 +3,12 @@
 # Symlink dotfiles to their expected locations on a fresh PC.
 # Run once after cloning or downloading the dotfiles repo.
 #
-# Usage: ./setup-symlinks [--dry-run]
+# Usage: ./setup_symlinks.sh [--dry-run]
 
 set -euo pipefail
 
 # Resolve DOTFILES from this script's own location:
-# This script lives at <dotfiles>/.config/shell/scripts/setup-symlinks
+# This script lives at <dotfiles>/.config/shell/scripts/setup_symlinks.sh
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DOTFILES="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 DRY_RUN=false
@@ -104,7 +104,7 @@ fi
 echo "── Git ──"
 link_path "$DOTFILES/.config/git/config" "$HOME/.config/git/config"
 # NOTE: config.default, config.private, and config.work are NOT symlinked.
-# They are machine-specific and created by setup-identities.
+# They are machine-specific and created by setup_identities.sh.
 
 # ── Terminals (only if installed) ─────────────────────────────────────────────
 if command -v wezterm &>/dev/null || [[ -d "/Applications/WezTerm.app" ]]; then

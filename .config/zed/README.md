@@ -41,4 +41,4 @@ The `themes/` directory contains 13 themes: Day Shift, GitHub Classic, GitHub Th
 
 ## Setup
 
-Installed via the official install script on Linux (uses Flatpak) or Homebrew cask on macOS. Config directory is symlinked by `setup-symlinks`.
+Installed via the official install script on Linux (uses Flatpak) or Homebrew cask on macOS. Config directory is symlinked by `setup_symlinks.sh`.

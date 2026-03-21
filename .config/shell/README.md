@@ -60,8 +60,8 @@ No frameworks, no bloat, just clean shell scripting with powerful fuzzy-finding 
 │   └── .zshprompt_theme_pure ············ Default prompt — minimal style
 │
 ├── scripts/
-│   ├── setup-symlinks ··················· Symlinks dotfiles to ~/.config/
-│   ├── setup-identities ················· Git & SSH identity setup
+│   ├── setup_symlinks.sh ················ Symlinks dotfiles to ~/.config/
+│   ├── setup_identities.sh ·············· Git & SSH identity setup
 │   └── ...
 │
 └── starship/

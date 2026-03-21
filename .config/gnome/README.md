@@ -42,7 +42,7 @@ Workspace switching uses `Super+Alt+Left/Right` and `Super+PageUp/Down`. The `Ct
 
 ## Restoring
 
-Settings are loaded automatically by `setup-symlinks` (or `setup.sh` which calls it). To manually reload:
+Settings are loaded automatically by `setup_symlinks.sh` (or `setup.sh` which calls it). To manually reload:
 
 ```shell
 # Full GNOME settings

@@ -24,4 +24,4 @@ Standard keybindings (`Ctrl+S` save, `Ctrl+Z` undo, `Ctrl+F` find, `Ctrl+P` comm
 
 ## Setup
 
-Installed from the official install script on Linux, or via `brew tap sinelaw/fresh && brew install fresh-editor` on macOS. The config file is symlinked by `setup-symlinks` (not the entire `~/.config/fresh/` directory, since fresh may write runtime state there).
+Installed from the official install script on Linux, or via `brew tap sinelaw/fresh && brew install fresh-editor` on macOS. The config file is symlinked by `setup_symlinks.sh` (not the entire `~/.config/fresh/` directory, since fresh may write runtime state there).

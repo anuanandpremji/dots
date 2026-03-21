@@ -31,4 +31,4 @@ Pane splitting, navigation, and resizing are **not** bound — the host terminal
 
 ## Setup
 
-Installed as a Neovim AppImage on Linux (`~/.local/bin/nvim`) or via Homebrew on macOS. Config directory is symlinked by `setup-symlinks`.
+Installed as a Neovim AppImage on Linux (`~/.local/bin/nvim`) or via Homebrew on macOS. Config directory is symlinked by `setup_symlinks.sh`.

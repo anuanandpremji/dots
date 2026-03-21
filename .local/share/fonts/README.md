@@ -24,4 +24,4 @@ Nerd Font patched monospace fonts and a few display fonts, symlinked to `~/.loca
 
 ## Setup
 
-On Linux, the entire directory is symlinked by `setup-symlinks` and `fc-cache -f` is run to rebuild the font cache. On macOS, `setup.sh` copies `.ttf` and `.otf` files to `~/Library/Fonts/`.
+On Linux, the entire directory is symlinked by `setup_symlinks.sh` and `fc-cache -f` is run to rebuild the font cache. On macOS, `setup.sh` copies `.ttf` and `.otf` files to `~/Library/Fonts/`.
