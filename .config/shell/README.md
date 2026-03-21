@@ -290,6 +290,9 @@ Browse, inspect, and diff commits with delta-powered preview.
 |----------------|-----------------------------------------------|
 | `Enter`        | Show the commit (full diff via pager)         |
 | `Ctrl-D`       | Diff between that commit and the working tree |
+| `Ctrl-S`       | Toggle branch switcher (pick a branch to view its log) |
+| `Ctrl-F`       | Filter commits by author                      |
+| `Ctrl-T`       | Filter commits by message                     |
 | `Ctrl-Y`       | Copy the commit hash to clipboard             |
 | `Ctrl-O`       | Open the commit on GitHub                     |
 | `?`            | Toggle preview                                |
