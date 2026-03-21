@@ -1,4 +1,6 @@
 {
+    "scroll_sensitivity": 4.0,
+    "fast_scroll_sensitivity": 8.0,
     "window_decorations": "client",
     "git": {
         "blame": {
@@ -9,8 +11,8 @@
         "button": true,
     },
     "status_bar": {
-        "cursor_position_button": false,
-        "active_language_button": false,
+        "cursor_position_button": true,
+        "active_language_button": true,
     },
     "show_whitespaces": "all",
     "collaboration_panel": {
@@ -35,7 +37,7 @@
     "ui_font_weight": 600.0,
 
     "project_panel": {
-        "button": false,
+        "button": true,
         "drag_and_drop": false,
         "entry_spacing": "standard",
         "folder_icons": true,
