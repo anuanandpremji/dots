@@ -71,7 +71,7 @@
         "font_weight": 600.0,
     },
     "theme": {
-        "dark": "Gruvbox Dark Hard",
+        "dark": "Vitesse Dark Soft",
         "light": "VSCode Light Modern",
         "mode": "system",
     },
