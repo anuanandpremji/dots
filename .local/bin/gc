@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+#
+# gc - Interactive git checkout for branches, tags, and recent commits.
+#
+# ┌─ Views  (CTRL-S to cycle) ──────────────────────────────────────────────────────────────────────┐
+# │                                                                                                 │
+# │  Branches (default)       Tags                   Recent Commits                                 │
+# │  ──────────────────────   ─────────────────────  ──────────────────────────────────             │
+# │  * main                   v1.2.0                 abc1234  feat: add fuzzy search                │
+# │    feature/login          v1.1.3                 def5678  fix: null pointer                     │
+# │    hotfix/critical        v1.0.0                 bcd9012  chore: clean up deps                  │
+# │           ↓ preview pane: commit details and delta diff                                         │
+# │                                                                                                 │
+# │  ENTER   checkout selected branch / tag / commit                                                │
+# │  CTRL-N  create a new branch from current HEAD                                                  │
+# │  ALT-X   delete the selected local branch                                                       │
+# │  CTRL-O  open on GitHub                                                                         │
+# │  ?       toggle preview                                                                         │
+# │                                                                                                 │
+# └─────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+if ! command -v fzf   >/dev/null 2>&1; then printf "gc: fzf not found.\n"   >&2; exit 1; fi
+if ! command -v delta >/dev/null 2>&1; then printf "gc: delta not found.\n" >&2; exit 1; fi
+
+if ! command git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; exit 1; fi
+
+_detect_color_scheme() {
+    local scheme
+    scheme=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null | tr -d "'")
+    case "$scheme" in
+        prefer-dark)          printf dark;  return ;;
+        prefer-light|default) printf light; return ;;
+    esac
+    if command -v darkman >/dev/null 2>&1; then darkman get 2>/dev/null && return; fi
+    printf dark
+}
+
+_git_web_url() {
+    local remote="${1:-origin}"
+    local raw_url
+    raw_url=$(command git config remote."$remote".url 2>/dev/null) || return 1
+
+    local ssh_host
+    ssh_host=$(printf '%s' "$raw_url" | command sed -n 's|^git@\([^:]*\):.*|\1|p')
+    if [ -n "$ssh_host" ]; then
+        local real_host
+        real_host=$(command ssh -G "$ssh_host" 2>/dev/null | command awk '/^hostname / {print $2}')
+        [ -n "$real_host" ] && raw_url=$(printf '%s' "$raw_url" | command sed "s|^git@${ssh_host}:|git@${real_host}:|")
+    fi
+
+    printf '%s' "$raw_url" \
+        | command sed -e "s|^ssh://git@|https://|" \
+              -e "s|^git@\([^:]*\):|https://\1/|" \
+              -e "s|\.git$||"
+}
+
+branch_cmd="command git branch --all | command cut -c3- | command grep -v HEAD | command grep ."
+tag_cmd="command git tag --sort=-creatordate"
+recent_cmd="command git log --oneline -50"
+
+delta_theme=$(_detect_color_scheme)
+delta_cmd="delta --paging=never --width=\$FZF_PREVIEW_COLUMNS --$delta_theme"
+
+github_url=$(_git_web_url origin)
+
+open_cmd="xdg-open"
+[[ "$OSTYPE" == darwin* ]] && open_cmd="open"
+
+preview_cmd="
+[ -n {} ] || exit 0;
+ref={1};
+if command git rev-parse --verify \"\$ref\" >/dev/null 2>&1; then
+    if [[ {fzf:prompt} == *Commits* ]]; then
+        printf '\e[33;1m%s\e[0m\n' \"\$(command git log -1 --format='%h  %ad  %an' --date=format:'%Y-%m-%d %a' \"\$ref\")\";
+        printf '%s\n\n' \"\$(command git log -1 --format='%s%n%n%b' \"\$ref\")\";
+        command git --no-pager diff --stat --color=always \"\$ref\"~1 \"\$ref\" 2>/dev/null;
+        echo;
+        command git --no-pager diff --color=never \"\$ref\"~1 \"\$ref\" 2>/dev/null | $delta_cmd;
+    else
+        command git log --color=always \
+            --format='%C(yellow)%h%C(reset)  %s  %C(dim)%ad  %aN%C(reset)' \
+            --date=format:'%Y-%m-%d' \"\$ref\" 2>/dev/null;
+    fi
+fi"
+
+bind_cycle="ctrl-s:transform:
+    if [[ \$FZF_PROMPT =~ Branches ]]; then
+        echo 'change-prompt(Tags ▶ )+reload[$tag_cmd]+change-ghost(Filter tags sorted by date...)+change-preview-label( Tag Log )+refresh-preview';
+    elif [[ \$FZF_PROMPT =~ Tags ]]; then
+        echo 'change-prompt(Commits ▶ )+reload[$recent_cmd]+change-ghost(Filter last 50 commits on the current branch...)+change-preview-label( Commit Details )+refresh-preview';
+    else
+        echo 'change-prompt(Branches ▶ )+reload[$branch_cmd]+change-ghost(Filter branches across all remotes...)+change-preview-label( Branch Log )+refresh-preview';
+    fi"
+
+# _git_web_url is not available in fzf subshells, so we inline the SSH alias resolution.
+bind_open="ctrl-o:transform:
+    if [[ \$FZF_PROMPT =~ Branches ]]; then
+        echo 'execute-silent(\
+             ref={1}; remote=origin; branch=\$ref; tmp=\${ref#remotes/}; \
+             if [[ \$tmp != \$ref ]]; then remote=\${tmp%%/*}; branch=\${tmp#*/}; fi; \
+             raw=\$(command git config remote.\$remote.url 2>/dev/null); \
+             ssh_host=\$(printf \"%s\" \"\$raw\" | command sed -n \"s|^git@\\([^:]*\\):.*|\\1|p\"); \
+             if [ -n \"\$ssh_host\" ]; then \
+                 real=\$(command ssh -G \"\$ssh_host\" 2>/dev/null | command awk \"/^hostname / {print \\\$2}\"); \
+                 [ -n \"\$real\" ] && raw=\$(printf \"%s\" \"\$raw\" | command sed \"s|^git@\${ssh_host}:|git@\${real}:|\"); \
+             fi; \
+             url=\$(printf \"%s\" \"\$raw\" \
+             | command sed \"s/\\.git\$//\" \
+             | command sed \"s|^ssh://git@|https://|\" \
+             | command sed \"s|^git@\\([^:]*\\):|https://\\1/|\"); \
+             $open_cmd \"\$url/tree/\$branch\" >/dev/null 2>&1 &)';
+    elif [[ \$FZF_PROMPT =~ Tags ]]; then
+        echo 'execute-silent[tag={1}; $open_cmd \"$github_url/releases/tag/\$tag\" >/dev/null 2>&1 &]';
+    else
+        echo 'execute-silent[sha={1}; $open_cmd \"$github_url/commit/\$sha\" >/dev/null 2>&1 &]';
+    fi"
+
+bind_delete="alt-x:transform:
+    if [[ \$FZF_PROMPT =~ Branches ]]; then
+        echo 'execute(command git branch -d {1})+reload[$branch_cmd]+refresh-preview';
+    fi"
+
+bind_new_branch="ctrl-n:execute(
+    printf \"New branch name: \";
+    read branch_name;
+    if [ -n \"\$branch_name\" ]; then
+        git checkout -b \"\$branch_name\";
+    fi
+)"
+
+fzf_opts=(
+    --ansi --no-sort --height=100%
+    --prompt 'Branches ▶ '
+    --ghost 'Filter branches across all remotes...'
+    --highlight-line
+    --style=full
+    --preview "$preview_cmd"
+    --preview-window 'down:60%:hidden'
+    --preview-label=' Branch Log '
+    --preview-label-pos=2
+    --header-border=line
+    --footer " ↵ Checkout │ ^S Cycle View │ ^N New Branch │ ^O GitHub │ Alt-X Delete │ ? Preview"
+    --footer-border=line
+    --color 'label:yellow:bold,header:dim,footer:bold'
+    --bind '?:toggle-preview'
+    --bind "start:bg-transform-header:printf ' %s' \"\$(command git branch --show-current 2>/dev/null || echo 'detached')\""
+    --bind "$bind_cycle"
+    --bind "enter:become(git checkout {1})"
+    --bind "$bind_open"
+    --bind "$bind_delete"
+    --bind "$bind_new_branch"
+)
+
+eval "$branch_cmd" | fzf "${fzf_opts[@]}"

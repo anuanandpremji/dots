@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+#
+# rf - Live ripgrep text search with fzf, previewed with bat, opened in $VISUAL.
+#
+# Usage:
+#   rf           search in the current directory
+#   rf path/     search in a specific directory
+#   rf file.rs   search within a single file
+#
+# ┌─ Pipeline ──────────────────────────────────────────────────────────────────────────────────────┐
+# │                                                                                                 │
+# │  keystroke → rg (live reload on every change) → fzf                                             │
+# │                                                   │                                             │
+# │                                        ┌──────────┴───────────────────────────────┐             │
+# │                                        │                                          │             │
+# │                                   single match                             multi-select         │
+# │                                   ENTER ↓                               TAB / ALT-A ↓           │
+# │                             $VISUAL file +line                    $VISUAL -q {quickfix}         │
+# │                           (jumps to matched line)                  (vim / nvim only)            │
+# │                                                                                                 │
+# │  Preview: bat  (syntax-highlighted, scrolled to the matched line)                               │
+# │                                                                                                 │
+# └─────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+if ! command -v rg  >/dev/null 2>&1; then printf "rf: rg (ripgrep) not found.\n"  >&2; exit 1; fi
+if ! command -v bat >/dev/null 2>&1; then printf "rf: bat not found.\n"            >&2; exit 1; fi
+if ! command -v fzf >/dev/null 2>&1; then printf "rf: fzf not found.\n"            >&2; exit 1; fi
+
+_detect_color_scheme() {
+    local scheme
+    scheme=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null | tr -d "'")
+    case "$scheme" in
+        prefer-dark)          printf dark;  return ;;
+        prefer-light|default) printf light; return ;;
+    esac
+    if command -v darkman >/dev/null 2>&1; then darkman get 2>/dev/null && return; fi
+    printf dark
+}
+
+search_path="${1:-.}"
+
+reload="reload:rg --column --line-number --no-heading --with-filename --color=always --smart-case --hidden --glob '!.git' --glob '!.claude' --glob '!.vscode' -- {q} $(printf '%q' "$search_path") || :"
+
+# Single-quoted so that $VISUAL, $FZF_SELECT_COUNT, and {placeholders} expand at runtime inside fzf.
+# vim/nvim support `+N` to jump to a line; other editors don't, so we detect and skip it.
+opener='
+    if [[ $FZF_SELECT_COUNT -eq 0 ]]; then
+        case "${VISUAL:-vim}" in
+            *vim*|vi) "${VISUAL:-vim}" {1} +{2} ;;
+            *fresh*)  "${VISUAL:-vim}" {1}:{2}  ;;
+            *)        "${VISUAL:-vim}" {1}       ;;
+        esac
+    else
+        case "${VISUAL:-vim}" in
+            *vim*|vi) "${VISUAL:-vim}" +cw -q {+f} ;;
+            *fresh*)  "${VISUAL:-vim}" {1}:{2}      ;;
+            *)        "${VISUAL:-vim}" {1}           ;;
+        esac
+    fi'
+
+bat_theme=$(_detect_color_scheme)
+
+fzf \
+    --height 100% \
+    --disabled \
+    --ansi \
+    --multi \
+    --bind "start:$reload" \
+    --bind "change:$reload+first" \
+    --bind "enter:become:$opener" \
+    --bind 'alt-a:select-all' \
+    --bind 'alt-d:deselect-all' \
+    --bind '?:toggle-preview' \
+    --border-label=" Search: ${search_path} " \
+    --border-label-pos=2 \
+    --color 'label:yellow:bold' \
+    --delimiter ':' \
+    --preview "bat --style=full --color=always --theme=$bat_theme --highlight-line {2} {1}" \
+    --preview-window 'down:~4,+{2}+4/3:wrap-word' \
+    --header-border=line \
+    --footer " ↵ Open │ Tab Select │ Alt-A All │ Alt-D None │ ? Preview" \
+    --footer-border=line \
+    --prompt 'Search ▶ '

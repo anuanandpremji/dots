@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+#
+# sshf - Fuzzy SSH into a host from ~/.ssh/config.
+
+if ! command -v fzf >/dev/null 2>&1; then printf "sshf: fzf not found.\n" >&2; exit 1; fi
+
+host=$(grep '^[[:space:]]*Host[[:space:]]' ~/.ssh/config | grep -v '[*?]' | cut -d ' ' -f 2 | fzf)
+[ $? -eq 0 ] && [ -n "$host" ] && ssh "$host"

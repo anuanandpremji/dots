@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+#
+# ga - Interactive git staging, unstaging, and committing.
+#
+# ┌─ Workflow ───────────────────────────────────────────────────────────────────────────────────────┐
+# │                                                                                                  │
+# │  Unstaged view (default)                     Staged view  (CTRL-S to switch)                     │
+# │  ────────────────────────────────────────     ─────────────────────────────────                  │
+# │  M  src/main.rs   ← ENTER to stage           M  src/main.rs   ← ENTER to unstage                 │
+# │  ?  src/new.rs                                                                                   │
+# │  M  Cargo.toml                                                                                   │
+# │          ↓ preview pane: delta diff of the selected file                                         │
+# │                                                                                                  │
+# │  ALT-A   stage all unstaged files at once                                                        │
+# │  ALT-E   open selected file(s) in $EDITOR                                                        │
+# │  CTRL-C  commit staged changes  (opens $VISUAL for the commit message)                           │
+# │  ?       toggle preview                                                                          │
+# │                                                                                                  │
+# └──────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+if ! command -v fzf   >/dev/null 2>&1; then printf "ga: fzf not found.\n"   >&2; exit 1; fi
+if ! command -v delta >/dev/null 2>&1; then printf "ga: delta not found.\n" >&2; exit 1; fi
+
+if ! command git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; exit 1; fi
+
+_detect_color_scheme() {
+    local scheme
+    scheme=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null | tr -d "'")
+    case "$scheme" in
+        prefer-dark)          printf dark;  return ;;
+        prefer-light|default) printf light; return ;;
+    esac
+    if command -v darkman >/dev/null 2>&1; then darkman get 2>/dev/null && return; fi
+    printf dark
+}
+
+toplevel=$(command git rev-parse --show-toplevel)
+
+unstaged_cmd="command git ls-files --modified --deleted --other --exclude-standard --deduplicate \"$toplevel\""
+staged_cmd="command git diff --cached --name-only"
+
+if [[ -z "$(eval "$unstaged_cmd")" && -z "$(eval "$staged_cmd")" ]]; then
+    printf "Nothing to stage or commit.\n"
+    exit 0
+fi
+
+delta_theme=$(_detect_color_scheme)
+delta_cmd="delta --paging=never --width=\$FZF_PREVIEW_COLUMNS --$delta_theme"
+
+preview_cmd="
+[ -n {} ] || exit 0;
+if [[ {fzf:prompt} =~ Unstaged ]]; then
+    if command git ls-files --error-unmatch {} >/dev/null 2>&1; then
+        command git --no-pager diff --color=never -- {} | $delta_cmd;
+    else
+        command git --no-pager diff --color=never --no-index /dev/null -- {} | $delta_cmd;
+    fi;
+else
+    command git --no-pager diff --cached --color=never -- {} | $delta_cmd;
+fi"
+
+status_header_cmd="
+    local s u;
+    s=\$(command git diff --cached --name-only | wc -l | tr -d ' ');
+    u=\$(command git ls-files --modified --deleted --other --exclude-standard --deduplicate \"$toplevel\" | wc -l | tr -d ' ');
+    printf '  Staged: %s  │  Unstaged: %s' \"\$s\" \"\$u\""
+
+bind_toggle_mode="ctrl-s:transform:
+    if [[ \$FZF_PROMPT =~ Unstaged ]]; then
+        echo 'change-prompt(Staged ▶ )+reload($staged_cmd)+change-ghost(Filter files staged for commit...)+refresh-preview';
+    else
+        echo 'change-prompt(Unstaged ▶ )+reload($unstaged_cmd)+change-ghost(Filter unstaged changes in the working tree...)+refresh-preview';
+    fi"
+
+bind_enter="enter:execute-silent(
+    if [[ {fzf:prompt} =~ Unstaged ]]; then
+        git add -- {+};
+    else
+        git restore --staged -- {+};
+    fi)+transform:
+    if [[ \$FZF_PROMPT =~ Unstaged ]]; then
+        echo 'reload($unstaged_cmd)+refresh-preview';
+    else
+        echo 'reload($staged_cmd)+refresh-preview';
+    fi"
+
+bind_commit="ctrl-c:execute(
+    if [ -z \"\$(command git diff --cached --name-only)\" ]; then
+        printf 'Nothing staged to commit. Press Enter to return.\n';
+        read;
+    else
+        command git commit;
+    fi)+reload($unstaged_cmd)+change-prompt(Unstaged ▶ )+change-ghost(Filter unstaged changes in the working tree...)+refresh-preview"
+
+bind_stage_all="alt-a:transform:
+    if [[ \$FZF_PROMPT =~ Unstaged ]]; then
+        echo 'execute-silent(git add -- {*})+reload($unstaged_cmd)+refresh-preview';
+    fi"
+
+fzf_opts=(
+    --multi --no-sort --height=100%
+    --prompt 'Unstaged ▶ '
+    --ghost 'Filter unstaged changes in the working tree...'
+    --highlight-line
+    --style=full
+    --preview "$preview_cmd"
+    --preview-window 'down:60%:hidden'
+    --preview-label=' Diff '
+    --preview-label-pos=2
+    --header-border=line
+    --footer " ↵ Stage/Unstage │ ^S Switch View │ ^C Commit │ Alt-A Stage All │ Alt-E Editor │ ? Preview"
+    --footer-border=line
+    --color 'label:yellow:bold,header:dim,footer:bold'
+    --bind '?:toggle-preview'
+    --bind "start,focus:bg-transform-header($status_header_cmd)"
+    --bind "$bind_toggle_mode"
+    --bind "$bind_enter"
+    --bind "$bind_commit"
+    --bind "$bind_stage_all"
+    --bind 'alt-e:execute(${EDITOR:-vim} {+})+refresh-preview'
+)
+
+eval "$unstaged_cmd" | fzf "${fzf_opts[@]}"
+rc=$?
+[[ $rc -eq 1 || $rc -eq 130 ]] && exit 0
+exit $rc

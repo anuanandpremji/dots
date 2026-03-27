@@ -26,3 +26,16 @@
 .config/git/config.work
 .config/espanso/
 
+# SSH keys (should never be committed)
+**/*.pem
+**/*.key
+**/*.p12
+**/id_rsa*
+**/id_ed25519*
+**/id_ecdsa*
+
+# Backups and temp files
+*.bak
+*~
+__pycache__/
+

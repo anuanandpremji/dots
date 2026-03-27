@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+#
+# sysinfo - Show system information using built-in tools (no external dependencies).
+
+if [[ "$(uname)" == "Darwin" ]]; then
+    system_profiler SPSoftwareDataType SPHardwareDataType SPDisplaysDataType SPStorageDataType
+    exit
+fi
+
+echo "── OS ──"
+grep PRETTY_NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"'
+uname -r
+
+echo -e "\n── CPU ──"
+lscpu 2>/dev/null | grep -E "^(Model name|CPU\(s\)|Core|Thread|Architecture)" | sed 's/^[[:space:]]*//'
+
+echo -e "\n── Memory ──"
+free -h 2>/dev/null | grep -E "^(Mem|Swap)"
+
+echo -e "\n── Disk ──"
+lsblk -d -o NAME,SIZE,MODEL 2>/dev/null | grep -v "^loop"
+
+echo -e "\n── Network ──"
+ip -br addr 2>/dev/null | grep -v "^lo"

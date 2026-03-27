@@ -48,9 +48,9 @@ setopt noclobber           # must use >| to truncate existing files
 #║ History                                                                                                             ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-# Store ZSH history at a local (non-synced) location
-mkdir -p "$HOME/.config/shell"
-HISTFILE="$HOME/.config/shell/history"
+# Store history under XDG_STATE_HOME (state, not config — it's app-generated, not user-edited)
+mkdir -p "$XDG_STATE_HOME/shell"
+HISTFILE="$XDG_STATE_HOME/shell/history"
 
 # Ignore certain commands from being stored in history
 HISTORY_IGNORE="(ls|cd|cd -|df|ff|cls|reboot|restart|poweroff|pwd|exit|date|* --help|#*)"
@@ -194,13 +194,12 @@ source "$ZDOTDIR/.zshprompt_theme_pure"
 #║ Extras                                                                                                              ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-# Load utils, git, history, find, functions, and aliases
-source "$ZDOTDIR/.zsh_utils"
-source "$ZDOTDIR/.zsh_git"
-source "$ZDOTDIR/.zsh_history"
-source "$ZDOTDIR/.zsh_find"
-source "$ZDOTDIR/.zsh_functions"
-source "$ZDOTDIR/.zsh_aliases"
+# Load shared and zsh-specific config
+source "$ZDOTDIR/../shared/utils.sh"
+source "$ZDOTDIR/../shared/git.sh"
+source "$ZDOTDIR/../shared/history.sh"
+source "$ZDOTDIR/../shared/find.sh"
+source "$ZDOTDIR/../shared/aliases.sh"
 if [[ -f "$HOME/.config/shell/.zshextra" ]]; then source "$HOME/.config/shell/.zshextra"; fi
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗

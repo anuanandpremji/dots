@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+#
+# gho - Open GitHub/GitLab page of a repository from the terminal.
+# (Named gho to avoid colliding with the official GitHub CLI `gh`.)
+#
+# Usage:
+#   gho             opens the current repo on origin (current branch)
+#   gho <remote>    opens the given remote
+#
+# ┌─ URL resolution ────────────────────────────────────────────────────────────────────────────────┐
+# │                                                                                                 │
+# │  git config remote.origin.url                                                                   │
+# │       │                                                                                         │
+# │       ├─ SSH alias? (e.g. git@github-private:...) ──► resolve real host via ssh -G              │
+# │       │                                                                                         │
+# │       ▼                                                                                         │
+# │  Normalise to HTTPS:                                                                            │
+# │    ssh://git@github.com/user/repo.git  →  https://github.com/user/repo                          │
+# │    git@github.com:user/repo.git        →  https://github.com/user/repo                          │
+# │       │                                                                                         │
+# │       ▼                                                                                         │
+# │  Append branch path (if on a named branch that exists on the remote):                           │
+# │    GitHub / Bitbucket  →  /tree/<branch>                                                        │
+# │    GitLab              →  /-/tree/<branch>                                                      │
+# │       │                                                                                         │
+# │       ▼                                                                                         │
+# │  open / xdg-open / wslview                                                                      │
+# │                                                                                                 │
+# └─────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+_git_web_url() {
+    local remote="${1:-origin}"
+    local raw_url
+    raw_url=$(command git config remote."$remote".url 2>/dev/null) || return 1
+
+    local ssh_host
+    ssh_host=$(printf '%s' "$raw_url" | command sed -n 's|^git@\([^:]*\):.*|\1|p')
+    if [ -n "$ssh_host" ]; then
+        local real_host
+        real_host=$(command ssh -G "$ssh_host" 2>/dev/null | command awk '/^hostname / {print $2}')
+        [ -n "$real_host" ] && raw_url=$(printf '%s' "$raw_url" | command sed "s|^git@${ssh_host}:|git@${real_host}:|")
+    fi
+
+    printf '%s' "$raw_url" \
+        | command sed -e "s|^ssh://git@|https://|" \
+              -e "s|^git@\([^:]*\):|https://\1/|" \
+              -e "s|\.git$||"
+}
+
+_open_url() {
+    case "$(uname -s)" in
+        Darwin) open "$1" >/dev/null 2>&1 ;;
+        Linux)
+            if [[ "$(uname -r)" == *icrosoft* ]]; then
+                wslview "$1" >/dev/null 2>&1
+            else
+                nohup xdg-open "$1" >/dev/null 2>&1
+            fi
+            ;;
+        *) printf "gho: platform %s not supported.\n" "$(uname -s)" >&2; return 1 ;;
+    esac
+}
+
+if ! command git rev-parse --git-dir > /dev/null 2>&1; then
+    printf "gho: not inside a git repository.\n" >&2; exit 1
+fi
+
+remote="${1:-origin}"
+
+if ! command git remote | grep -qx "$remote"; then
+    printf "gho: remote '%s' not found.\n" "$remote" >&2
+    available=$(command git remote)
+    if [ -n "$available" ]; then
+        printf "Available remotes: %s\n" "$available" >&2
+    else
+        printf "No remotes configured.\n" >&2
+    fi
+    exit 1
+fi
+
+command git remote -v | grep "(push)"
+printf "Using remote %s\n" "$remote"
+
+URL=$(_git_web_url "$remote") || { printf "gho: could not resolve URL for remote '%s'.\n" "$remote" >&2; exit 1; }
+
+if [ -z "$1" ]; then
+    branch=$(command git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+    if [ -n "$branch" ] && [ "$branch" != "HEAD" ] \
+        && command git rev-parse --verify "origin/$branch" >/dev/null 2>&1; then
+        case "$URL" in
+            *gitlab*) URL="$URL/-/tree/$branch" ;;
+            *)        URL="$URL/tree/$branch" ;;
+        esac
+    fi
+fi
+
+printf "Opening %s\n" "$URL"
+_open_url "$URL"

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+#
+# shwifi - Show saved Wi-Fi passwords.
+# On macOS: uses the security command to look up the current network's password.
+# On Linux: uses nmcli to list all saved Wi-Fi profiles and their PSKs.
+
+case "$(uname -s)" in
+    Darwin)
+        security find-generic-password -ga \
+            "$(networksetup -getairportnetwork en0 | awk -F': ' '{print $2}')" \
+            2>&1 | grep password
+        ;;
+    Linux)
+        nmcli -t -f NAME,TYPE connection show | awk -F: '$2=="802-11-wireless"{print $1}' |
+        while IFS= read -r ssid; do
+            pass=$(sudo nmcli -s -g 802-11-wireless-security.psk connection show "$ssid" 2>/dev/null)
+            [ -n "$pass" ] && printf "%-30s %s\n" "$ssid" "$pass"
+        done
+        ;;
+    *)
+        printf "shwifi: unsupported platform: %s\n" "$(uname -s)" >&2
+        exit 1
+        ;;
+esac

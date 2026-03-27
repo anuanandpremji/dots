@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+#
+# gl - Browse git commits with delta-powered preview.
+#
+# ┌─ Views ─────────────────────────────────────────────────────────────────────────────────────────┐
+# │                                                                                                 │
+# │  Log view (default)                          Branch switcher  (CTRL-S to toggle)                │
+# │  ─────────────────────────────────────────   ───────────────────────────────────                │
+# │  abc1234  feat: add fuzzy file search        * main                                             │
+# │  def5678  fix: null pointer dereference        feature/login   ← ENTER to view                  │
+# │  bcd9012  chore: clean up test deps            hotfix/bug-123       that branch's log           │
+# │           ↓ preview pane: delta diff                                                            │
+# │                                                                                                 │
+# │  ENTER   git show (full diff in pager)       CTRL-Y  copy commit hash to clipboard              │
+# │  CTRL-D  git diff (vs working tree)          CTRL-O  open commit on GitHub                      │
+# │  CTRL-S  toggle branch switcher              CTRL-F  filter by author                           │
+# │  ?       toggle preview                      CTRL-T  filter by commit message                   │
+# │                                                                                                 │
+# └─────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+if ! command -v fzf   >/dev/null 2>&1; then printf "gl: fzf not found.\n"   >&2; exit 1; fi
+if ! command -v delta >/dev/null 2>&1; then printf "gl: delta not found.\n" >&2; exit 1; fi
+
+if ! command git rev-parse --git-dir > /dev/null 2>&1; then printf "Not inside a Git repository.\n"; exit 1; fi
+
+_detect_color_scheme() {
+    local scheme
+    scheme=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null | tr -d "'")
+    case "$scheme" in
+        prefer-dark)          printf dark;  return ;;
+        prefer-light|default) printf light; return ;;
+    esac
+    if command -v darkman >/dev/null 2>&1; then darkman get 2>/dev/null && return; fi
+    printf dark
+}
+
+_git_web_url() {
+    local remote="${1:-origin}"
+    local raw_url
+    raw_url=$(command git config remote."$remote".url 2>/dev/null) || return 1
+
+    local ssh_host
+    ssh_host=$(printf '%s' "$raw_url" | command sed -n 's|^git@\([^:]*\):.*|\1|p')
+    if [ -n "$ssh_host" ]; then
+        local real_host
+        real_host=$(command ssh -G "$ssh_host" 2>/dev/null | command awk '/^hostname / {print $2}')
+        [ -n "$real_host" ] && raw_url=$(printf '%s' "$raw_url" | command sed "s|^git@${ssh_host}:|git@${real_host}:|")
+    fi
+
+    printf '%s' "$raw_url" \
+        | command sed -e "s|^ssh://git@|https://|" \
+              -e "s|^git@\([^:]*\):|https://\1/|" \
+              -e "s|\.git$||"
+}
+
+delta_theme=$(_detect_color_scheme)
+delta_cmd="delta --paging=never --width=\$FZF_PREVIEW_COLUMNS --$delta_theme"
+delta_pager="delta --$delta_theme --paging=never | less -R"
+
+preview_cmd="
+[ -n {1} ] || exit 0;
+if [[ {fzf:prompt} == *Branches* ]]; then
+    command git log --color=always \
+        --format='%C(yellow)%h%C(reset)  %s  %C(dim)%ad  %aN%C(reset)' \
+        --date=format:'%Y-%m-%d' {1} 2>/dev/null;
+else
+    printf '\e[33;1m%s\e[0m\n' \"\$(command git log -1 --format='%h  %ad  %aN' --date=format:'%Y-%m-%d %H:%M' {1})\";
+    printf '%s\n\n' \"\$(command git log -1 --format='%s%n%n%b' {1})\";
+    command git --no-pager show --stat --color=always --format='' {1} 2>/dev/null;
+    echo;
+    command git --no-pager show --color=never --format='' {1} 2>/dev/null | $delta_cmd;
+fi"
+
+github_url=$(_git_web_url origin)
+
+open_cmd="xdg-open"
+[[ "$OSTYPE" == darwin* ]] && open_cmd="open"
+
+clip_cmd="xclip -selection clipboard"
+if [[ "$OSTYPE" == darwin* ]]; then clip_cmd="pbcopy"
+elif [[ -n "$WAYLAND_DISPLAY" ]]; then clip_cmd="wl-copy"
+fi
+
+git_log_opts=(
+    --color=always
+    --date=format:'%d.%b.%y'
+    --format=format:$'%C(yellow)%h%C(reset)\t%C(auto)%d%C(reset)\t%s\t%ad\t%aN'
+)
+
+viewed_ref="${1:-$(command git branch --show-current 2>/dev/null || echo 'HEAD')}"
+
+branch_list_cmd="{ printf \"Branch / Tag\n\"; { command git branch --all | command cut -c3- | command grep -v HEAD | command grep .; command git tag --sort=-creatordate; } | command sort -u; }"
+
+bind_switch="ctrl-s:transform:
+    if [[ \$FZF_PROMPT =~ Branches ]]; then
+        echo 'become(gl \"$viewed_ref\")';
+    else
+        echo 'change-prompt(Branches ▶ )+reload[$branch_list_cmd]+change-ghost(Pick a branch or tag...)+change-preview-label( Branch Log )+change-footer( ↵ Switch to Branch │ ^S Back to Log │ ? Preview)+refresh-preview';
+    fi"
+
+bind_enter="enter:transform:
+    if [[ \$FZF_PROMPT =~ Branches ]]; then
+        echo 'become(gl \"{1}\")';
+    else
+        echo \"execute(command git --no-pager show --color=never --format='' {1} | $delta_pager)\";
+    fi"
+
+fzf_opts=(
+    --ansi --no-sort --height=100% --freeze-left=10
+    --ghost "Filter commits on  $viewed_ref..."
+    --highlight-line
+    --style=full
+    --header-lines=1
+    --preview "$preview_cmd"
+    --preview-window 'down:60%:hidden'
+    --preview-label=' Commit Details '
+    --preview-label-pos=2
+    --header-border=line
+    --footer " ↵ Show │ ^D Diff │ ^S Switch Branch │ ^Y Copy Hash │ ^O GitHub │ ^F Author │ ^T Msg │ ? Preview"
+    --footer-border=line
+    --color 'label:yellow:bold,header:bold,footer:bold'
+    --delimiter '│'
+    --bind '?:toggle-preview'
+    --info-command "printf 'On  \xee\x82\xa0 %s  %s' '$viewed_ref' \"\$FZF_INFO\""
+    --bind "$bind_enter"
+    --bind "ctrl-d:execute(command git --no-pager diff --color=never {1} | $delta_pager)"
+    --bind "$bind_switch"
+    --bind "ctrl-y:execute-silent(printf '%s' {1} | $clip_cmd)+change-ghost(Copied commit hash to clipboard)"
+    --bind "ctrl-o:execute-silent[sha={1}; $open_cmd \"$github_url/commit/\$sha\" >/dev/null 2>&1 &]"
+    --bind 'ctrl-f:change-nth(3)+change-ghost(Author filter — press ctrl-a to reset)'
+    --bind 'ctrl-t:change-nth(2)+change-ghost(Message filter — press ctrl-a to reset)'
+    --bind "ctrl-a:change-nth(..)+change-ghost(Filter commits on  $viewed_ref...)"
+)
+
+command git log "${git_log_opts[@]}" "$@" \
+| awk -v cols="$(tput cols)" -F'\t' '
+    function strip(s,  r) { r=s; gsub(/\033\[[0-9;]*m/,"",r); return r }
+    function vlen(s,   r) { r=s; gsub(/\033\[[0-9;]*m/,"",r); gsub(/[\200-\277]/,"",r); return length(r) }
+    NR == 1 {
+        eff = (cols > 120 ? 120 : cols)
+        hash_len = length(strip($1))
+        subj_col = eff - hash_len - 27
+        if (subj_col < 7) subj_col = 7
+        printf "%-*s│ %-*s │ %-10s │ Date\n", hash_len, "Hash", subj_col, "Subject", "Author"
+    }
+    {
+        eff = (cols > 120 ? 120 : cols)
+        split($5, n, " "); first = n[1]
+        if (length(first) > 10) first = substr(first, 1, 9) "."
+        age        = $4
+        right      = sprintf("%-10s │ %s", first, age)
+        rlen       = 22
+        hash_len   = length(strip($1))
+        decor_clean = strip($2)
+        decor_len  = length(decor_clean)
+        base_len   = hash_len + 2 + (decor_len > 0 ? decor_len + 1 : 0)
+        available  = eff - base_len - 3 - rlen
+        if (available < 10) available = 10
+        subj = $3
+        truncated = 0
+        if (vlen(subj) > available) { subj = substr(subj, 1, available - 2); truncated = 1 }
+        left = $1 "\033[2m│\033[0m "
+        if (decor_len > 0) left = left $2 " "
+        left = left subj
+        if (truncated) left = left "\033[2m··\033[0m"
+        llen = base_len + vlen(subj) + (truncated ? 2 : 0)
+        sep  = " \033[2m│\033[0m "
+        pad  = eff - llen - 3 - rlen
+        if (pad < 0) pad = 0
+        printf "%s%*s%s\033[2m%s\033[0m\n", left, pad, "", sep, right
+    }' \
+| fzf "${fzf_opts[@]}"

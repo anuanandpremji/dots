@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#
+# tre - Better `tree` with color, shows hidden files, ignores .git, lists directories first.
+# Output is piped through `less` with options to preserve color and line numbers,
+# unless it fits in one screen.
+#
+# Usage: tre [dir1 dir2 ...]
+
+tree -aC -I ".git" --dirsfirst "$@" | less -FRNX

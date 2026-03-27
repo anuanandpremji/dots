@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+#
+# launch - Run a command in the background, detached from the terminal.
+#
+# Usage: launch <command> [args...]
+# Example: launch meld ~/project ~/backup
+
+"$@" &

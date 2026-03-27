@@ -9,38 +9,31 @@
 #║ Read http://mywiki.wooledge.org/BashFAQ/028 to know why we are doing this                                           ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
-# Resolve DOTFILE_DIR automatically from the symlink target of this file.
-# ~/.bashrc is a symlink → dotfiles/.config/shell/bash/.bashrc
-# So resolving the symlink gives us the real directory.
-
-_resolve_dotfile_dir() {
-    local link="$HOME/.bashrc"
-    if [[ ! -L "$link" ]]; then return 1; fi
-
-    local target
-    # Prefer readlink -f (follows entire chain), available on Linux and Homebrew coreutils
-    if target="$(readlink -f "$link" 2>/dev/null)"; then
-        printf '%s' "$(dirname "$target")"
-    # macOS fallback: python3 is always available
-    elif target="$(python3 -c "import os; print(os.path.realpath('$link'))" 2>/dev/null)"; then
-        printf '%s' "$(dirname "$target")"
-    # Last resort: plain readlink + cd to resolve relative paths
-    elif target="$(readlink "$link" 2>/dev/null)"; then
-        (cd "$(dirname "$link")" && cd "$(dirname "$target")" && pwd)
+# Resolve the repo root from this file's real path (handles ~/.bashrc → dotfiles symlink).
+# We resolve the symlink then navigate three levels up to the repo root:
+#   .bashrc → shell/bash/ → shell/ → .config/ → repo root
+_dotfiles_path() {
+    local f="${BASH_SOURCE[0]}"
+    local real
+    if   real="$(readlink -f "$f" 2>/dev/null)"; then :
+    elif real="$(python3 -c "import os; print(os.path.realpath('$f'))" 2>/dev/null)"; then :
+    elif real="$(readlink "$f" 2>/dev/null)"; then
+        real="$(cd "$(dirname "$f")" && cd "$(dirname "$real")" && pwd)/$(basename "$real")"
     else
-        return 1
+        real="$f"
     fi
+    cd "$(dirname "$real")/../../.." && pwd
 }
-
-DOTFILE_DIR="$(_resolve_dotfile_dir)" || DOTFILE_DIR="$HOME/.config/shell/bash"
-unset -f _resolve_dotfile_dir
-export DOTFILE_DIR
+DOTFILES_PATH="$(_dotfiles_path)" || DOTFILES_PATH="$HOME/dotfiles"
+unset -f _dotfiles_path
+export DOTFILES_PATH
+_bash_dir="$DOTFILES_PATH/.config/shell/bash"
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
 # The global exports should be available to all programs, not just the interactive and login shells
 
-source "$DOTFILE_DIR/.bashexports";
+source "$DOTFILES_PATH/.config/shell/shared/exports.sh";
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
@@ -57,11 +50,11 @@ case $- in *i*) ;; *) return;; esac # don't do anything more if not an interacti
 # History
 
 # Ignore certain commands from being stored in history
-export HIST_IGNORE="ls:cd:cd -:df:ff:cls:reboot:restart:poweroff:pwd:exit:date:* --help:#*"
+HISTIGNORE="ls:cd:cd -:df:ff:cls:reboot:restart:poweroff:pwd:exit:date:* --help:#*"
 
-# Store BASH history at a local (non-synced) location
-mkdir -p "$HOME/.config/shell"
-export HISTFILE="$HOME/.config/shell/history";
+# Store history under XDG_STATE_HOME (state, not config — it's app-generated, not user-edited)
+mkdir -p "$XDG_STATE_HOME/shell"
+export HISTFILE="$XDG_STATE_HOME/shell/history";
 
 HISTSIZE=1000000000      # number of entries from the history file to be kept in memory for the current session
 HISTFILESIZE=1000000000  # number of entries that are stored in the history file
@@ -217,21 +210,20 @@ bind -x '"\C-x\C-e": __edit_command_line'
 
 # Load custom prompt
 
-source "$DOTFILE_DIR/.bashprompt_theme_cascade"
-# source "$DOTFILE_DIR/.bashprompt_theme_pure"
-# source "$DOTFILE_DIR/.bashprompt"
-# if _has starship; then export STARSHIP_CONFIG="$DOTFILE_DIR/../starship/gaps.toml"; eval "$(starship init bash)"; fi
+source "$_bash_dir/.bashprompt_theme_cascade"
+# source "$_bash_dir/.bashprompt_theme_pure"
+# source "$_bash_dir/.bashprompt"
+# if _has starship; then export STARSHIP_CONFIG="$DOTFILES_PATH/.config/starship/gaps.toml"; eval "$(starship init bash)"; fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
-# Load utils, git, history, find, functions, and aliases
+# Load shared config
 
-source "$DOTFILE_DIR/.bash_utils";
-source "$DOTFILE_DIR/.bash_git";
-source "$DOTFILE_DIR/.bash_history";
-source "$DOTFILE_DIR/.bash_find";
-source "$DOTFILE_DIR/.bash_functions";
-source "$DOTFILE_DIR/.bash_aliases";
+source "$DOTFILES_PATH/.config/shell/shared/utils.sh";
+source "$DOTFILES_PATH/.config/shell/shared/git.sh";
+source "$DOTFILES_PATH/.config/shell/shared/history.sh";
+source "$DOTFILES_PATH/.config/shell/shared/find.sh";
+source "$DOTFILES_PATH/.config/shell/shared/aliases.sh";
 if [[ -f "$HOME/.config/shell/.bashextra" ]]; then source "$HOME/.config/shell/.bashextra"; fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
