@@ -7,18 +7,51 @@ if [[ "$(uname)" == "Darwin" ]]; then
     exit
 fi
 
-echo "── OS ──"
+_E=$(printf '\033')
+R="${_E}[0m";  BO="${_E}[1m"
+GR="${_E}[32m"; RE="${_E}[31m"; YE="${_E}[33m"
+CY="${_E}[36m"; GA="${_E}[90m"
+
+hdr() { printf "\n%s%s── %s ──%s\n" "$BO" "$CY" "$1" "$R"; }
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+hdr "OS"
 grep PRETTY_NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"'
 uname -r
 
-echo -e "\n── CPU ──"
-lscpu 2>/dev/null | grep -E "^(Model name|CPU\(s\)|Core|Thread|Architecture)" | sed 's/^[[:space:]]*//'
+# ── CPU ───────────────────────────────────────────────────────────────────────
+hdr "CPU"
+lscpu 2>/dev/null \
+    | grep -E "^(Architecture|Model name|CPU\(s\):|Core\(s\) per socket|Thread\(s\) per core)" \
+    | awk -F':[[:space:]]+' -v GA="$GA" -v R="$R" \
+        '{printf "  %s%-24s%s %s\n", GA, $1":", R, $2}'
 
-echo -e "\n── Memory ──"
-free -h 2>/dev/null | grep -E "^(Mem|Swap)"
+# ── Memory ────────────────────────────────────────────────────────────────────
+hdr "Memory"
+free -h 2>/dev/null | awk -v CY="$CY" -v YE="$YE" -v R="$R" -v BO="$BO" '
+    /^Mem:/  { printf "  %s%-6s%s total: %s%-8s%s  used: %s%-8s%s  available: %s%s%s\n",
+               CY BO, "RAM",  R, YE, $2, R, YE, $3, R, YE, $7, R }
+    /^Swap:/ { printf "  %s%-6s%s total: %s%-8s%s  used: %s%s%s\n",
+               CY BO, "Swap", R, YE, $2, R, YE, $3, R }
+'
 
-echo -e "\n── Disk ──"
-lsblk -d -o NAME,SIZE,MODEL 2>/dev/null | grep -v "^loop"
+# ── Disk ──────────────────────────────────────────────────────────────────────
+hdr "Disk"
+lsblk -d -o NAME,SIZE,MODEL 2>/dev/null | grep -v "^loop" | awk \
+    -v GA="$GA" -v YE="$YE" -v CY="$CY" -v R="$R" -v BO="$BO" '
+    NR==1 { printf "  %s%-12s %-10s %s%s\n", GA, $1, $2, $3, R; next }
+           { model = ""; for (i=3; i<=NF; i++) model = model (i>3 ? " " : "") $i
+             printf "  %s%s%-12s%s %s%-10s%s %s\n", CY, BO, $1, R, YE, $2, R, model }
+'
 
-echo -e "\n── Network ──"
-ip -br addr 2>/dev/null | grep -v "^lo"
+# ── Network ───────────────────────────────────────────────────────────────────
+hdr "Network"
+ip -br addr 2>/dev/null | grep -v "^lo" | while read -r iface state addrs; do
+    ipv4=$(printf '%s\n' $addrs | grep -v ':' | head -1)
+    if   [[ "$state" == "UP"   ]]; then sc="${GR}${BO}"
+    elif [[ "$state" == "DOWN" ]]; then sc="${RE}${BO}"
+    else                                sc="${YE}"; fi
+    printf "  %s%-18s%s  %s%-6s%s  %s%s%s\n" \
+        "$CY$BO" "$iface" "$R" "$sc" "$state" "$R" "$YE" "${ipv4:-}" "$R"
+done
+echo ""

@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+#
+# ipa — Formatted network interface summary: status, MACs, IPs, and gateway.
+
+_E=$(printf '\033')
+R="${_E}[0m";  BO="${_E}[1m";  DI="${_E}[2m"
+GR="${_E}[32m"; RE="${_E}[31m"; YE="${_E}[33m"
+CY="${_E}[36m"; BL="${_E}[34m"; GA="${_E}[90m"
+
+ip addr | awk \
+    -v R="$R" -v BO="$BO" -v DI="$DI" \
+    -v GR="$GR" -v RE="$RE" -v YE="$YE" \
+    -v CY="$CY" -v BL="$BL" -v GA="$GA" '
+
+BEGIN { skip = 0; order_n = 0; current = "" }
+
+# ── Interface header ──────────────────────────────────────────────────────────
+/^[0-9]+: / {
+    iface = $2; sub(/:$/, "", iface)
+    if (iface == "lo") { skip = 1; next }
+    skip = 0; current = iface
+    order[++order_n] = iface
+    state[iface] = "UNKNOWN"; mac[iface] = ""
+    inet_n[iface] = 0; inet6_n[iface] = 0
+    for (i = 1; i <= NF; i++)
+        if ($i == "state") { state[iface] = $(i+1); break }
+    next
+}
+
+skip { next }
+
+# ── MAC ───────────────────────────────────────────────────────────────────────
+/link\/ether/ { mac[current] = $2 }
+
+# ── IPv4 ──────────────────────────────────────────────────────────────────────
+/[[:space:]]inet / {
+    n = ++inet_n[current]
+    inet_addr[current, n] = $2
+}
+
+# ── IPv6 ──────────────────────────────────────────────────────────────────────
+/[[:space:]]inet6 / {
+    n = ++inet6_n[current]
+    addr = $2; scope = "global"; tmp = 0
+    for (i = 3; i <= NF; i++) {
+        if ($i == "scope")     scope = $(i+1)
+        if ($i == "temporary") tmp   = 1
+    }
+    if      (addr ~ /^fe80/) scope = "link-local"
+    else if (addr ~ /^f[cd]/) scope = "ULA"
+    inet6_addr[current, n]  = addr
+    inet6_scope[current, n] = scope
+    inet6_tmp[current, n]   = tmp
+}
+
+# ── Print ─────────────────────────────────────────────────────────────────────
+END {
+    for (oi = 1; oi <= order_n; oi++) {
+        iface = order[oi]
+
+        if      (state[iface] == "UP")   { dot = GR "●" R; st = GR BO "UP"   R }
+        else if (state[iface] == "DOWN") { dot = RE "●" R; st = RE BO "DOWN" R }
+        else                             { dot = YE "●" R; st = YE state[iface] R }
+
+        printf "\n %s %s%s%s%s  %s\n", dot, CY, BO, iface, R, st
+
+        if (mac[iface] != "")
+            printf "   %sMAC%s   %s%s%s\n", GA, R, GA, mac[iface], R
+
+        for (i = 1; i <= inet_n[iface]; i++)
+            printf "   %sIPv4%s  %s%s%s\n", BO, R, YE, inet_addr[iface, i], R
+
+        # Non-temporary IPv6 first, then temporary ones dimmed
+        for (pass = 0; pass <= 1; pass++) {
+            for (i = 1; i <= inet6_n[iface]; i++) {
+                if (inet6_tmp[iface, i] != pass) continue
+                addr  = inet6_addr[iface, i]
+                scope = inet6_scope[iface, i]
+                tag   = "[" scope (pass ? ", temporary" : "") "]"
+                if (pass)
+                    printf "   %sIPv6%s  %s%-44s%s %s%s%s\n", DI, R, DI BL, addr, R, DI, tag, R
+                else
+                    printf "   %sIPv6%s  %s%-44s%s %s%s%s\n", BO, R, BL, addr, R, GA, tag, R
+            }
+        }
+    }
+    print ""
+}
+'
+
+# ── Gateway ───────────────────────────────────────────────────────────────────
+printf " %s%sGateway%s\n" "$BO" "$CY" "$R"
+while IFS= read -r line; do
+    gw=$(    awk '{for (i=1; i<=NF; i++) if ($i=="via")   { print $(i+1); exit }}' <<< "$line")
+    dev=$(   awk '{for (i=1; i<=NF; i++) if ($i=="dev")   { print $(i+1); exit }}' <<< "$line")
+    proto=$( awk '{for (i=1; i<=NF; i++) if ($i=="proto") { print $(i+1); exit }}' <<< "$line")
+    [[ -n "$gw" ]] && printf "   %-18s %s%s%s  %s(%s)%s\n" \
+        "$dev" "$YE" "$gw" "$R" "$GA" "$proto" "$R"
+done < <(ip route show default 2>/dev/null)
+echo ""
