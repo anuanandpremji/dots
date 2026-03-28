@@ -18,3 +18,4 @@
 ## Markdown Files (README.md, *.md)
 - Do NOT break sentences or paragraphs to adhere to line length limits. Write prose as single continuous lines per sentence or paragraph.
 - Text editors and markdown viewers use soft wrap — hard line breaks inside sentences are unnecessary and make diffs noisier.
+- Use ```sh for shell code blocks, NOT ```shell. Most Markdown renderers recognise `sh` but not `shell`.
