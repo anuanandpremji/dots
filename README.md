@@ -8,13 +8,13 @@ Personal dotfiles for a consistent development environment across Ubuntu, Debian
 
 On a fresh machine with nothing installed, run this single command:
 
-```shell
+```sh
 curl -fsSL https://raw.githubusercontent.com/anuanandpremji/dots/main/setup.sh -o /tmp/setup.sh && bash /tmp/setup.sh
 ```
 
 The script will ask how to get the dotfiles (clone via SSH, HTTPS, or download as zip), then walk through identity setup, app installs, and config linking interactively.
 
-```shell
+```sh
 # If the dotfiles repo is already present, run directly
 ./setup.sh
 
@@ -187,7 +187,7 @@ System-wide fuzzy search for files and directories, starting from `/`.
 
 Live text search powered by ripgrep with a bat-previewed, fzf-driven interface. Opens matches directly in `$VISUAL` at the matched line. Requires `rg` and `bat`.
 
-```shell
+```sh
 rf           # search in current directory
 rf path/     # search in a specific directory
 rf file.rs   # search within a single file
@@ -270,7 +270,7 @@ Prints each remote aligned in columns. Shows two lines for a remote only when it
 
 Opens the remote repository page in the default browser. Resolves SSH aliases (e.g. `git@github-private:...`) to their real HTTPS URL, appends the current branch path, and handles both GitHub and GitLab URL formats.
 
-```shell
+```sh
 gho           # opens origin at the current branch
 gho upstream  # opens a specific remote
 ```
@@ -339,7 +339,7 @@ Both shells redirect config and state paths for 25+ applications to proper XDG d
 
 ### 1. Clone the repository
 
-```shell
+```sh
 git clone <URL> "$HOME/private/dots/"
 ```
 
@@ -347,7 +347,7 @@ Or use `setup.sh` from the Quick Start above — it handles cloning automaticall
 
 ### 2. Run setup
 
-```shell
+```sh
 cd "$HOME/private/dots"
 ./setup.sh          # full interactive setup
 ./setup.sh server   # headless server (no GUI)
@@ -364,7 +364,7 @@ cd "$HOME/private/dots"
 > cp ~/.zshenv ~/.zshenv.bak 2>/dev/null; cp ~/.bashrc ~/.bashrc.bak 2>/dev/null
 > ```
 
-```shell
+```sh
 # Zsh
 ln -sf "$HOME/private/dots/.config/shell/zsh/.zshenv" "$HOME/.zshenv"
 
@@ -376,7 +376,7 @@ ln -sf "$HOME/private/dots/.config/shell/bash/.bashrc" "$HOME/.bashrc"
 
 ### 4. Reload
 
-```shell
+```sh
 exec "$(ps -p $$ -ocomm=)"
 ```
 

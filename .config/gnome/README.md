@@ -44,7 +44,7 @@ Workspace switching uses `Super+Alt+Left/Right` and `Super+PageUp/Down`. The `Ct
 
 Settings are loaded automatically by `setup_symlinks.sh` (or `setup.sh` which calls it). To manually reload:
 
-```shell
+```sh
 # Full GNOME settings
 dconf load / < gnome-settings.dconf
 
@@ -56,7 +56,7 @@ dconf load /org/gnome/shell/extensions/quake-terminal/ < extensions/quake-termin
 
 After changing GNOME or extension settings, re-export to keep backups current:
 
-```shell
+```sh
 dconf dump / > gnome-settings.dconf
 dconf dump /org/gnome/shell/extensions/quake-terminal/ > extensions/quake-terminal.dconf
 ```

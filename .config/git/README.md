@@ -27,7 +27,7 @@ The `setup_identities.sh` script (run automatically by `setup.sh`) creates separ
 
 The correct name, email, and SSH key are applied automatically based on where you clone:
 
-```shell
+```sh
 cd ~/private && git clone git@github-private:user/repo.git    # private identity
 cd ~/work    && git clone git@github-work:org/repo.git        # work identity
 ```
