@@ -1,7 +1,35 @@
 #!/bin/sh
+#
+# Redacts secrets and credentials from a shell history file in-place.
+# Reports which line numbers were changed.
+#
+# Patterns matched:
+#   AWS access key IDs (AKIA*, ASIA*) and AWS_SECRET_ACCESS_KEY=
+#   GitHub tokens (ghp_, gho_, ghu_, ghs_, ghr_)
+#   GitLab personal access tokens (glpat-...)
+#   Slack tokens (xoxb-, xoxp-, etc.) and webhook URLs
+#   Generic variable assignments: KEY=, SECRET=, TOKEN=, PASS=/PASSWORD=
+#
+# Usage: ./sanitize_history.sh <file>
+
+case "${1:-}" in
+    -h|--help)
+        printf "Usage: ./sanitize_history.sh <file>\n"
+        printf "\n"
+        printf "  Redacts secrets and credentials from a shell history file in-place.\n"
+        printf "  Reports which line numbers were changed.\n"
+        printf "\n"
+        printf "  Patterns matched:\n"
+        printf "    AWS access key IDs (AKIA*, ASIA*) and AWS_SECRET_ACCESS_KEY=\n"
+        printf "    GitHub tokens (ghp_, gho_, ghu_, ghs_, ghr_)\n"
+        printf "    GitLab personal access tokens (glpat-...)\n"
+        printf "    Slack tokens (xoxb-, xoxp-, etc.) and webhook URLs\n"
+        printf "    Generic assignments: KEY=, SECRET=, TOKEN=, PASS=/PASSWORD=\n"
+        exit 0 ;;
+esac
 
 if [ $# -eq 0 ]; then
-    echo "Usage: $0 <filename>" >&2
+    printf "Usage: %s <file>\n" "$0" >&2
     exit 1
 fi
 

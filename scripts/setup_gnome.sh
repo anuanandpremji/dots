@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# GNOME setup: Flatpak, Extension Manager, GNOME extensions, dconf backup/restore.
-# Linux only.
+# GNOME setup: Extension Manager, GNOME extensions, and dconf backup/restore.
+# Linux only. Assumes Flatpak and Flathub are already configured (done by setup_system.sh).
 #
 # Usage:
 #   ./setup_gnome.sh [--dry-run]          Install tools + restore settings
@@ -17,6 +17,17 @@ for arg in "$@"; do
     case "$arg" in
         backup|restore) SUBCOMMAND="$arg" ;;
         --dry-run)      DRY_RUN=true ;;
+        -h|--help)
+            printf "Usage:\n"
+            printf "  ./setup_gnome.sh [--dry-run]          Install tools + restore settings\n"
+            printf "  ./setup_gnome.sh backup  [--dry-run]  Dump live dconf settings to repo\n"
+            printf "  ./setup_gnome.sh restore [--dry-run]  Apply saved dconf settings from repo\n"
+            exit 0
+            ;;
+        *)
+            printf "Unknown argument: %s\n" "$arg" >&2
+            exit 1
+            ;;
     esac
 done
 
@@ -54,8 +65,8 @@ dconf_load() {
 gnome_backup() {
     log_section "Backing up GNOME settings"
 
-    dconf_dump "/"                                          "$DOTFILES/.config/gnome/gnome-settings.dconf"
-    dconf_dump "/org/gnome/shell/extensions/quake-terminal/" "$DOTFILES/.config/gnome/extensions/quake-terminal.dconf"
+    dconf_dump "/"                                               "$DOTFILES/.config/gnome/gnome-settings.dconf"
+    dconf_dump "/org/gnome/shell/extensions/quake-terminal/"     "$DOTFILES/.config/gnome/extensions/quake-terminal.dconf"
     dconf_dump "/org/gnome/shell/extensions/nightthemeswitcher/" "$DOTFILES/.config/gnome/extensions/nightthemeswitcher.dconf"
     dconf_dump "/org/gnome/shell/extensions/tiling-assistant/"   "$DOTFILES/.config/gnome/extensions/tiling-assistant.dconf"
     dconf_dump "/org/gnome/shell/extensions/ding/"               "$DOTFILES/.config/gnome/extensions/ding.dconf"
@@ -77,30 +88,18 @@ gnome_restore() {
         return
     fi
 
-    dconf_load "$DOTFILES/.config/gnome/gnome-settings.dconf"                        "/"
-    dconf_load "$DOTFILES/.config/gnome/extensions/quake-terminal.dconf"              "/org/gnome/shell/extensions/quake-terminal/"
-    dconf_load "$DOTFILES/.config/gnome/extensions/nightthemeswitcher.dconf"          "/org/gnome/shell/extensions/nightthemeswitcher/"
-    dconf_load "$DOTFILES/.config/gnome/extensions/tiling-assistant.dconf"            "/org/gnome/shell/extensions/tiling-assistant/"
-    dconf_load "$DOTFILES/.config/gnome/extensions/ding.dconf"                        "/org/gnome/shell/extensions/ding/"
-    dconf_load "$DOTFILES/.config/gnome/extensions/unblank.dconf"                     "/org/gnome/shell/extensions/unblank/"
-    dconf_load "$DOTFILES/.config/meld/meld-settings.dconf"                           "/org/gnome/meld/"
+    dconf_load "$DOTFILES/.config/gnome/gnome-settings.dconf"                  "/"
+    dconf_load "$DOTFILES/.config/gnome/extensions/quake-terminal.dconf"       "/org/gnome/shell/extensions/quake-terminal/"
+    dconf_load "$DOTFILES/.config/gnome/extensions/nightthemeswitcher.dconf"   "/org/gnome/shell/extensions/nightthemeswitcher/"
+    dconf_load "$DOTFILES/.config/gnome/extensions/tiling-assistant.dconf"     "/org/gnome/shell/extensions/tiling-assistant/"
+    dconf_load "$DOTFILES/.config/gnome/extensions/ding.dconf"                 "/org/gnome/shell/extensions/ding/"
+    dconf_load "$DOTFILES/.config/gnome/extensions/unblank.dconf"              "/org/gnome/shell/extensions/unblank/"
+    dconf_load "$DOTFILES/.config/meld/meld-settings.dconf"                    "/org/gnome/meld/"
 }
 
 # ============================================================
 # Install
 # ============================================================
-setup_flatpak() {
-    log_section "Flatpak"
-    if is_installed flatpak; then
-        if ! flatpak remotes | grep -q flathub; then
-            log_info "Adding Flathub repository..."
-            run flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-        else
-            log_skip "Flathub"
-        fi
-    fi
-}
-
 install_extension_manager() {
     log_section "Extension Manager"
     if flatpak list 2>/dev/null | grep -q "com.mattjakeman.ExtensionManager"; then
@@ -175,7 +174,6 @@ main() {
             gnome_restore
             ;;
         *)
-            try_step setup_flatpak
             try_step install_extension_manager
             try_step install_gnome_extensions
             gnome_restore

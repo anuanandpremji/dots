@@ -2,9 +2,9 @@
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ CTRL-R - Fuzzy search history with multi-select, editing, and deletion                                              ║
-#║ Shared by Bash and Zsh. Shell-specific differences are guarded with $ZSH_VERSION / $BASH_VERSION.                  ║
+#║ Shared by Bash and Zsh. Shell-specific differences are guarded with $ZSH_VERSION / $BASH_VERSION.                   ║
 #║                                                                                                                     ║
-#║ Requires: fzf >= 0.56 (--style=full, --ghost). Install via setup_apps_cli.sh, not the system package manager.      ║
+#║ Requires: fzf >= 0.56 (--style=full, --ghost). Install via setup_apps_cli.sh, not the system package manager.       ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 if ! command -v fzf >/dev/null 2>&1; then printf "fzf not found.\n"; return; fi

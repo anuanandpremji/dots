@@ -17,6 +17,17 @@ for arg in "$@"; do
     case "$arg" in
         --dry-run) DRY_RUN=true ;;
         --update)  FORCE_UPDATE=true ;;
+        -h|--help)
+            printf "Usage: ./setup_apps_cli.sh [--dry-run] [--update]\n"
+            printf "\n"
+            printf "  Installs CLI tools suitable for any machine, including headless servers.\n"
+            printf "  Tools: fzf, fd, bat, ripgrep, eza, delta, fresh, neovim\n"
+            printf "\n"
+            printf "  --update    Force-reinstall all tools from latest GitHub release\n"
+            printf "  --dry-run   Print commands without executing them\n"
+            exit 0 ;;
+        *)
+            printf "Unknown argument: %s\n" "$arg" >&2; exit 1 ;;
     esac
 done
 

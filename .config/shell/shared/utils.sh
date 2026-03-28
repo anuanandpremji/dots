@@ -15,6 +15,7 @@
 #║ open_path()             - Open a path in the system file explorer (Linux, macOS, WSL)                               ║
 #║ detect_clipboard()      - Define clipcopy() and clippaste() for the detected platform                               ║
 #║ copyabsolutepath()      - Copy the absolute path of a file or directory to the clipboard                            ║
+#║ cdgr()                  - cd to the outermost Git superproject root directory                                       ║
 #╚═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
@@ -203,6 +204,25 @@ copyabsolutepath() {
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
+# cdgr() - cd to the outermost Git superproject root directory
+
+cdgr()
+{
+    local gitroot;
+    gitroot="$(command git rev-parse --show-toplevel)";
+
+    [ -z "$gitroot" ] && return 1;
+
+    while [ -n "$gitroot" ]; do
+        cd "$gitroot" || return 1;
+        gitroot="$(command git rev-parse --show-superproject-working-tree 2>/dev/null)";
+    done
+
+    return 0;
+}
+
+# ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
+
 # Dependency check
 
 # Environment variables
@@ -215,5 +235,6 @@ if ! _has clipcopy;         then printf "clipcopy(): function not loaded.\n";   
 if ! _has copyabsolutepath; then printf "copyabsolutepath(): function not loaded.\n";             fi
 if ! _has open_command;     then printf "open_command(): function not loaded.\n";                 fi
 if ! _has open_path;        then printf "open_path(): function not loaded.\n";                    fi
+if ! _has git;              then printf "git: program not found. Install git.\n";                 fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #

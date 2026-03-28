@@ -17,7 +17,30 @@
 set -euo pipefail
 
 DRY_RUN=false
-[[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) DRY_RUN=true ;;
+        -h|--help)
+            printf "Usage: ./setup_identities.sh [--dry-run]\n"
+            printf "\n"
+            printf "  Interactive setup for Git and SSH identities.\n"
+            printf "  Creates SSH keys and git configs for private and work GitHub accounts,\n"
+            printf "  and configures ~/.ssh/config so each host alias uses the correct key.\n"
+            printf "\n"
+            printf "  Output files:\n"
+            printf "    ~/.ssh/id_private              Private SSH key\n"
+            printf "    ~/.ssh/id_work                 Work SSH key (optional)\n"
+            printf "    ~/.ssh/config                  Host aliases: github-private, github-work\n"
+            printf "    ~/.config/git/config.private   Private git identity\n"
+            printf "    ~/.config/git/config.work      Work git identity (optional)\n"
+            printf "    ~/.config/git/config.default   Default identity (for repos outside ~/private/ and ~/work/)\n"
+            printf "\n"
+            printf "  --dry-run   Print actions without executing them\n"
+            exit 0 ;;
+        *)
+            printf "Unknown argument: %s\n" "$arg" >&2; exit 1 ;;
+    esac
+done
 
 # ── Colors ──
 if [[ -t 1 ]]; then

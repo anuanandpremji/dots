@@ -35,7 +35,7 @@ The script will ask how to get the dotfiles (clone via SSH, HTTPS, or download a
 
 | Category  | Content                                                                            |
 |-----------|------------------------------------------------------------------------------------|
-| Shell     | Zsh + Bash — shared config, aliases, history, fzf integrations, prompt themes     |
+| Shell     | Zsh + Bash — shared config, aliases, history, fzf integrations, prompt themes      |
 | Terminal  | WezTerm (quake-mode dropdown on Linux)                                             |
 | Editors   | Neovim, Fresh, VS Code, Zed                                                        |
 | CLI Tools | fzf, fd, bat, ripgrep, eza, delta                                                  |
@@ -91,8 +91,7 @@ These are installed automatically by `setup.sh cli-apps`. fzf ≥ 0.56 is requir
 └── shared/                           # Sourced by both shells; differences guarded with $ZSH_VERSION / $BASH_VERSION
     ├── exports.sh ·················· Env vars, XDG paths, PATH, EDITOR/VISUAL
     ├── aliases.sh ·················· Shell aliases (ls, git, cd, XDG wrappers, etc.)
-    ├── utils.sh ···················· Clipboard, open_command, open_path, confirm
-    ├── git.sh ······················ cdgr, _git_web_url helper
+    ├── utils.sh ···················· Clipboard, open_command, open_path, confirm, cdgr
     ├── history.sh ·················· Ctrl-R fuzzy history search
     └── find.sh ····················· Ctrl-T fuzzy file/dir search
 ```
@@ -100,16 +99,16 @@ These are installed automatically by `setup.sh cli-apps`. fzf ≥ 0.56 is requir
 ### Load order
 
 ```
-Zsh                              │   Bash
-───                              │   ────
-~/.zshenv                        │   ~/.bashrc
- ├─ shared/exports.sh            │    ├─ shared/exports.sh
- └─ $ZDOTDIR/.zshrc              │    ├─ bash/.bashprompt_theme_cascade
-     ├─ shared/utils.sh          │    ├─ shared/utils.sh
-     ├─ shared/git.sh            │    ├─ shared/git.sh
-     ├─ shared/history.sh        │    ├─ shared/history.sh
-     ├─ shared/find.sh           │    ├─ shared/find.sh
-     └─ shared/aliases.sh        │    └─ shared/aliases.sh
+Zsh                                       │   Bash
+───                                       │   ────
+~/.zshenv 󰌷 zsh/.zshenv                   │   ~/.bashrc 󰌷 bash/.bashrc
+          ├─ shared/exports.sh            │             ├─ shared/exports.sh
+          ├─ $ZDOTDIR/.zshrc              │             ├─ bash/.bashprompt_theme_*
+          ├─ zsh/.zshprompt_theme_*       │             ├─ shared/utils.sh
+          ├─ shared/utils.sh              │             ├─ shared/history.sh
+          ├─ shared/history.sh            │             ├─ shared/find.sh
+          ├─ shared/find.sh               │             └─ shared/aliases.sh
+          └─ shared/aliases.sh            │
 ```
 
 `DOTFILES_PATH` is resolved automatically by `.zshenv` and `.bashrc` from their own symlink target — no hardcoded paths to edit per machine.
@@ -194,13 +193,13 @@ rf path/     # search in a specific directory
 rf file.rs   # search within a single file
 ```
 
-| Key     | Action                                                                   |
-|---------|--------------------------------------------------------------------------|
-| `Enter` | Open match in `$VISUAL` at the matched line                              |
-| `TAB`   | Toggle selection of a match                                              |
-| `Alt-A` | Select all matches                                                       |
-| `Alt-D` | Deselect all                                                             |
-| `?`     | Toggle preview                                                           |
+| Key     | Action                                      |
+|---------|---------------------------------------------|
+| `Enter` | Open match in `$VISUAL` at the matched line |
+| `TAB`   | Toggle selection of a match                 |
+| `Alt-A` | Select all matches                          |
+| `Alt-D` | Deselect all                                |
+| `?`     | Toggle preview                              |
 
 When multiple matches are selected, `$VISUAL` is opened with a quickfix list (vim/nvim only).
 
@@ -284,13 +283,13 @@ gho upstream  # opens a specific remote
 
 ### Utility functions
 
-| Function                  | Description                                                              |
-|---------------------------|--------------------------------------------------------------------------|
+| Function                  | Description                                                                |
+|---------------------------|--------------------------------------------------------------------------  |
 | `open_command <path>`     | Open a file, directory, or URL in the system default app (Linux/macOS/WSL) |
-| `open_path <path>`        | Open the containing directory in the system file manager                 |
-| `detect_clipboard`        | Auto-detect clipboard backend (Wayland / X11 / macOS / WSL / tmux)      |
-| `copyabsolutepath <path>` | Copy the absolute path of a file or directory to the clipboard           |
-| `confirm <prompt>`        | Show a Y/N prompt and return 0/1                                         |
+| `open_path <path>`        | Open the containing directory in the system file manager                   |
+| `detect_clipboard`        | Auto-detect clipboard backend (Wayland / X11 / macOS / WSL / tmux)         |
+| `copyabsolutepath <path>` | Copy the absolute path of a file or directory to the clipboard             |
+| `confirm <prompt>`        | Show a Y/N prompt and return 0/1                                           |
 
 ---
 
@@ -322,7 +321,7 @@ Both shells redirect config and state paths for 25+ applications to proper XDG d
 | Variable  | Preference order                          |
 |-----------|-------------------------------------------|
 | `EDITOR`  | `fresh` > `micro` > `nvim` > `vim` > `vi` |
-| `VISUAL`  | `zed` > `code` > `$EDITOR`               |
+| `VISUAL`  | `zed` > `code` > `$EDITOR`                |
 
 ---
 
@@ -417,14 +416,15 @@ dots/
 │   ├── bin/                        # Daily-use tools — each file symlinked to ~/.local/bin/
 │   │   ├── gl, gc, ga              # Git: log browser, checkout, staging
 │   │   ├── gr, gho                 # Git: list remotes, open in browser
-│   │   ├── rf                      # Live ripgrep search (fzf + bat)
+│   │   ├── ipa                     # Formatted network interface summary
 │   │   ├── fkill                   # Fuzzy process kill
+│   │   ├── launch                  # Run a command detached from the terminal
+│   │   ├── rf                      # Live ripgrep search (fzf + bat)
+│   │   ├── shwifi                  # Show saved Wi-Fi passwords
 │   │   ├── sshf                    # Fuzzy SSH from ~/.ssh/config
 │   │   ├── sysinfo                 # System information summary
-│   │   ├── upgrade                 # Update all detected package managers
-│   │   ├── launch                  # Run a command detached from the terminal
-│   │   ├── shwifi                  # Show saved Wi-Fi passwords
 │   │   ├── tre                     # Better `tree` (color, hidden files, pager)
+│   │   ├── upgrade                 # Update all detected package managers
 │   │   └── wezterm-dropdown        # WezTerm quake-mode launcher (Linux)
 │   └── share/
 │       ├── applications/           # Desktop entries

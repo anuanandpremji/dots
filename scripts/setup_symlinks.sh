@@ -5,30 +5,46 @@
 # dconf settings are handled separately by setup_gnome.sh.
 #
 # ┌─ What gets linked ────────────────────────────────────────────────────────────────────────────────┐
-# │                                                                                                    │
+# │                                                                                                   │
 # │  dotfiles/                                  ~/ (target)                                           │
 # │  ──────────────────────────────────────     ────────────────────────────────────────────────────  │
-# │  .config/shell/bash/.bashrc             →   ~/.bashrc                                             │
-# │  .config/shell/zsh/.zshenv              →   ~/.zshenv                     (if zsh installed)      │
-# │  .config/git/config                     →   ~/.config/git/config                                  │
-# │  .config/wezterm/                       →   ~/.config/wezterm/            (if wezterm found)      │
-# │  .config/nvim/                          →   ~/.config/nvim/               (if nvim found)         │
-# │  .config/zed/                           →   ~/.config/zed/                (if zed found)          │
-# │  .config/fresh/config.json              →   ~/.config/fresh/config.json   (if fresh found)        │
-# │  .config/micro/{settings,bindings,...}  →   ~/.config/micro/              (if micro found)        │
-# │  .config/vscode/User/                   →   ~/.config/Code/User/          (if code found)         │
-# │  .config/claude/CLAUDE.md               →   ~/.claude/CLAUDE.md                                   │
-# │  .local/bin/*                           →   ~/.local/bin/*                (shell utilities)       │
-# │  .local/share/fonts/*.{ttf,otf}              ~/.local/share/fonts/        (copied, not symlinked) │
-# │                                                                                                    │
-# └────────────────────────────────────────────────────────────────────────────────────────────────────┘
+# │  .config/shell/bash/.bashrc             󰌷   ~/.bashrc                                             │
+# │  .config/shell/zsh/.zshenv              󰌷   ~/.zshenv                     (if zsh installed)      │
+# │  .config/git/config                     󰌷   ~/.config/git/config                                  │
+# │  .config/wezterm/                       󰌷   ~/.config/wezterm/            (if wezterm found)      │
+# │  .config/nvim/                          󰌷   ~/.config/nvim/               (if nvim found)         │
+# │  .config/zed/                           󰌷   ~/.config/zed/                (if zed found)          │
+# │  .config/fresh/config.json              󰌷   ~/.config/fresh/config.json   (if fresh found)        │
+# │  .config/micro/{settings,bindings,...}  󰌷   ~/.config/micro/              (if micro found)        │
+# │  .config/vscode/User/                   󰌷   ~/.config/Code/User/          (if code found)         │
+# │  .config/claude/CLAUDE.md               󰌷   ~/.claude/CLAUDE.md                                   │
+# │  .local/bin/*                           󰌷   ~/.local/bin/*                (shell utilities)       │
+# │  .local/share/fonts/*.{ttf,otf}         󰆏   ~/.local/share/fonts/         (copied, not symlinked) │
+# │                                                                                                   │
+# └───────────────────────────────────────────────────────────────────────────────────────────────────┘
 #
 # Usage: ./setup_symlinks.sh [--dry-run]
 
 set -euo pipefail
 
 DRY_RUN=false
-[[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) DRY_RUN=true ;;
+        -h|--help)
+            printf "Usage: ./setup_symlinks.sh [--dry-run]\n"
+            printf "\n"
+            printf "  Symlinks dotfiles config files to their expected locations in ~/.\n"
+            printf "  Run once after cloning the repo, and again after any structural changes.\n"
+            printf "  Existing files are backed up with a .bak suffix before being replaced.\n"
+            printf "  dconf settings are handled separately by setup_gnome.sh.\n"
+            printf "\n"
+            printf "  --dry-run   Show what would be linked without making any changes\n"
+            exit 0 ;;
+        *)
+            printf "Unknown argument: %s\n" "$arg" >&2; exit 1 ;;
+    esac
+done
 
 # This script lives at <dotfiles>/scripts/setup_symlinks.sh
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -132,7 +148,7 @@ fi
 
 if command -v micro &>/dev/null; then
     echo "── Micro ──"
-    link_path "$DOTFILES/.config/micro/settings.json" "$HOME/.config/micro/settings.json"
+    link_path "$DOTFILES/.config/micro/settings.json"  "$HOME/.config/micro/settings.json"
     link_path "$DOTFILES/.config/micro/bindings.json"  "$HOME/.config/micro/bindings.json"
     link_path "$DOTFILES/.config/micro/init.lua"       "$HOME/.config/micro/init.lua"
 fi

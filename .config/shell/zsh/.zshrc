@@ -196,7 +196,6 @@ source "$ZDOTDIR/.zshprompt_theme_pure"
 
 # Load shared and zsh-specific config
 source "$ZDOTDIR/../shared/utils.sh"
-source "$ZDOTDIR/../shared/git.sh"
 source "$ZDOTDIR/../shared/history.sh"
 source "$ZDOTDIR/../shared/find.sh"
 source "$ZDOTDIR/../shared/aliases.sh"

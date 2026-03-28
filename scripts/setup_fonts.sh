@@ -8,7 +8,20 @@ set -u
 
 DRY_RUN=false
 for arg in "$@"; do
-    [[ "$arg" == "--dry-run" ]] && DRY_RUN=true
+    case "$arg" in
+        --dry-run) DRY_RUN=true ;;
+        -h|--help)
+            printf "Usage: ./setup_fonts.sh [--dry-run]\n"
+            printf "\n"
+            printf "  Copies fonts from .local/share/fonts/ in the dotfiles repo to the system\n"
+            printf "  font directory. Skips fonts that are already installed. Rebuilds the font\n"
+            printf "  cache afterward (Linux only).\n"
+            printf "\n"
+            printf "  --dry-run   Print commands without executing them\n"
+            exit 0 ;;
+        *)
+            printf "Unknown argument: %s\n" "$arg" >&2; exit 1 ;;
+    esac
 done
 
 SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"

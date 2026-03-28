@@ -1,15 +1,25 @@
 #!/bin/sh
+#
+# Migrates APT keys from the deprecated /etc/apt/trusted.gpg to /etc/apt/trusted.gpg.d/.
+# Run this if apt warns: "Key is stored in legacy trusted.gpg keyring"
+# Ubuntu/Debian only. Requires: apt-key, gpg, sudo.
+#
+# Usage: ./convert_gpg_key_format.sh [-h | --help]
 
-# This script is designed to address the deprecation of the legacy APT keyring stored in /etc/apt/trusted.gpg.
-# In recent versions of APT, the use of the apt-key command has been deprecated due to security concerns,
-# and it is recommended to store keys in /etc/apt/trusted.gpg.d/ as individual .gpg files.
+case "${1:-}" in
+    -h|--help)
+        printf "Usage: ./convert_gpg_key_format.sh\n"
+        printf "\n"
+        printf "  Migrates APT keys from /etc/apt/trusted.gpg to /etc/apt/trusted.gpg.d/.\n"
+        printf "  Run this if apt warns: \"Key is stored in legacy trusted.gpg keyring\"\n"
+        printf "  Ubuntu/Debian only. Requires: apt-key, gpg, sudo.\n"
+        exit 0 ;;
+    "")  ;;
+    *)
+        printf "Unknown argument: %s\n" "$1" >&2; exit 1 ;;
+esac
 
-# When the system still relies on the legacy trusted.gpg keyring, you may see warnings
-# like 'Key is stored in legacy trusted.gpg keyring'.
-# This script automates the process of migrating existing keys from the deprecated keyring to the new  trusted.gpg.d/
-# directory, ensuring the system complies with updated APT key management practices & avoids future compatibility issues.
-
-# Function to convert legacy GPG keys to the new trusted.gpg.d format for APT
+# Migrate legacy GPG keys to the new trusted.gpg.d format for APT
 convert_gpg_key_format() {
     # Check if the system uses APT package manager
     if ! command -v apt-get &> /dev/null; then

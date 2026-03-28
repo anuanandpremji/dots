@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# macOS-specific setup: generates a Brewfile from currently installed apps.
-# No-op on Linux.
+# macOS-specific setup: writes a Brewfile to the dotfiles root listing all managed
+# Homebrew packages and casks. No-op on Linux.
 #
 # Usage: ./setup_macos.sh [--dry-run]
 
@@ -9,7 +9,19 @@ set -u
 
 DRY_RUN=false
 for arg in "$@"; do
-    [[ "$arg" == "--dry-run" ]] && DRY_RUN=true
+    case "$arg" in
+        --dry-run) DRY_RUN=true ;;
+        -h|--help)
+            printf "Usage: ./setup_macos.sh [--dry-run]\n"
+            printf "\n"
+            printf "  Writes a Brewfile to the dotfiles root listing all managed Homebrew\n"
+            printf "  packages and casks. macOS only — no-op on Linux.\n"
+            printf "\n"
+            printf "  --dry-run   Print commands without executing them\n"
+            exit 0 ;;
+        *)
+            printf "Unknown argument: %s\n" "$arg" >&2; exit 1 ;;
+    esac
 done
 
 SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"

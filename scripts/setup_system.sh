@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 #
-# Installs base system packages and sets up the package manager.
+# Installs base system packages, sets up the package manager, and configures Flathub (Linux).
+# On macOS, installs Homebrew first if not already present.
 #
 # Usage:
 #   ./setup_system.sh [--dry-run] [--server]
 #
-#   --server   Install CLI-only packages (no GUI dependencies)
+#   --server   Install CLI-only packages (no GUI dependencies); skips Flathub
 
 set -u
 
@@ -16,6 +17,17 @@ for arg in "$@"; do
     case "$arg" in
         --dry-run) DRY_RUN=true ;;
         --server)  SERVER_MODE=true ;;
+        -h|--help)
+            printf "Usage: ./setup_system.sh [--dry-run] [--server]\n"
+            printf "\n"
+            printf "  Installs base system packages, sets up the package manager, and configures\n"
+            printf "  Flathub (Linux). On macOS, installs Homebrew first if not already present.\n"
+            printf "\n"
+            printf "  --server    Install CLI-only packages (no GUI dependencies); skips Flathub\n"
+            printf "  --dry-run   Print commands without executing them\n"
+            exit 0 ;;
+        *)
+            printf "Unknown argument: %s\n" "$arg" >&2; exit 1 ;;
     esac
 done
 
@@ -88,12 +100,31 @@ install_system_packages() {
 }
 
 # ============================================================
+# Flathub
+# ============================================================
+setup_flathub() {
+    if [[ "$OS" != "linux" ]]; then return; fi
+    if [[ "$SERVER_MODE" == true ]]; then return; fi
+
+    log_section "Flathub"
+    if ! is_installed flatpak; then log_skip "Flathub (flatpak not installed)"; return; fi
+
+    if ! flatpak remotes | grep -q flathub; then
+        log_info "Adding Flathub repository..."
+        run flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    else
+        log_skip "Flathub"
+    fi
+}
+
+# ============================================================
 # Main
 # ============================================================
 main() {
     try_step install_homebrew
     try_step pkg_update
     try_step install_system_packages
+    try_step setup_flathub
 }
 
 main "$@"

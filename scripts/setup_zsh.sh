@@ -8,7 +8,19 @@ set -u
 
 DRY_RUN=false
 for arg in "$@"; do
-    [[ "$arg" == "--dry-run" ]] && DRY_RUN=true
+    case "$arg" in
+        --dry-run) DRY_RUN=true ;;
+        -h|--help)
+            printf "Usage: ./setup_zsh.sh [--dry-run]\n"
+            printf "\n"
+            printf "  Installs zsh (with user confirmation) and sets it as the default shell.\n"
+            printf "  Skips silently if zsh is already installed and is already the default.\n"
+            printf "\n"
+            printf "  --dry-run   Print commands without executing them\n"
+            exit 0 ;;
+        *)
+            printf "Unknown argument: %s\n" "$arg" >&2; exit 1 ;;
+    esac
 done
 
 SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"

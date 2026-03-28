@@ -220,7 +220,6 @@ source "$_bash_dir/.bashprompt_theme_cascade"
 # Load shared config
 
 source "$DOTFILES_PATH/.config/shell/shared/utils.sh";
-source "$DOTFILES_PATH/.config/shell/shared/git.sh";
 source "$DOTFILES_PATH/.config/shell/shared/history.sh";
 source "$DOTFILES_PATH/.config/shell/shared/find.sh";
 source "$DOTFILES_PATH/.config/shell/shared/aliases.sh";
