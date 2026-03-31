@@ -11,7 +11,8 @@
 #   Logging:   log_info, log_warn, log_error, log_section, log_skip
 #   Control:   run(), try_step()
 #   Helpers:   is_installed(), pkg_install(), pkg_update()
-#   GitHub:    gh_latest_url(), gh_install_pkg()
+#   GitHub:    gh_latest_url(), gh_install_pkg(), gh_latest_version(), up_to_date()
+#   Packages:  apt_up_to_date(), flatpak_up_to_date()
 
 : "${DRY_RUN:=false}"
 
@@ -139,6 +140,59 @@ gh_install_pkg() {
             run sudo dnf install -y "$tmp/pkg.rpm"
             ;;
     esac
+}
+
+# Get the latest release version from GitHub (strips leading 'v').
+# Usage: gh_latest_version <owner/repo>
+gh_latest_version() {
+    local repo="$1"
+    curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" \
+        | grep '"tag_name"' \
+        | head -1 \
+        | sed 's/.*"tag_name":[[:space:]]*"v\{0,1\}\([^"]*\)".*/\1/'
+}
+
+# Check if a tool is already at the latest version.
+# Prints a skip message and returns 0 if already up to date, 1 if update available.
+# Usage: up_to_date <display-name> <installed-version> <latest-version>
+up_to_date() {
+    local name="$1" installed="$2" latest="$3"
+    if [[ -z "$latest" ]]; then
+        log_warn "Could not determine latest version for $name — proceeding"
+        return 1
+    fi
+    if [[ "$installed" == "$latest" ]]; then
+        log_skip "$name is already at the latest version ($latest)"
+        return 0
+    fi
+    [[ -n "$installed" ]] && log_info "$name: $installed → $latest"
+    return 1
+}
+
+# ============================================================
+# Package Version Helpers
+# ============================================================
+
+# Check if an apt-managed package is already at the candidate (latest cached) version.
+# Returns 0 (skip) if installed == candidate, 1 (proceed) otherwise.
+# Usage: apt_up_to_date <display-name> <pkg-name>
+apt_up_to_date() {
+    local name="$1" pkg="$2"
+    local installed candidate
+    installed=$(dpkg -s "$pkg" 2>/dev/null | awk '/^Version:/ {print $2}')
+    candidate=$(apt-cache policy "$pkg" 2>/dev/null | awk '/Candidate:/ {print $2}')
+    up_to_date "$name" "$installed" "${candidate:-}"
+}
+
+# Check if a Flatpak app is already at the latest version from a GitHub release.
+# Returns 0 (skip) if up to date, 1 (proceed) otherwise.
+# Usage: flatpak_up_to_date <display-name> <app-id> <github-repo>
+flatpak_up_to_date() {
+    local name="$1" app_id="$2" repo="$3"
+    local installed latest
+    installed=$(flatpak info "$app_id" 2>/dev/null | awk '/^\s*Version:/ {print $NF}')
+    latest=$(gh_latest_version "$repo")
+    up_to_date "$name" "$installed" "$latest"
 }
 
 # ============================================================

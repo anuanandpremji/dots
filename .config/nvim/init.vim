@@ -74,7 +74,6 @@ au BufRead,BufNewFile *.bash*                set syntax=sh
 au BufRead,BufNewFile *.exports              set syntax=sh
 au BufRead,BufNewFile *.hardware_description set syntax=json
 au BufRead,BufNewFile *.shell                set syntax=sh
-au BufRead,BufNewFile *.xc                   set syntax=xc " provided by ../syntax/xc.vim
 au BufRead,BufNewFile *.zsh*                 set syntax=sh
 
 " --------------------------------------------------------------------------------------------------------------------- "
@@ -144,5 +143,52 @@ noremap! <C-h> <C-w>
 " Toggle soft wrap (Alt+Z — same as VS Code, Zed, Micro)
 
 nnoremap <A-z> :set wrap!<CR>
+
+" --------------------------------------------------------------------------------------------------------------------- "
+
+" Theme: auto-switch with system light/dark setting
+"   Dark  → Catppuccin Mocha
+"   Light → Catppuccin Latte
+
+function! s:system_background() abort
+    " GNOME / freedesktop (Linux)
+    let l:out = trim(system('gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null'))
+    if l:out =~? 'dark'
+        return 'dark'
+    endif
+    " macOS
+    let l:out = trim(system('defaults read -g AppleInterfaceStyle 2>/dev/null'))
+    if l:out =~? 'dark'
+        return 'dark'
+    endif
+    return 'light'
+endfunction
+
+function! ApplySystemTheme() abort
+    try
+        if s:system_background() ==# 'dark'
+            set background=dark
+            colorscheme catppuccin-mocha
+        else
+            set background=light
+            colorscheme catppuccin-latte
+        endif
+    catch
+        " Theme plugin not installed — run setup_apps_cli.sh to install
+    endtry
+endfunction
+
+call ApplySystemTheme()
+
+augroup SystemTheme
+    autocmd!
+    autocmd FocusGained * call ApplySystemTheme()
+augroup END
+
+" --------------------------------------------------------------------------------------------------------------------- "
+
+" nvim-xc: XC language support (filetype detection + xc-lsp via nvim-lspconfig)
+
+lua require('nvim-xc').setup({ tree_sitter_xc_path = '/home/anu/private/xc-tooling/tree-sitter-xc' })
 
 " --------------------------------------------------------------------------------------------------------------------- "

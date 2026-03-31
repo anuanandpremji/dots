@@ -33,7 +33,7 @@
         "status_style": "icon",
         "tree_view": false,
     },
-    "icon_theme": "Zed (Default)",
+    "icon_theme": "Material Icon Theme",
     "outline_panel": {
         "button": true,
         "default_width": 325.0,
@@ -71,8 +71,8 @@
         "font_weight": 600.0,
     },
     "theme": {
-        "dark": "Vitesse Dark Soft",
-        "light": "VSCode Light Modern",
+        "dark": "Vitesse Dark",
+        "light": "GitHub Light Classic",
         "mode": "system",
     },
     "title_bar": {

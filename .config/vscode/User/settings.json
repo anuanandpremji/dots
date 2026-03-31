@@ -13,7 +13,7 @@
     "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0}",
     "clang-format.fallbackStyle": "Google",
     "cSpell.diagnosticLevel": "Hint", // Highlight mis-spelled words in editor, but don't show in problems list
-    "cSpell.enabled": true,
+    "cSpell.enabled": false,
     "cSpell.enableFiletypes": [
         "dockerfile",
         "groovy",
@@ -53,12 +53,11 @@
     "files.associations": {
         "*.aliases": "shellscript",
         "*.bash*": "shellscript",
-        "*.bsp": "c",
+        "*.bsp": "xc",
         "*.exports": "shellscript",
         "*.functions": "shellscript",
         "*.hardware_description": "json",
         "*.shell": "shellscript",
-        "*.xc": "c",
         "*.zsh*": "shellscript",
         "Makefile.*": "makefile"
     },
@@ -212,5 +211,6 @@
     "terminal.integrated.tabs.enabled": false,
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
-    }
+    },
+    "python.analysis.typeCheckingMode": "standard"
 }
