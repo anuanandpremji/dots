@@ -4,6 +4,11 @@
 - NEVER add "Co-Authored-By" or "Co-authored-by" trailers to commit messages.
 - NEVER add "Generated with Claude Code" or similar attribution lines to commit messages.
 
+## Git Push — Mandatory Pre-Push Summary
+- ALWAYS show a summary table before every `git push`, without exception.
+- The summary MUST include: remote name, remote URL, SSH key (resolved via `ssh -G <host> | grep identityfile`), git user name, git user email, and the list of commits being pushed.
+- Wait for explicit user confirmation before executing the push.
+
 ## Code Formatting
 - Do NOT aggressively wrap lines to 79 or 80 characters. Prioritize readability over line length.
 - Do NOT enforce a strict line length limit. Use good judgment — keep lines readable, but don't break expressions into awkward multi-line pieces just to stay under a number.
