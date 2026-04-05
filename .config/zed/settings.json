@@ -87,4 +87,12 @@
     "ui_font_weight": 600.0,
     "vim_mode": false,
     "window_decorations": "client",
+    "lsp": {
+        "xc-lsp": {
+            "initialization_options": {
+                "dim_inactive_regions": true,
+                "dim_inactive_files": true
+            }
+        }
+    }
 }

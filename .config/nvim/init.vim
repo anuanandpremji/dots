@@ -189,6 +189,6 @@ augroup END
 
 " nvim-xc: XC language support (filetype detection + xc-lsp via nvim-lspconfig)
 
-lua require('nvim-xc').setup({ tree_sitter_xc_path = '/home/anu/private/xc-tooling/tree-sitter-xc' })
+lua require('nvim-xc').setup({ tree_sitter_xc_path = '/home/anu/private/xc-tooling/tree-sitter-xc', dim_inactive_regions = true, dim_inactive_files = true })
 
 " --------------------------------------------------------------------------------------------------------------------- "
