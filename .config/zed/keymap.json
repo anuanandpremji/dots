@@ -32,6 +32,8 @@
         "context": "Editor",
         "bindings": {
             "alt-delete": "editor::DeleteLine",
+            "alt-left": "pane::GoBack",
+            "alt-right": "pane::GoForward",
         },
     },
     {
