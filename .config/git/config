@@ -22,14 +22,14 @@
     pager         = delta
 
 [interactive]
-    diffFilter = delta --color-only
+    diffFilter    = delta --color-only
 
 [delta]
-    features = decorations
-    hyperlinks = true
-    line-numbers = true
-    navigate = true
-    side-by-side = false
+    features      = decorations
+    hyperlinks    = true
+    line-numbers  = true
+    navigate      = true
+    side-by-side  = false
 
 # Default identity — machine-specific, not tracked. Points to either
 # private or work identity depending on what setup_identities.sh configured.

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#
+# clippaste — Paste the system clipboard contents to stdout.
+#
+# Usage:
+#   clippaste
+#   clippaste | grep pattern
+#   clippaste > myfile.txt
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+if [[ "$OSTYPE" == darwin* ]]; then
+    pbpaste
+elif [[ -n "${WAYLAND_DISPLAY:-}" ]] && command -v wl-paste >/dev/null 2>&1; then
+    wl-paste
+elif [[ -n "${DISPLAY:-}" ]] && command -v xclip >/dev/null 2>&1; then
+    xclip -out -selection clipboard
+elif [[ -n "${DISPLAY:-}" ]] && command -v xsel >/dev/null 2>&1; then
+    xsel --clipboard --output
+elif [[ -n "${TMUX:-}" ]] && command -v tmux >/dev/null 2>&1; then
+    tmux save-buffer -
+else
+    printf 'clippaste: no clipboard provider found.\n' >&2
+    exit 1
+fi

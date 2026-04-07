@@ -1,100 +1,546 @@
 #!/usr/bin/env bash
 #
-# ipa — Formatted network interface summary: status, MACs, IPs, and gateway.
+# ipa — Formatted network interface summary in a box-drawn table.
+# Works on Linux (ip) and macOS (ifconfig/networksetup).
+# Compatible with bash 3.2+ (macOS default bash).
+#
+# Usage:
+#   ipa          Show all interfaces
+#   ipa --up     Show only interfaces that are UP
 
-_E=$(printf '\033')
-R="${_E}[0m";  BO="${_E}[1m";  DI="${_E}[2m"
-GR="${_E}[32m"; RE="${_E}[31m"; YE="${_E}[33m"
-CY="${_E}[36m"; BL="${_E}[34m"; GA="${_E}[90m"
+set -o pipefail
 
-ip addr | awk \
-    -v R="$R" -v BO="$BO" -v DI="$DI" \
-    -v GR="$GR" -v RE="$RE" -v YE="$YE" \
-    -v CY="$CY" -v BL="$BL" -v GA="$GA" '
+# ─────────────────────────────────────────────────────────────────────────────────
+# Colors (disabled when piped)
+# ─────────────────────────────────────────────────────────────────────────────────
 
-BEGIN { skip = 0; order_n = 0; current = "" }
+if [[ -t 1 ]]; then
+    _E=$(printf '\033')
+    R="${_E}[0m";  BO="${_E}[1m";  DI="${_E}[2m"
+    GR="${_E}[32m"; RE="${_E}[31m"; YE="${_E}[33m"
+    CY="${_E}[36m"; BL="${_E}[34m"; GA="${_E}[90m"
+else
+    R="" BO="" DI="" GR="" RE="" YE="" CY="" BL="" GA=""
+fi
 
-# ── Interface header ──────────────────────────────────────────────────────────
-/^[0-9]+: / {
-    iface = $2; sub(/:$/, "", iface)
-    if (iface == "lo") { skip = 1; next }
-    skip = 0; current = iface
-    order[++order_n] = iface
-    state[iface] = "UNKNOWN"; mac[iface] = ""
-    inet_n[iface] = 0; inet6_n[iface] = 0
-    for (i = 1; i <= NF; i++)
-        if ($i == "state") { state[iface] = $(i+1); break }
-    next
+# ─────────────────────────────────────────────────────────────────────────────────
+# Options
+# ─────────────────────────────────────────────────────────────────────────────────
+
+SHOW_ONLY_UP=false
+for arg in "$@"; do
+    case "$arg" in
+        --up)       SHOW_ONLY_UP=true ;;
+        -h|--help)
+            printf "Usage: ipa [--up]\n\n"
+            printf "  --up    Show only interfaces that are UP\n"
+            exit 0 ;;
+    esac
+done
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# Internal field separators (non-printable to avoid clashing with data)
+# ─────────────────────────────────────────────────────────────────────────────────
+
+FS=$'\x1e'   # record separator:    field1 FS field2 FS ...
+GS=$'\x1d'   # group separator:     item1 GS item2 GS ...
+SS=$'\x1c'   # sub-field separator: addr SS scope
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# Table helpers
+# ─────────────────────────────────────────────────────────────────────────────────
+
+# Repeat a string N times (works with multi-byte UTF-8 like ─)
+repeat_str() {
+    local str="$1" n="$2" i
+    for ((i = 0; i < n; i++)); do printf '%s' "$str"; done
 }
 
-skip { next }
-
-# ── MAC ───────────────────────────────────────────────────────────────────────
-/link\/ether/ { mac[current] = $2 }
-
-# ── IPv4 ──────────────────────────────────────────────────────────────────────
-/[[:space:]]inet / {
-    n = ++inet_n[current]
-    inet_addr[current, n] = $2
+# Print text left-aligned, padded to a target VISIBLE width.
+# printf's %-*s counts ANSI bytes as width, so we pad manually.
+#   $1 = visible text  (plain, for length calculation)
+#   $2 = display text  (may contain ANSI codes)
+#   $3 = target width
+lpad() {
+    local pad=$(($3 - ${#1}))
+    ((pad < 0)) && pad=0
+    printf '%s%*s' "$2" "$pad" ''
 }
 
-# ── IPv6 ──────────────────────────────────────────────────────────────────────
-/[[:space:]]inet6 / {
-    n = ++inet6_n[current]
-    addr = $2; scope = "global"; tmp = 0
-    for (i = 3; i <= NF; i++) {
-        if ($i == "scope")     scope = $(i+1)
-        if ($i == "temporary") tmp   = 1
+# ─────────────────────────────────────────────────────────────────────────────────
+# Renderer
+# ─────────────────────────────────────────────────────────────────────────────────
+#
+# Reads records from stdin (one per interface, 7 FS-separated fields):
+#   iface FS status FS type FS mac FS ipv4_list FS ipv6_list FS gateway
+#
+# Outputs:
+#   1. Box-drawn table: ●  Interface  Type  Status  MAC  IPv4  Gateway
+#   2. IPv6 section (only if any interface has IPv6 addresses)
+
+render() {
+    local -a records=()
+    while IFS= read -r line; do
+        records+=("$line")
+    done
+    [[ ${#records[@]} -eq 0 ]] && return
+
+    local BC="$GA"   # border color
+
+    # ── Parse all records once, stash fields for both tables ─────────────
+    local -a all_iface all_status all_type all_mac all_ipv4 all_ipv6 all_gw
+    local record
+    for record in "${records[@]}"; do
+        local iface status iftype mac ipv4s ipv6s gateway
+        IFS="$FS" read -r iface status iftype mac ipv4s ipv6s gateway <<< "$record"
+        [[ "$SHOW_ONLY_UP" == true && "$status" != "UP" ]] && continue
+        all_iface+=("$iface")
+        all_status+=("$status")
+        all_type+=("$iftype")
+        all_mac+=("$mac")
+        all_ipv4+=("$ipv4s")
+        all_ipv6+=("$ipv6s")
+        all_gw+=("$gateway")
+    done
+
+    local total=${#all_iface[@]}
+    [[ $total -eq 0 ]] && return
+
+    # ── Helpers for colored cell values ──────────────────────────────────
+    dot_for()  { case "$1" in UP) printf '%s●%s' "$GR" "$R" ;; DOWN) printf '%s●%s' "$RE" "$R" ;; *) printf '%s●%s' "$YE" "$R" ;; esac; }
+    stat_for() { case "$1" in UP) printf '%s%sUP%s' "$GR" "$BO" "$R" ;; DOWN) printf '%s%sDOWN%s' "$RE" "$BO" "$R" ;; *) printf '%s%s%s' "$YE" "$1" "$R" ;; esac; }
+
+    # ══════════════════════════════════════════════════════════════════════
+    # Table 1: IPv4
+    # ══════════════════════════════════════════════════════════════════════
+
+    # Column widths: dot, interface, type, status, MAC, IPv4, gateway
+    # A1=15: Linux kernel max interface name length is 15 (e.g. enxd626b3450fb5)
+    local A0=1 A1=15 A2=12 A3=6 A4=19 A5=18 A6=17
+
+    local AH0; AH0=$(repeat_str '─' $((A0 + 2)))
+    local AH1; AH1=$(repeat_str '─' $((A1 + 2)))
+    local AH2; AH2=$(repeat_str '─' $((A2 + 2)))
+    local AH3; AH3=$(repeat_str '─' $((A3 + 2)))
+    local AH4; AH4=$(repeat_str '─' $((A4 + 2)))
+    local AH5; AH5=$(repeat_str '─' $((A5 + 2)))
+    local AH6; AH6=$(repeat_str '─' $((A6 + 2)))
+
+    print_v4_row() {
+        printf '%s│%s ' "$BC" "$R"; lpad "$1"    "$2"     "$A0"
+        printf ' %s│%s ' "$BC" "$R"; lpad "$3"    "$4"     "$A1"
+        printf ' %s│%s ' "$BC" "$R"; lpad "$5"    "$6"     "$A2"
+        printf ' %s│%s ' "$BC" "$R"; lpad "$7"    "$8"     "$A3"
+        printf ' %s│%s ' "$BC" "$R"; lpad "$9"    "${10}"  "$A4"
+        printf ' %s│%s ' "$BC" "$R"; lpad "${11}" "${12}"  "$A5"
+        printf ' %s│%s ' "$BC" "$R"; lpad "${13}" "${14}"  "$A6"
+        printf ' %s│%s\n' "$BC" "$R"
     }
-    if      (addr ~ /^fe80/) scope = "link-local"
-    else if (addr ~ /^f[cd]/) scope = "ULA"
-    inet6_addr[current, n]  = addr
-    inet6_scope[current, n] = scope
-    inet6_tmp[current, n]   = tmp
+
+    printf '\n %s%sIPv4%s\n' "$BO" "$CY" "$R"
+
+    printf '%s╭%s┬%s┬%s┬%s┬%s┬%s┬%s╮%s\n' \
+        "$BC" "$AH0" "$AH1" "$AH2" "$AH3" "$AH4" "$AH5" "$AH6" "$R"
+
+    print_v4_row \
+        ""          ""                          \
+        "Interface" "${GA}Interface${R}"         \
+        "Type"      "${GA}Type${R}"              \
+        "Status"    "${GA}Status${R}"            \
+        "MAC"       "${GA}MAC${R}"               \
+        "IPv4"      "${GA}IPv4${R}"              \
+        "Gateway"   "${GA}Gateway${R}"
+
+    printf '%s├%s┼%s┼%s┼%s┼%s┼%s┼%s┤%s\n' \
+        "$BC" "$AH0" "$AH1" "$AH2" "$AH3" "$AH4" "$AH5" "$AH6" "$R"
+
+    local i
+    for ((i = 0; i < total; i++)); do
+        local mac_vis mac_col
+        if [[ -n "${all_mac[$i]}" ]]; then mac_vis="${all_mac[$i]}"; mac_col="${GA}${all_mac[$i]}${R}"
+        else                               mac_vis="—";             mac_col="${GA}—${R}"
+        fi
+
+        local -a v4=()
+        [[ -n "${all_ipv4[$i]}" ]] && IFS="$GS" read -ra v4 <<< "${all_ipv4[$i]}"
+        local v4_vis v4_col
+        if [[ ${#v4[@]} -gt 0 ]]; then v4_vis="${v4[0]}"; v4_col="${YE}${v4[0]}${R}"
+        else                           v4_vis="—";        v4_col="${GA}—${R}"
+        fi
+
+        local gw_vis gw_col
+        if [[ -n "${all_gw[$i]}" ]]; then gw_vis="${all_gw[$i]}"; gw_col="${YE}${all_gw[$i]}${R}"
+        else                              gw_vis="";              gw_col=""
+        fi
+
+        print_v4_row \
+            "●"                "$(dot_for "${all_status[$i]}")"               \
+            "${all_iface[$i]}" "${CY}${BO}${all_iface[$i]}${R}"              \
+            "${all_type[$i]}"  "${GA}${all_type[$i]}${R}"                    \
+            "${all_status[$i]}" "$(stat_for "${all_status[$i]}")"            \
+            "$mac_vis"         "$mac_col"                                     \
+            "$v4_vis"          "$v4_col"                                      \
+            "$gw_vis"          "$gw_col"
+    done
+
+    printf '%s╰%s┴%s┴%s┴%s┴%s┴%s┴%s╯%s\n' \
+        "$BC" "$AH0" "$AH1" "$AH2" "$AH3" "$AH4" "$AH5" "$AH6" "$R"
+
+    # ══════════════════════════════════════════════════════════════════════
+    # Table 2: IPv6 (only if any interface has IPv6)
+    # ══════════════════════════════════════════════════════════════════════
+
+    # First, check if there's any IPv6 data at all
+    local has_ipv6=false
+    for ((i = 0; i < total; i++)); do
+        [[ -n "${all_ipv6[$i]}" ]] && { has_ipv6=true; break; }
+    done
+    [[ "$has_ipv6" == false ]] && { printf '\n'; return; }
+
+    # Column widths: interface, type, IPv6 address, scope
+    # B0=15: match IPv4 table interface column (Linux max = 15)
+    local B0=15 B1=12 B2=42 B3=14
+
+    local BH0; BH0=$(repeat_str '─' $((B0 + 2)))
+    local BH1; BH1=$(repeat_str '─' $((B1 + 2)))
+    local BH2; BH2=$(repeat_str '─' $((B2 + 2)))
+    local BH3; BH3=$(repeat_str '─' $((B3 + 2)))
+
+    print_v6_row() {
+        printf '%s│%s ' "$BC" "$R"; lpad "$1" "$2" "$B0"
+        printf ' %s│%s ' "$BC" "$R"; lpad "$3" "$4" "$B1"
+        printf ' %s│%s ' "$BC" "$R"; lpad "$5" "$6" "$B2"
+        printf ' %s│%s ' "$BC" "$R"; lpad "$7" "$8" "$B3"
+        printf ' %s│%s\n' "$BC" "$R"
+    }
+
+    printf '\n %s%sIPv6%s\n' "$BO" "$CY" "$R"
+
+    printf '%s╭%s┬%s┬%s┬%s╮%s\n' \
+        "$BC" "$BH0" "$BH1" "$BH2" "$BH3" "$R"
+
+    print_v6_row \
+        "Interface" "${GA}Interface${R}" \
+        "Type"      "${GA}Type${R}"      \
+        "Address"   "${GA}Address${R}"   \
+        "Scope"     "${GA}Scope${R}"
+
+    printf '%s├%s┼%s┼%s┼%s┤%s\n' \
+        "$BC" "$BH0" "$BH1" "$BH2" "$BH3" "$R"
+
+    for ((i = 0; i < total; i++)); do
+        [[ -z "${all_ipv6[$i]}" ]] && continue
+
+        local -a v6=()
+        IFS="$GS" read -ra v6 <<< "${all_ipv6[$i]}"
+
+        local first=true
+        local entry
+        for entry in "${v6[@]}"; do
+            local addr="${entry%%${SS}*}"
+            local scope="${entry#*${SS}}"
+            local dim=""
+            [[ "$scope" == *temporary* ]] && dim="$DI"
+
+            local addr_col="${dim}${BL}${addr}${R}"
+            local scope_col="${GA}${scope}${R}"
+
+            if [[ "$first" == true ]]; then
+                print_v6_row \
+                    "${all_iface[$i]}" "${CY}${BO}${all_iface[$i]}${R}" \
+                    "${all_type[$i]}"  "${GA}${all_type[$i]}${R}"       \
+                    "$addr"            "$addr_col"                       \
+                    "$scope"           "$scope_col"
+                first=false
+            else
+                print_v6_row \
+                    "" "" \
+                    "" "" \
+                    "$addr" "$addr_col" \
+                    "$scope" "$scope_col"
+            fi
+        done
+    done
+
+    printf '%s╰%s┴%s┴%s┴%s╯%s\n' \
+        "$BC" "$BH0" "$BH1" "$BH2" "$BH3" "$R"
+
+    printf '\n'
 }
 
-# ── Print ─────────────────────────────────────────────────────────────────────
-END {
-    for (oi = 1; oi <= order_n; oi++) {
-        iface = order[oi]
+# ─────────────────────────────────────────────────────────────────────────────────
+# Linux: parse `ip addr` and `ip route`
+# ─────────────────────────────────────────────────────────────────────────────────
 
-        if      (state[iface] == "UP")   { dot = GR "●" R; st = GR BO "UP"   R }
-        else if (state[iface] == "DOWN") { dot = RE "●" R; st = RE BO "DOWN" R }
-        else                             { dot = YE "●" R; st = YE state[iface] R }
+detect_type_linux() {
+    # Determine interface type from /sys/class/net on Linux.
+    # Uses sysfs first, then falls back to predictable naming prefixes.
+    local iface="$1"
+    local sys="/sys/class/net/$iface"
 
-        printf "\n %s %s%s%s%s  %s\n", dot, CY, BO, iface, R, st
+    # ── Wireless detection (sysfs) ───────────────────────────────────────
+    if [[ -d "$sys/wireless" ]] || \
+       { [[ -d "/sys/class/ieee80211" ]] && [[ -L "$sys/phy80211" ]]; }; then
+        printf 'Wi-Fi'; return
+    fi
 
-        if (mac[iface] != "")
-            printf "   %sMAC%s   %s%s%s\n", GA, R, GA, mac[iface], R
+    # ── Predictable naming prefixes (systemd v197+) ──────────────────────
+    # These are reliable because systemd assigns them based on device type.
+    #   wl* = WLAN,  ww* = WWAN,  en* = Ethernet,  ib* = InfiniBand
+    case "$iface" in
+        wl*)     printf 'Wi-Fi';      return ;;
+        ww*)     printf 'WWAN';       return ;;
+        ib*)     printf 'InfiniBand'; return ;;
+    esac
 
-        for (i = 1; i <= inet_n[iface]; i++)
-            printf "   %sIPv4%s  %s%s%s\n", BO, R, YE, inet_addr[iface, i], R
+    # ── sysfs device type (ARPHRD_* from linux/if_arp.h) ─────────────────
+    if [[ -f "$sys/type" ]]; then
+        local devtype
+        devtype=$(cat "$sys/type" 2>/dev/null)
+        case "$devtype" in
+            1)    # ARPHRD_ETHER — physical or virtual Ethernet
+                  if [[ -d "$sys/device" ]]; then
+                      # Check if it's a USB device (e.g. USB Ethernet dongle)
+                      local devpath
+                      devpath=$(readlink -f "$sys/device" 2>/dev/null)
+                      if [[ "$devpath" == */usb* ]]; then printf 'USB Ethernet'
+                      else                                printf 'Ethernet'
+                      fi
+                  elif [[ -d "$sys/bridge" ]]; then printf 'Bridge'
+                  elif [[ -d "$sys/bonding" ]]; then printf 'Bond'
+                  elif [[ -f "$sys/tun_flags" ]]; then printf 'TAP'
+                  elif [[ "$iface" == veth* ]]; then printf 'veth'
+                  elif [[ "$iface" == docker* ]] || [[ "$iface" == br-* ]]; then printf 'Docker'
+                  elif [[ "$iface" == virbr* ]]; then printf 'libvirt'
+                  else printf 'Virtual'
+                  fi ;;
+            772)  printf 'Loopback' ;;
+            768)  printf 'Tunnel' ;;    # ARPHRD_TUNNEL (ipip)
+            769)  printf 'Tunnel6' ;;   # ARPHRD_TUNNEL6 (ip6tnl)
+            776)  printf 'IP-in-IP' ;;  # ARPHRD_SIT (6in4)
+            778)  printf 'GRE' ;;       # ARPHRD_IPGRE
+            65534) printf 'TUN' ;;      # ARPHRD_NONE (tun devices)
+            *)    printf 'Other' ;;
+        esac
+        return
+    fi
 
-        # Non-temporary IPv6 first, then temporary ones dimmed
-        for (pass = 0; pass <= 1; pass++) {
-            for (i = 1; i <= inet6_n[iface]; i++) {
-                if (inet6_tmp[iface, i] != pass) continue
-                addr  = inet6_addr[iface, i]
-                scope = inet6_scope[iface, i]
-                tag   = "[" scope (pass ? ", temporary" : "") "]"
-                if (pass)
-                    printf "   %sIPv6%s  %s%-44s%s %s%s%s\n", DI, R, DI BL, addr, R, DI, tag, R
-                else
-                    printf "   %sIPv6%s  %s%-44s%s %s%s%s\n", BO, R, BL, addr, R, GA, tag, R
-            }
+    # ── Last resort: name pattern heuristics ─────────────────────────────
+    case "$iface" in
+        en*)      printf 'Ethernet' ;;
+        eth*)     printf 'Ethernet' ;;
+        tap*)     printf 'TAP' ;;
+        tun*)     printf 'TUN' ;;
+        veth*)    printf 'veth' ;;
+        docker*)  printf 'Docker' ;;
+        br-*)     printf 'Docker' ;;
+        virbr*)   printf 'libvirt' ;;
+        bond*)    printf 'Bond' ;;
+        *)        printf 'Unknown' ;;
+    esac
+}
+
+parse_linux() {
+    local gw_data
+    gw_data=$(ip route show default 2>/dev/null | awk '{
+        dev = ""; gw = ""
+        for (i = 1; i <= NF; i++) {
+            if ($i == "via") gw = $(i+1)
+            if ($i == "dev") dev = $(i+1)
+        }
+        if (dev != "" && gw != "") print dev "\t" gw
+    }')
+
+    # Build a type map: "iface<TAB>type" lines
+    local type_data=""
+    while IFS= read -r iface_name; do
+        local t
+        t=$(detect_type_linux "$iface_name")
+        type_data+="${iface_name}"$'\t'"${t}"$'\n'
+    done < <(ls /sys/class/net/ 2>/dev/null)
+
+    ip addr | awk \
+        -v FS_OUT="$FS" -v GS_OUT="$GS" -v SS_OUT="$SS" \
+        -v gw_data="$gw_data" -v type_data="$type_data" '
+    BEGIN {
+        n_gw = split(gw_data, gw_lines, "\n")
+        for (g = 1; g <= n_gw; g++) {
+            split(gw_lines[g], parts, "\t")
+            gw_map[parts[1]] = parts[2]
+        }
+        n_type = split(type_data, type_lines, "\n")
+        for (t = 1; t <= n_type; t++) {
+            split(type_lines[t], parts, "\t")
+            type_map[parts[1]] = parts[2]
+        }
+        skip = 0; n = 0; current = ""
+    }
+
+    /^[0-9]+: / {
+        iface = $2; sub(/:$/, "", iface)
+        if (iface == "lo") { skip = 1; next }
+        skip = 0; current = iface
+        order[++n] = iface
+        state[iface] = "UNKNOWN"
+        mac[iface] = ""; inet_s[iface] = ""; inet6_s[iface] = ""
+        for (i = 1; i <= NF; i++)
+            if ($i == "state") { state[iface] = $(i+1); break }
+        next
+    }
+
+    skip { next }
+
+    /link\/ether/ { mac[current] = $2 }
+
+    /[[:space:]]inet / {
+        if (inet_s[current] != "") inet_s[current] = inet_s[current] GS_OUT
+        inet_s[current] = inet_s[current] $2
+    }
+
+    /[[:space:]]inet6 / {
+        addr = $2; scope = "global"; tmp = 0
+        for (i = 3; i <= NF; i++) {
+            if ($i == "scope")     scope = $(i+1)
+            if ($i == "temporary") tmp = 1
+        }
+        if      (addr ~ /^fe80/) scope = "link-local"
+        else if (addr ~ /^f[cd]/) scope = "ULA"
+        if (tmp) scope = scope ", temporary"
+        if (inet6_s[current] != "") inet6_s[current] = inet6_s[current] GS_OUT
+        inet6_s[current] = inet6_s[current] addr SS_OUT scope
+    }
+
+    END {
+        for (i = 1; i <= n; i++) {
+            iface = order[i]
+            gw = (iface in gw_map) ? gw_map[iface] : ""
+            tp = (iface in type_map) ? type_map[iface] : "Unknown"
+            # Fields: iface FS status FS type FS mac FS ipv4 FS ipv6 FS gw
+            printf "%s%s%s%s%s%s%s%s%s%s%s%s%s\n", \
+                iface, FS_OUT, state[iface], FS_OUT, tp, FS_OUT, \
+                mac[iface], FS_OUT, inet_s[iface], FS_OUT, inet6_s[iface], FS_OUT, gw
+        }
+    }'
+}
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# macOS: parse `ifconfig`, `route`, and `networksetup`
+# ─────────────────────────────────────────────────────────────────────────────────
+
+parse_macos() {
+    local gw_addr gw_iface
+    gw_addr=$(route -n get default 2>/dev/null  | awk '/gateway:/   { print $2 }')
+    gw_iface=$(route -n get default 2>/dev/null | awk '/interface:/ { print $2 }')
+
+    # Build a type map from networksetup: "device<TAB>Hardware Port" entries
+    # joined by "|" (pipe) to avoid newlines breaking awk's -v.
+    local hw_map
+    hw_map=$(networksetup -listallhardwareports 2>/dev/null | awk '
+        /^Hardware Port:/ { port = substr($0, 16) }
+        /^Device:/        { dev = $2; if (NR>2) printf "|"; printf "%s\t%s", dev, port }
+    ')
+
+    ifconfig | awk \
+        -v FS_OUT="$FS" -v GS_OUT="$GS" -v SS_OUT="$SS" \
+        -v gw_addr="$gw_addr" -v gw_iface="$gw_iface" \
+        -v hw_map="$hw_map" '
+    BEGIN {
+        n = 0; current = ""; skip = 0
+
+        # Parse hw_map (pipe-delimited) into an associative array
+        n_hw = split(hw_map, hw_lines, "|")
+        for (h = 1; h <= n_hw; h++) {
+            split(hw_lines[h], parts, "\t")
+            hw_type[parts[1]] = parts[2]
         }
     }
-    print ""
-}
-'
 
-# ── Gateway ───────────────────────────────────────────────────────────────────
-printf " %s%sGateway%s\n" "$BO" "$CY" "$R"
-while IFS= read -r line; do
-    gw=$(    awk '{for (i=1; i<=NF; i++) if ($i=="via")   { print $(i+1); exit }}' <<< "$line")
-    dev=$(   awk '{for (i=1; i<=NF; i++) if ($i=="dev")   { print $(i+1); exit }}' <<< "$line")
-    proto=$( awk '{for (i=1; i<=NF; i++) if ($i=="proto") { print $(i+1); exit }}' <<< "$line")
-    [[ -n "$gw" ]] && printf "   %-18s %s%s%s  %s(%s)%s\n" \
-        "$dev" "$YE" "$gw" "$R" "$GA" "$proto" "$R"
-done < <(ip route show default 2>/dev/null)
-echo ""
+    /^[a-z]/ {
+        split($1, a, ":"); iface = a[1]
+        if (iface == "lo0") { skip = 1; next }
+        skip = 0; current = iface
+        order[++n] = iface
+        mac[iface] = ""; inet_s[iface] = ""; inet6_s[iface] = ""
+
+        if ($0 ~ /[<,]UP[,>]/ && $0 ~ /[<,]RUNNING[,>]/) state[iface] = "_RUNNING"
+        else                                               state[iface] = "DOWN"
+        next
+    }
+
+    skip { next }
+
+    /ether / { mac[current] = $2 }
+
+    /[[:space:]]inet / {
+        if (inet_s[current] != "") inet_s[current] = inet_s[current] GS_OUT
+        inet_s[current] = inet_s[current] $2
+    }
+
+    /[[:space:]]inet6 / {
+        addr = $2; scope = "global"
+        sub(/%.*/, "", addr)
+        if      (addr ~ /^fe80/) scope = "link-local"
+        else if (addr ~ /^f[cd]/) scope = "ULA"
+        if (inet6_s[current] != "") inet6_s[current] = inet6_s[current] GS_OUT
+        inet6_s[current] = inet6_s[current] addr SS_OUT scope
+    }
+
+    END {
+        for (i = 1; i <= n; i++) {
+            iface = order[i]
+            gw = (iface == gw_iface) ? gw_addr : ""
+
+            # Resolve _RUNNING → UP (has IP) or IDLE (no IP)
+            if (state[iface] == "_RUNNING") {
+                if (inet_s[iface] != "" || inet6_s[iface] != "")
+                    state[iface] = "UP"
+                else
+                    state[iface] = "IDLE"
+            }
+
+            # Determine type: networksetup first, then name-based fallback
+            if (iface in hw_type) {
+                tp = hw_type[iface]
+                # Shorten common labels to fit the Type column (12 chars)
+                if      (tp ~ /^Wi-Fi/)                tp = "Wi-Fi"
+                else if (tp ~ /^Thunderbolt.*Bridge/)  tp = "TB Bridge"
+                else if (tp ~ /^Thunderbolt/)          tp = "Thunderbolt"
+                else if (tp ~ /USB.*LAN|USB.*Ethernet/) tp = "USB Ethernet"
+                else if (tp ~ /^Ethernet/)             tp = "Ethernet"
+                else if (tp ~ /^USB/)                  tp = "USB"
+                else if (tp ~ /^FireWire/)             tp = "FireWire"
+                else if (tp ~ /^Bluetooth/)            tp = "Bluetooth"
+                else if (tp ~ /^iPhone USB/)           tp = "iPhone USB"
+            } else {
+                # Fallback: infer from interface name
+                if      (iface ~ /^awdl/)    tp = "AirDrop"
+                else if (iface ~ /^llw/)     tp = "WLAN-Link"
+                else if (iface ~ /^utun/)    tp = "Tunnel"
+                else if (iface ~ /^ipsec/)   tp = "IPsec"
+                else if (iface ~ /^gif/)     tp = "GIF Tunnel"
+                else if (iface ~ /^stf/)     tp = "6to4"
+                else if (iface ~ /^bridge/)  tp = "Bridge"
+                else if (iface ~ /^ap/)      tp = "AP"
+                else if (iface ~ /^anpi/)    tp = "ANPI"
+                else if (iface ~ /^vmnet/)   tp = "VMware"
+                else if (iface ~ /^vboxnet/) tp = "VirtualBox"
+                else                         tp = ""
+            }
+
+            # Fields: iface FS status FS type FS mac FS ipv4 FS ipv6 FS gw
+            printf "%s%s%s%s%s%s%s%s%s%s%s%s%s\n", \
+                iface, FS_OUT, state[iface], FS_OUT, tp, FS_OUT, \
+                mac[iface], FS_OUT, inet_s[iface], FS_OUT, inet6_s[iface], FS_OUT, gw
+        }
+    }'
+}
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# Main
+# ─────────────────────────────────────────────────────────────────────────────────
+
+case "$(uname)" in
+    Linux)  parse_linux | sort | render ;;
+    Darwin) parse_macos | sort | render ;;
+    *)      printf "ipa: unsupported platform: %s\n" "$(uname)" >&2; exit 1 ;;
+esac

@@ -1,0 +1,10 @@
+# fzf default options — loaded via FZF_DEFAULT_OPTS_FILE (fzf >= 0.53)
+# One option per line. Lines starting with # are comments.
+
+--height 40%
+--layout=reverse
+--border=rounded
+--info=inline-right
+--pointer=󰜴
+--color=gutter:-1,pointer:yellow
+--bind change:first

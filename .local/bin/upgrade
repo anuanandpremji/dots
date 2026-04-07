@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# upgrade - Run system updates across all detected package managers.
+# upgrade — Run system updates across all detected package managers.
 #
 # ┌─ What runs (each step only if the package manager is installed) ─────────────────────────────────┐
 # │                                                                                                  │
@@ -11,10 +11,27 @@
 # │  Flatpak?  list pending updates → prompt → flatpak update    → uninstall --unused                │
 # │     ↓                                                                                            │
 # │  Snap?     list pending updates → prompt → snap refresh                                          │
+# │     ↓                                                                                            │
+# │  Brew?     list pending updates → prompt → brew upgrade       → cleanup                          │
 # │                                                                                                  │
 # └──────────────────────────────────────────────────────────────────────────────────────────────────┘
+#
+# Usage:
+#   upgrade            Interactive update (shows pending, prompts before each)
+#   upgrade --check    List pending updates without installing anything
 
 _has() { command -v "$1" >/dev/null 2>&1; }
+
+CHECK_ONLY=false
+for arg in "$@"; do
+    case "$arg" in
+        --check|-c) CHECK_ONLY=true ;;
+        --help|-h)
+            printf "Usage: upgrade [--check]\n\n"
+            printf "  --check, -c   List pending updates without installing\n"
+            exit 0 ;;
+    esac
+done
 
 confirm() {
     printf "%s\n" "${1:-Are you sure you want to continue? Reply with [Y]es or [N]o and then press ENTER.}"
@@ -28,6 +45,9 @@ confirm() {
     done
 }
 
+found_updates=false
+
+# ── APT ──────────────────────────────────────────────────────────────────────────
 update_apt() {
     if ! _has apt-get; then return 1; fi
 
@@ -39,7 +59,10 @@ update_apt() {
 
     if [ -z "$updates" ]; then printf "No APT updates available.\n\n"; return 0; fi
 
+    found_updates=true
     printf "%s\n\n" "$updates"
+    if [[ "$CHECK_ONLY" == true ]]; then return 0; fi
+
     if ! confirm 'Start APT update? [y/N]'; then printf "APT update cancelled.\n\n"; return 0; fi
 
     sudo apt full-upgrade -y || { printf "APT upgrade failed.\n\n"; return 1; }
@@ -52,6 +75,7 @@ update_apt() {
     printf "APT update finished.\n\n"
 }
 
+# ── DNF ──────────────────────────────────────────────────────────────────────────
 update_dnf() {
     if ! _has dnf; then return 1; fi
 
@@ -65,7 +89,10 @@ update_dnf() {
     if [ "$rc" -eq 0 ]; then printf "No DNF updates available.\n\n"; return 0; fi
     if [ "$rc" -ne 100 ]; then printf "Error checking for DNF updates.\n\n"; return 1; fi
 
+    found_updates=true
     printf "%s\n\n" "$updates"
+    if [[ "$CHECK_ONLY" == true ]]; then return 0; fi
+
     if ! confirm 'Start DNF update? [y/N]'; then printf "DNF update cancelled.\n\n"; return 0; fi
 
     sudo dnf upgrade -y || { printf "DNF upgrade failed.\n\n"; return 1; }
@@ -77,6 +104,7 @@ update_dnf() {
     printf "DNF update finished.\n\n"
 }
 
+# ── Flatpak ──────────────────────────────────────────────────────────────────────
 update_flatpaks() {
     if ! _has flatpak; then return 1; fi
 
@@ -87,7 +115,10 @@ update_flatpaks() {
 
     if [ -z "$updates" ]; then printf "No Flatpak updates available.\n\n"; return 0; fi
 
+    found_updates=true
     printf "%s\n\n" "$updates"
+    if [[ "$CHECK_ONLY" == true ]]; then return 0; fi
+
     if ! confirm 'Start Flatpak update? [y/N]'; then printf "Flatpak update cancelled.\n\n"; return 0; fi
 
     flatpak update -y || { printf "Flatpak update failed.\n\n"; return 1; }
@@ -98,6 +129,7 @@ update_flatpaks() {
     printf "Flatpak update finished.\n\n"
 }
 
+# ── Snap ─────────────────────────────────────────────────────────────────────────
 update_snaps() {
     if ! _has snap; then return 1; fi
 
@@ -109,7 +141,10 @@ update_snaps() {
         return 0
     fi
 
+    found_updates=true
     printf "%s\n\n" "$updates"
+    if [[ "$CHECK_ONLY" == true ]]; then return 0; fi
+
     if ! confirm 'Start Snap update? [y/N]'; then printf "Snap update cancelled.\n\n"; return 0; fi
 
     sudo snap refresh || { printf "Snap update failed.\n\n"; return 1; }
@@ -117,11 +152,60 @@ update_snaps() {
     printf "Snap update finished.\n\n"
 }
 
-printf "\nStarting system update...\n"
+# ── Homebrew ─────────────────────────────────────────────────────────────────────
+update_brew() {
+    if ! _has brew; then return 1; fi
+
+    printf "Checking for available Homebrew updates...\n"
+    brew update --quiet
+
+    local outdated_formulae outdated_casks
+    outdated_formulae=$(brew outdated --formula 2>/dev/null)
+    outdated_casks=$(brew outdated --cask 2>/dev/null)
+
+    if [ -z "$outdated_formulae" ] && [ -z "$outdated_casks" ]; then
+        printf "No Homebrew updates available.\n\n"
+        return 0
+    fi
+
+    found_updates=true
+    if [ -n "$outdated_formulae" ]; then
+        printf "Outdated formulae:\n%s\n\n" "$outdated_formulae"
+    fi
+    if [ -n "$outdated_casks" ]; then
+        printf "Outdated casks:\n%s\n\n" "$outdated_casks"
+    fi
+    if [[ "$CHECK_ONLY" == true ]]; then return 0; fi
+
+    if ! confirm 'Start Homebrew update? [y/N]'; then printf "Homebrew update cancelled.\n\n"; return 0; fi
+
+    brew upgrade || { printf "Homebrew upgrade failed.\n\n"; return 1; }
+
+    printf "Doing Homebrew clean-up...\n"
+    brew cleanup
+
+    printf "Homebrew update finished.\n\n"
+}
+
+# ── Main ─────────────────────────────────────────────────────────────────────────
+if [[ "$CHECK_ONLY" == true ]]; then
+    printf "\nChecking for pending updates...\n\n"
+else
+    printf "\nStarting system update...\n\n"
+fi
 
 if _has apt-get; then update_apt;      fi
 if _has dnf;     then update_dnf;      fi
 if _has flatpak; then update_flatpaks; fi
 if _has snap;    then update_snaps;    fi
+if _has brew;    then update_brew;     fi
 
-printf "Done. It's good practice to do a system reboot now.\n"
+if [[ "$CHECK_ONLY" == true ]]; then
+    if [[ "$found_updates" == true ]]; then
+        printf "Run 'upgrade' (without --check) to install.\n"
+    else
+        printf "Everything is up to date.\n"
+    fi
+else
+    printf "Done. It's good practice to do a system reboot now.\n"
+fi

@@ -67,15 +67,7 @@ mkdir -p "$DOTNET_CLI_HOME"
 # fzf
 if command -v fzf >/dev/null 2>&1; then
     export FZF_DEFAULT_COMMAND='fd --type f'
-    export FZF_DEFAULT_OPTS='
-        --height 40%
-        --layout=reverse
-        --border=rounded
-        --info=inline-right
-        --pointer="󰜴"
-        --color="gutter:-1,pointer:yellow"
-        --bind "change:first"
-    '
+    export FZF_DEFAULT_OPTS_FILE="$XDG_CONFIG_HOME/fzf/config"
 fi
 
 # Git

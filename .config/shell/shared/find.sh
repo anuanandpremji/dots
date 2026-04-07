@@ -76,11 +76,11 @@ fzf_file_widget()
         return 0
     fi
 
-    if   [[ "$key" == ctrl-o ]]; then open_command "$sel"
+    if   [[ "$key" == ctrl-o ]]; then open-command "$sel"
     elif [[ "$key" == ctrl-v ]]; then zed "$sel"
     elif [[ "$key" == ctrl-n ]]; then "$VISUAL" "$sel"
-    elif [[ "$key" == ctrl-e ]]; then open_path "$sel"
-    elif [[ "$key" == ctrl-y ]]; then copyabsolutepath "$sel"
+    elif [[ "$key" == ctrl-e ]]; then open-path "$sel"
+    elif [[ "$key" == ctrl-y ]]; then copypath "$sel"
     elif [[ "$key" == alt-c  ]]; then
         if [[ -d "$sel" ]]; then cd "$sel"; else cd "$(dirname "$sel")"; fi
         if [ -n "$ZSH_VERSION" ]; then zle reset-prompt; return 0; fi
@@ -109,10 +109,10 @@ fi
 
 # Dependency check
 
-if ! _has fd;               then printf "fd: program not found. Install fd-find.\n";  fi
-if ! _has clipcopy;         then printf "clipcopy(): function not loaded.\n";         fi
-if ! _has copyabsolutepath; then printf "copyabsolutepath(): function not loaded.\n"; fi
-if ! _has open_command;     then printf "open_command(): function not loaded.\n";     fi
-if ! _has open_path;        then printf "open_path(): function not loaded.\n";        fi
+if ! _has fd;           then printf "fd: program not found. Install fd-find.\n";   fi
+if ! _has clipcopy;     then printf "clipcopy: script not found in PATH.\n";    fi
+if ! _has copypath;     then printf "copypath: script not found in PATH.\n";    fi
+if ! _has open-command; then printf "open-command: script not found in PATH.\n"; fi
+if ! _has open-path;    then printf "open-path: script not found in PATH.\n";   fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #

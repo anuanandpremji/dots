@@ -223,7 +223,7 @@ source "$DOTFILES_PATH/.config/shell/shared/utils.sh";
 source "$DOTFILES_PATH/.config/shell/shared/history.sh";
 source "$DOTFILES_PATH/.config/shell/shared/find.sh";
 source "$DOTFILES_PATH/.config/shell/shared/aliases.sh";
-if [[ -f "$HOME/.config/shell/.bashextra" ]]; then source "$HOME/.config/shell/.bashextra"; fi
+if [[ -f "$HOME/.config/shell/.bashlocal" ]]; then source "$HOME/.config/shell/.bashlocal"; fi
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# open-path — Open a path in the system file explorer.
+# If the argument is a file, opens its parent directory.
+#
+# Usage:
+#   open-path ~/Documents
+#   open-path ~/Documents/report.pdf
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+target="${1:-.}"
+
+if [[ -d "$target" ]]; then
+    open-command "$target"
+else
+    open-command "$(dirname "$target")"
+fi

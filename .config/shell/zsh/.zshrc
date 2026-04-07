@@ -199,7 +199,7 @@ source "$ZDOTDIR/../shared/utils.sh"
 source "$ZDOTDIR/../shared/history.sh"
 source "$ZDOTDIR/../shared/find.sh"
 source "$ZDOTDIR/../shared/aliases.sh"
-if [[ -f "$HOME/.config/shell/.zshextra" ]]; then source "$HOME/.config/shell/.zshextra"; fi
+if [[ -f "$HOME/.config/shell/.zshlocal" ]]; then source "$HOME/.config/shell/.zshlocal"; fi
 
 #╔═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
 #║ Notes                                                                                                               ║

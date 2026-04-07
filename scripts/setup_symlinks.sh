@@ -17,6 +17,8 @@
 # │  .config/fresh/config.json              󰌷   ~/.config/fresh/config.json   (if fresh found)        │
 # │  .config/micro/{settings,bindings,...}  󰌷   ~/.config/micro/              (if micro found)        │
 # │  .config/vscode/User/                   󰌷   ~/.config/Code/User/          (if code found)         │
+# │  .config/bat/config                    󰌷   ~/.config/bat/config          (if bat found)          │
+# │  .config/fzf/config                    󰌷   ~/.config/fzf/config          (if fzf found)          │
 # │  .config/claude/CLAUDE.md               󰌷   ~/.claude/CLAUDE.md                                   │
 # │  .local/bin/*                           󰌷   ~/.local/bin/*                (shell utilities)       │
 # │  .local/share/fonts/*.{ttf,otf}         󰆏   ~/.local/share/fonts/         (copied, not symlinked) │
@@ -163,6 +165,18 @@ if command -v code &>/dev/null; then
         link_path "$DOTFILES/.config/vscode/User/settings.json"    "$HOME/.config/Code/User/settings.json"
         link_path "$DOTFILES/.config/vscode/User/keybindings.json" "$HOME/.config/Code/User/keybindings.json"
     fi
+fi
+
+# ── bat ────────────────────────────────────────────────────────────────────────
+if command -v bat &>/dev/null || command -v batcat &>/dev/null; then
+    echo "── bat ──"
+    link_path "$DOTFILES/.config/bat/config" "$HOME/.config/bat/config"
+fi
+
+# ── fzf ────────────────────────────────────────────────────────────────────────
+if command -v fzf &>/dev/null; then
+    echo "── fzf ──"
+    link_path "$DOTFILES/.config/fzf/config" "$HOME/.config/fzf/config"
 fi
 
 # ── Claude Code ───────────────────────────────────────────────────────────────

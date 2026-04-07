@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+#
+# copypath — Copy the absolute path of a file or directory to the clipboard.
+# Defaults to $PWD if no argument is given.
+#
+# Usage:
+#   copypath              # copies current directory
+#   copypath myfile.txt   # copies absolute path of myfile.txt
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+file="${1:-$PWD}"
+
+# Resolve to absolute path
+[[ "$file" = /* ]] || file="$PWD/$file"
+
+# Resolve symlinks if realpath is available
+if command -v realpath >/dev/null 2>&1; then
+    file="$(realpath "$file")"
+fi
+
+printf '%s' "$file" | clipcopy
+printf '"%s" copied to clipboard.\n' "$file"

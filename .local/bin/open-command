@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+#
+# open-command — Open a file, directory, or URL in the default system app.
+# Works on macOS, Linux (X11/Wayland), and WSL.
+#
+# Usage:
+#   open-command https://example.com
+#   open-command ~/Documents/report.pdf
+#   open-command .
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+case "$OSTYPE" in
+    darwin*)
+        open "$@"
+        ;;
+    linux*)
+        if [[ "$(uname -r)" == *icrosoft* ]]; then
+            wslview "$@"
+        else
+            nohup xdg-open "$@" >/dev/null 2>&1 &
+        fi
+        ;;
+    *)
+        printf "open-command: platform %s not supported.\n" "$OSTYPE" >&2
+        exit 1
+        ;;
+esac

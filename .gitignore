@@ -34,6 +34,9 @@
 **/id_ed25519*
 **/id_ecdsa*
 
+# Zsh session restore files (auto-created by macOS)
+.config/shell/zsh/.zsh_sessions/
+
 # Backups and temp files
 *.bak
 *~

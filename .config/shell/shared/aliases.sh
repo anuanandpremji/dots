@@ -49,7 +49,7 @@ fi
 
 # Open current folder in the default files app
 
-alias nnn='open_command "$PWD"'
+alias nnn='open-command "$PWD"'
 
 # ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════ #
 
