@@ -37,6 +37,9 @@
 # Zsh session restore files (auto-created by macOS)
 .config/shell/zsh/.zsh_sessions/
 
+# Zed runtime databases (auto-created by Zed inside symlinked config dir)
+.config/zed/prompts/
+
 # Backups and temp files
 *.bak
 *~
